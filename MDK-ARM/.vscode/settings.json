@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "robot.h": "c",
+        "joyhandle.h": "c",
+        "link.h": "c",
+        "rgb.h": "c",
+        "rm3508.h": "c",
+        "fdcan_bsp.h": "c",
+        "shoot.h": "c",
+        "cmsis_os2.h": "c",
+        "cmsis_os.h": "c",
+        "pid.h": "c",
+        "platform.h": "c",
+        "elmo_fdcan.h": "c"
+    }
+}
