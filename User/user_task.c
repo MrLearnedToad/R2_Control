@@ -41,7 +41,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=1;
     }
     
-    if(distance<0.010)
+    if(distance<0.008)
     {
 //        dX=0;
 //        dY=0;
@@ -438,7 +438,7 @@ int auto_pick_up(mission_queue *current_task)
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.39;
+        distance_2_move=distance-0.36f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
         flags[auto_drive_status]=moving;
@@ -511,7 +511,7 @@ int auto_place(mission_queue *current_task)
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
         osDelay(5);
         }
-        osDelay(200);
+        osDelay(800);
         flag_running=1;
         return 0;
     }
@@ -540,12 +540,15 @@ int auto_place(mission_queue *current_task)
     }
     if(Read_Button(13)==1)
         count=0;
-    target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
-    dZ=-target_pos.z;    
+    if(count2>100)
+    {
+        target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
+        dZ=-target_pos.z;  
+    }
     if(flags[auto_drive_status]==stop&&count2==200&&Read_Button(20)==1)
     {
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.39;
+        distance_2_move=distance-0.36f;
         release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
         flags[auto_drive_status]=moving;

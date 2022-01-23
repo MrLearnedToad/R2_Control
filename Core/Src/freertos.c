@@ -53,6 +53,7 @@
 uint8_t flags[20]={0}; //自动(1)/手操模式(0),flag_down_finish,flag_hold,flag_up//标志位区
 mission_queue *mission_queue_head=NULL;//任务队列队头
 uint8_t task_reset=0;
+uint8_t block_num=0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -294,6 +295,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(12)==1&&last_key_status[12]==0)
       {
+          info.x=block_num;
           add_mission(AUTOPICKUP,set_flags,0,&info);
           last_key_status[12]=1;
       }
@@ -301,6 +303,18 @@ void RobotTask(void *argument)
       {
           add_mission(AUTOPLACE,set_flags,0,&info);
           last_key_status[15]=1;
+      }
+      else if(Read_Button(17)==1&&last_key_status[17]==0)
+      {
+          if(block_num<6)
+            block_num++;
+          last_key_status[17]=1;
+      }
+      else if(Read_Button(19)==1&&last_key_status[19]==0)
+      {
+          if(block_num>1)
+              block_num--;
+          last_key_status[19]=1;
       }
       else if(Read_Button(21)==automode&&flags[0]==manualmode)//全局重启
       {

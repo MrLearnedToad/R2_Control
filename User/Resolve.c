@@ -41,8 +41,8 @@ void Set_Pos(void)
     int tmp[4]={0};
     tmp[0]=-speed;
     tmp[1]=speed;
-    tmp[2]=-speed*0.3f;
-    tmp[3]=speed*0.3f;
+    tmp[2]=-speed*0.4f;
+    tmp[3]=speed*0.4f;
     for(int i=0;i<4;i++)
     {
         Wheel_Speed[i]=-tmp[i];
@@ -82,7 +82,7 @@ void Set_Pos(void)
     {
         Wheel_Speed[i]+=-1000*tmp[i];
     }
-        Wheel_Speed[0]=-Wheel_Speed[0];
+        Wheel_Speed[0]=Wheel_Speed[0];
         Wheel_Speed[1]=Wheel_Speed[1];
         Wheel_Speed[2]=Wheel_Speed[2]/16*28.5f;
         Wheel_Speed[3]=-Wheel_Speed[3];

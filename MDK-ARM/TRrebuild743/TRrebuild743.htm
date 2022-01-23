@@ -3,7 +3,7 @@
 <title>Static Call Graph - [TRrebuild743\TRrebuild743.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image TRrebuild743\TRrebuild743.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Sat Jan 22 09:13:58 2022
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Sat Jan 22 23:53:21 2022
 <BR><P>
 <H3>Maximum Stack Usage =        376 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -2181,7 +2181,7 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;manual_move
 </UL>
 
-<P><STRONG><a name="[aa]"></a>RobotTask</STRONG> (Thumb, 804 bytes, Stack size 56 bytes, freertos.o(i.RobotTask))
+<P><STRONG><a name="[aa]"></a>RobotTask</STRONG> (Thumb, 800 bytes, Stack size 56 bytes, freertos.o(i.RobotTask))
 <BR><BR>[Stack]<UL><LI>Max Depth = 240<LI>Call Chain = RobotTask &rArr; instruction_refresh &rArr; NRF24L01_RxPacket &rArr; NRF24L01_Read_Buf &rArr; SPI_ReadWriteByte &rArr; HAL_SPI_TransmitReceive &rArr; SPI_WaitOnFlagUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[19a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pick_up
@@ -2209,7 +2209,7 @@ Global Symbols
 <LI><a href="#[17e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;NRF24L01_Check
 </UL>
 
-<P><STRONG><a name="[162]"></a>Set_Pos</STRONG> (Thumb, 1340 bytes, Stack size 56 bytes, resolve.o(i.Set_Pos))
+<P><STRONG><a name="[162]"></a>Set_Pos</STRONG> (Thumb, 1338 bytes, Stack size 56 bytes, resolve.o(i.Set_Pos))
 <BR><BR>[Stack]<UL><LI>Max Depth = 240<LI>Call Chain = Set_Pos &rArr; __hardfp_sin &rArr; __ieee754_rem_pio2 &rArr; fabs
 </UL>
 <BR>[Calls]<UL><LI><a href="#[19f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Pid_Run
@@ -2565,7 +2565,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> user_task.o(.data)
 </UL>
-<P><STRONG><a name="[f]"></a>auto_pick_up</STRONG> (Thumb, 1106 bytes, Stack size 112 bytes, user_task.o(i.auto_pick_up))
+<P><STRONG><a name="[f]"></a>auto_pick_up</STRONG> (Thumb, 1122 bytes, Stack size 112 bytes, user_task.o(i.auto_pick_up))
 <BR><BR>[Stack]<UL><LI>Max Depth = 232<LI>Call Chain = auto_pick_up &rArr; pick_up &rArr; add_mission &rArr; malloc &rArr; __Heap_Full &rArr; __Heap_ProvideMemory &rArr; free
 </UL>
 <BR>[Calls]<UL><LI><a href="#[19a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pick_up
@@ -2581,7 +2581,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> user_task.o(.data)
 </UL>
-<P><STRONG><a name="[10]"></a>auto_place</STRONG> (Thumb, 1094 bytes, Stack size 112 bytes, user_task.o(i.auto_place))
+<P><STRONG><a name="[10]"></a>auto_place</STRONG> (Thumb, 1122 bytes, Stack size 112 bytes, user_task.o(i.auto_place))
 <BR><BR>[Stack]<UL><LI>Max Depth = 232<LI>Call Chain = auto_place &rArr; place_block &rArr; add_mission &rArr; malloc &rArr; __Heap_Full &rArr; __Heap_ProvideMemory &rArr; free
 </UL>
 <BR>[Calls]<UL><LI><a href="#[19b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osDelay
