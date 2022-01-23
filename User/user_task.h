@@ -173,6 +173,7 @@ extern PID_T pid_pos;
 extern int global_clock;
 extern check_point *check_point_head;
 extern barrier *barrier_head;
+extern uint8_t block_num;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);

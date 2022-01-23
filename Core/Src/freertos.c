@@ -312,7 +312,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(19)==1&&last_key_status[19]==0)
       {
-          if(block_num>1)
+          if(block_num>2)
               block_num--;
           last_key_status[19]=1;
       }

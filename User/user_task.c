@@ -397,6 +397,7 @@ int auto_pick_up(mission_queue *current_task)
         msg_buffer[1]='!';
         msg_buffer[2]=1;
         for(int i=3;i<15;i++)msg_buffer[i]=0;
+        msg_buffer[11]=7-(uint8_t)current_task->info.x;
         msg_buffer[15]='!';
         for(int j=0;j<8;j++)
         {
@@ -433,7 +434,7 @@ int auto_pick_up(mission_queue *current_task)
     if(Read_Button(13)==1)
         count=0;
         
-    if(flags[auto_drive_status]==stop&&count2==200)
+    if(flags[auto_drive_status]==stop&&count2==200&&count>10)
     {
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
@@ -452,6 +453,7 @@ int auto_pick_up(mission_queue *current_task)
     }
     if(flags[auto_drive_status]==moving_complete)
     {
+        
         flags[lock_mode_status]=stop;
         current_task->flag_finish=1;
         flag_running=0;
@@ -540,20 +542,20 @@ int auto_place(mission_queue *current_task)
     }
     if(Read_Button(13)==1)
         count=0;
-    if(count2>100)
+    if(count>15)
     {
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;  
     }
-    if(flags[auto_drive_status]==stop&&count2==200&&Read_Button(20)==1)
+    if(flags[auto_drive_status]==stop&&count2==200)
     {
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
         distance_2_move=distance-0.36f;
         release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
-        flags[auto_drive_status]=moving;
+        place_block(block_num);
+        set_flags[grab_status]=stop;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
-        place_block(tower_block_2);
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
@@ -563,6 +565,7 @@ int auto_place(mission_queue *current_task)
     if(flags[auto_drive_status]==moving_complete)
     {
         current_task->flag_finish=1;
+        block_num++;
         count=0;
         count2=0;
         flags[lock_mode_status]=stop;
@@ -602,9 +605,9 @@ void place_block(uint8_t tower_num)
     }
     Ort info={.x=0,.y=0,.z=0};
     
-    set_flags[auto_drive_status]=moving;
+    
     info.x=tower_num;
-    //add_mission(GRABPOSSET,set_flags,0,&info);
+    add_mission(GRABPOSSET,set_flags,0,&info);
     for(int i=0;i<total_flags;i++)
     {
         set_flags[i]=either;
@@ -613,7 +616,7 @@ void place_block(uint8_t tower_num)
     
     set_flags[grab_status]=stop;
     set_flags[auto_drive_status]=moving_complete;
-    add_mission(HOOKRELEASE,set_flags,1,&info);
+    add_mission(HOOKRELEASE,set_flags,0,&info);
     for(int i=0;i<total_flags;i++)
     {
         set_flags[i]=either;

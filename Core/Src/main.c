@@ -148,6 +148,8 @@ HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_Delay(200);
 HAL_TIM_Base_Start_IT(&htim6);
 HAL_TIM_Base_Start_IT(&htim16);
+extern uint8_t block_num;
+block_num=2;
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -267,7 +269,7 @@ void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_Ha
     memcpy(abaaba+5,&data2,4);
     memcpy(abaaba+9,&data3,4);
     memcpy(abaaba+13,&data4,4);
-    HAL_UART_Transmit(uart,abaaba,18,1111);
+    HAL_UART_Transmit(uart,abaaba,18,1);
     return;
 }
 
@@ -395,6 +397,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dX=0;
             dY=0;
         }
+        //send_log(0x01,vx[1],vy[1],current_speed.x,current_speed.y,&huart3);
 	}
 	else if(htim->Instance == TIM7)
 	{
