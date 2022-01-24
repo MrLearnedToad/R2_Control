@@ -411,7 +411,7 @@ int auto_pick_up(mission_queue *current_task)
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
         osDelay(5);
         }
-        osDelay(600);
+        osDelay(400);
         flag_running=1;
         return 0;
     }
@@ -520,7 +520,7 @@ int auto_place(mission_queue *current_task)
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
         osDelay(5);
         }
-        osDelay(600);
+        osDelay(400);
         flag_running=1;
         return 0;
     }
