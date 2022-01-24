@@ -386,6 +386,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         DMA_recieve();
         Set_Pos();
         Elmo_Run();
+        speed_cal();
         if(global_clock<2499)
             global_clock++;
         if(flags[auto_drive_status]==moving)
@@ -397,6 +398,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dX=0;
             dY=0;
         }
+        
         //send_log(0x01,vx[1],vy[1],current_speed.x,current_speed.y,&huart3);
 	}
 	else if(htim->Instance == TIM7)
@@ -413,7 +415,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
     else if(htim->Instance == TIM16)
     {
-        speed_cal();
+        
     }
   /* USER CODE END Callback 1 */
 }

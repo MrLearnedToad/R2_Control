@@ -102,7 +102,8 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define tower_block_3 4
 #define tower_block_4 5
 #define tower_block_5 6
-#define tower_bottom 1
+#define tower_bottom 1 
+#define tower_holding 7
 //ÈÎÎñÌí¼ÓÐòºÅ
 #define GRABPOSSET 0
 #define AUTODRIVESHORTDISTANCE 1

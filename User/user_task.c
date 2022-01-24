@@ -24,7 +24,6 @@ Ort target_pos;
 *********************************************************************************/
 int auto_drive_shortdistance(mission_queue *current_task)
 {
-    flags[auto_drive_status]=moving;
     static int flag_running=0;
     double distance;
 //    Ort velocity_vector;
@@ -39,9 +38,10 @@ int auto_drive_shortdistance(mission_queue *current_task)
         pre_plan(current_task->info);
         global_clock=0;
         flag_running=1;
+        flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.008)
+    if(distance<0.010)
     {
 //        dX=0;
 //        dY=0;
@@ -362,7 +362,14 @@ void pick_up(uint8_t pos)
         info.x=0;
         set_flags[hook_status]=either;
         
-        info.x=tower_bottom;
+        info.x=tower_holding;
+        add_mission(GRABPOSSET,set_flags,1,&info);
+    }
+    else
+    {
+        
+        set_flags[hook_status]=stop;
+        info.x=tower_holding;
         add_mission(GRABPOSSET,set_flags,1,&info);
     }
     return;
@@ -404,7 +411,7 @@ int auto_pick_up(mission_queue *current_task)
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
         osDelay(5);
         }
-        osDelay(800);
+        osDelay(600);
         flag_running=1;
         return 0;
     }
@@ -487,7 +494,7 @@ int auto_pick_up(mission_queue *current_task)
 *********************************************************************************/
 int auto_place(mission_queue *current_task)
 {
-    static uint8_t flag_running,count=0;
+    static uint8_t flag_running=0,count=0;
     static int count2=0;
     static Ort ortbuffer[20];
     Ort release_pos;
@@ -513,7 +520,7 @@ int auto_place(mission_queue *current_task)
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
         osDelay(5);
         }
-        osDelay(800);
+        osDelay(600);
         flag_running=1;
         return 0;
     }
@@ -542,20 +549,31 @@ int auto_place(mission_queue *current_task)
     }
     if(Read_Button(13)==1)
         count=0;
-    if(count>15)
+    
+    if(flags[auto_drive_status]==stop&&count2==200&&count>10&&flag_running==1)
     {
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
-        dZ=-target_pos.z;  
-    }
-    if(flags[auto_drive_status]==stop&&count2==200)
-    {
+        dZ=-target_pos.z;
+        flag_running=2;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
         distance_2_move=distance-0.36f;
         release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
+        //flags[auto_drive_status]=moving;
         place_block(block_num);
         set_flags[grab_status]=stop;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
+        set_flags[grab_status]=stop;
+        set_flags[hook_status]=stop;
+        set_flags[auto_drive_status]=moving_complete;
+        release_pos.x=current_pos.x+(release_pos.x-target_pos.x)*0.6f;
+        release_pos.y=current_pos.y+(release_pos.y-target_pos.y)*0.6f;
+        add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
+        release_pos.x=tower_bottom;
+        set_flags[grab_status]=stop;
+        set_flags[hook_status]=stop;
+        set_flags[auto_drive_status]=moving_complete;
+        add_mission(GRABPOSSET,set_flags,0,&release_pos);
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {

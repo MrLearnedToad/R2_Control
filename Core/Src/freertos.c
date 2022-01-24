@@ -335,7 +335,7 @@ void RobotTask(void *argument)
       }
       flags[drivemode]=Read_Button(23);
       //task_reset=Read_Button(14);
-    osDelay(30);
+    osDelay(20);
   }
   /* USER CODE END RobotTask */
 }

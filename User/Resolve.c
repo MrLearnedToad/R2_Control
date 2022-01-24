@@ -10,7 +10,7 @@ int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
 PID_T pid_speedx={.KP=0.3,.PID_MAX=4,.Dead_Zone=0.02};
 PID_T pid_speedy={.KP=0.3,.PID_MAX=4,.Dead_Zone=0.02};
 PID_T pid_deg={.KP=12,.PID_MAX=200};
-PID_T pid_pos={.KP=1.7,.KI=0,.KD=0,.PID_MAX=1};
+PID_T pid_pos={.KP=1.8,.KI=0,.KD=0,.PID_MAX=1};
 extern Ort current_pos;
 extern Ort current_speed;
 float dY;
@@ -36,18 +36,18 @@ void Set_Pos(void)
     dx=ddx*cos(current_pos.z*3.1415926f/180.0f)-ddy*sin(current_pos.z*3.1415926f/180.0f);
     dy=ddx*sin(current_pos.z*3.1415926f/180.0f)+ddy*cos(current_pos.z*3.1415926f/180.0f);
     int speed;
-    speed=-dx*52313*2*1.2f;
+    speed=-dx*22313*2*1.2f;
     speed=-(int)((double)speed*1.414);
     int tmp[4]={0};
     tmp[0]=-speed;
     tmp[1]=speed;
-    tmp[2]=-speed*0.4f;
-    tmp[3]=speed*0.4f;
+    tmp[2]=-speed*0.5f;
+    tmp[3]=speed*0.5f;
     for(int i=0;i<4;i++)
     {
         Wheel_Speed[i]=-tmp[i];
     }
-	speed=dy*52313*2*1.05f;
+	speed=dy*22313*2*1.05f;
     for(int i=0;i<4;i++)
     {
         tmp[i]=speed;
@@ -85,7 +85,7 @@ void Set_Pos(void)
         Wheel_Speed[0]=Wheel_Speed[0];
         Wheel_Speed[1]=Wheel_Speed[1];
         Wheel_Speed[2]=Wheel_Speed[2]/16*28.5f;
-        Wheel_Speed[3]=-Wheel_Speed[3];
+        Wheel_Speed[3]=Wheel_Speed[3];
 
 	/*解算到车轮的速度*/
 

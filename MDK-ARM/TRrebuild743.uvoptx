@@ -270,6 +270,16 @@
           <WinNumber>1</WinNumber>
           <ItemText>block_num,0x0A</ItemText>
         </Ww>
+        <Ww>
+          <count>23</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>global_clock,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>24</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>flag_running</ItemText>
+        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>
@@ -286,6 +296,11 @@
           <count>2</count>
           <WinNumber>2</WinNumber>
           <ItemText>Cylinder_Test</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>pos_plan</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow1>
