@@ -31,12 +31,12 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 			gyro.last_x = gyro.x;
 			memcpy(X,RxData,4);
 			gyro.x = *(int*)X;
-			gyro.sum_x += (gyro.x - gyro.last_x)*cos(gyro.z-gyro.last_z);
+			//gyro.sum_x += (gyro.x - gyro.last_x)*cos(gyro.z-gyro.last_z);
 			
 			gyro.last_y = gyro.y;
 			memcpy(Y,&RxData[4],4);
 			gyro.y = *(int*)Y;
-			gyro.sum_y += (gyro.y - gyro.last_y)*cos(gyro.z-gyro.last_z);
+			//gyro.sum_y += (gyro.y - gyro.last_y)*cos(gyro.z-gyro.last_z);
             gyro.y=gyro.y;
 		}
 	}

@@ -1,5 +1,6 @@
 --cpu Cortex-M7.fp.dp
 "trrebuild743\startup_stm32h743xx.o"
+"..\Drivers\CMSIS\DSP\Lib\ARM\arm_cortexM7lfdp_math.lib"
 "trrebuild743\main.o"
 "trrebuild743\gpio.o"
 "trrebuild743\freertos.o"

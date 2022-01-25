@@ -70,3 +70,5 @@ trrebuild743\main.o: ..\User\my_robot.h
 trrebuild743\main.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\main.o: ..\User\move.h
 trrebuild743\main.o: ..\User\Remote_Control.h
+trrebuild743\main.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
+trrebuild743\main.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h

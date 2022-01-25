@@ -3,7 +3,7 @@
 #include "Resolve.h"
 #include "joyhandle.h"
 #include "math.h"
-
+#include "arm_math.h"
 
 
 int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
@@ -33,8 +33,8 @@ void Set_Pos(void)
     ddx=dX;
     ddy=dY;
     
-    dx=ddx*cos(current_pos.z*3.1415926f/180.0f)-ddy*sin(current_pos.z*3.1415926f/180.0f);
-    dy=ddx*sin(current_pos.z*3.1415926f/180.0f)+ddy*cos(current_pos.z*3.1415926f/180.0f);
+    dx=ddx*arm_cos_f32(current_pos.z*3.1415926f/180.0f)-ddy*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+    dy=ddx*arm_sin_f32(current_pos.z*3.1415926f/180.0f)+ddy*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     int speed;
     speed=-dx*32313*2*1.2f;
     speed=-(int)((double)speed*1.414);

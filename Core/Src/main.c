@@ -38,6 +38,7 @@
 #include "usart.h"
 #include "move.h"
 #include "Remote_Control.h"
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -296,8 +297,8 @@ void speed_cal(void)
     lastsx=current_speed.x;
     lastsy=current_speed.y;
     
-    current_pos.x=current_pos.x+((float)(gyro.x-last_gyrox)/1000.0f)*cos(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(-sin(-correction_value.z*3.1415926f/180.0f));
-    current_pos.y=current_pos.y+((float)(gyro.x-last_gyrox)/1000.0f)*sin(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(cos(-correction_value.z*3.1415926f/180.0f));
+    current_pos.x=current_pos.x+((float)(gyro.x-last_gyrox)/1000.0f)*arm_cos_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(-arm_sin_f32(-correction_value.z*3.1415926f/180.0f));
+    current_pos.y=current_pos.y+((float)(gyro.x-last_gyrox)/1000.0f)*arm_sin_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(arm_cos_f32(-correction_value.z*3.1415926f/180.0f));
 //    current_pos.x=(float)gyro.x/1000.0f;
 //    current_pos.y=(float)gyro.y/1000.0f;
     current_pos.z=gyro.z+correction_value.z;
