@@ -414,7 +414,7 @@ int check_barrier(Ort pos1,Ort pos2)
 
     while (tmp2!=NULL)
     { 
-        if(4*(tmp2->location.x-b+tmp2->location.y)*(tmp2->location.x-b+tmp2->location.y)-4*(k*k+1)*(tmp2->location.x*tmp2->location.x+(b-tmp2->location.y)*(b-tmp2->location.y)+tmp2->range*tmp2->range)>0)
+        if(4*(tmp2->location.x-b+tmp2->location.y)*(tmp2->location.x-b+tmp2->location.y)-4*(k*k+1)*(tmp2->location.x*tmp2->location.x+(b-tmp2->location.y)*(b-tmp2->location.y)+tmp2->range*tmp2->range)>0&&tmp2->barrier_ID!=current_target_ID)
         {
             if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<tmp2->range*tmp2->range)
             {
@@ -547,6 +547,8 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
     */
     while (tmp!=NULL)//导入可变障碍到地图中，标记障碍为“2”
     {
+        if(tmp->barrier_ID==current_target_ID)//当前目标豁免
+            continue;
         barrier_x=tmp->location.x*10;
         barrier_y=tmp->location.y*10;
         barrier_range=tmp->range*10;

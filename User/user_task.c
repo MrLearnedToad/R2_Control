@@ -13,7 +13,9 @@ int (*switcherdirectionset)(mission_queue*)=switcher_direction_set;
 int (*catapultactivate)(mission_queue*)=catapult_activate;
 int (*autopickup)(mission_queue *current_task)=auto_pick_up;
 int (*autoplace)(mission_queue *current_task)=auto_place;
+/*全局变量区*/
 Ort target_pos;
+int current_target_ID=0;
 
 /*********************************************************************************
   *@  name      : auto_drive_shortdistance

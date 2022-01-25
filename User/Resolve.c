@@ -83,7 +83,7 @@ void Set_Pos(void)
         Wheel_Speed[i]+=-1000*tmp[i];
     }
         Wheel_Speed[0]=Wheel_Speed[0];
-        Wheel_Speed[1]=Wheel_Speed[1];
+        Wheel_Speed[1]=Wheel_Speed[1]/16*28.5f;
         Wheel_Speed[2]=Wheel_Speed[2]/16*28.5f;
         Wheel_Speed[3]=Wheel_Speed[3];
 
