@@ -50,10 +50,14 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-uint8_t flags[20]={0}; //自动(1)/手操模式(0),flag_down_finish,flag_hold,flag_up//标志位区
+uint8_t flags[20]={0}; //标志位区
+uint8_t backup_flags[20]={0};//备份标志位区
 mission_queue *mission_queue_head=NULL;//任务队列队头
+mission_queue *backup_mission_queue_head=NULL;//备份任务队列队头
 uint8_t task_reset=0;
-uint8_t block_num=0;
+uint8_t block_num=0;//计数器
+uint8_t backup_block_num=0;//备份计数器
+mission_queue *running_task;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -67,7 +71,7 @@ osThreadId_t RobotHandle;
 const osThreadAttr_t Robot_attributes = {
   .name = "Robot",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
 /* Definitions for manualmove */
 osThreadId_t manualmoveHandle;
@@ -81,6 +85,8 @@ const osThreadAttr_t manualmove_attributes = {
 /* USER CODE BEGIN FunctionPrototypes */
 void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);//任务添加函数
 void task_handler(void *task_info);//任务执行函数
+void save_status(void);
+void load_status(void);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -293,22 +299,32 @@ void RobotTask(void *argument)
           add_mission(4,set_flags,0,&info);
           last_key_status[10]=1;
       }
-      else if(Read_Button(12)==1&&last_key_status[12]==0)
+      else if(Read_Button(12)==1&&last_key_status[12]==0&&flags[lock_mode_status]==stop)
       {
           info.x=block_num;
           add_mission(AUTOPICKUP,set_flags,0,&info);
           last_key_status[12]=1;
       }
-      else if(Read_Button(15)==1&&last_key_status[15]==0)
+      else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop)
       {
           add_mission(AUTOPLACE,set_flags,0,&info);
           last_key_status[15]=1;
+      }
+      else if(Read_Button(16)==1&&last_key_status[16]==0)
+      {
+          save_status();
+          last_key_status[16]=1;
       }
       else if(Read_Button(17)==1&&last_key_status[17]==0)
       {
           if(block_num<6)
             block_num++;
           last_key_status[17]=1;
+      }
+      else if(Read_Button(18)==1&&last_key_status[18]==0)
+      {
+          load_status();
+          last_key_status[18]=1;
       }
       else if(Read_Button(19)==1&&last_key_status[19]==0)
       {
@@ -334,8 +350,8 @@ void RobotTask(void *argument)
           }
       }
       flags[drivemode]=Read_Button(23);
-      //task_reset=Read_Button(14);
-    osDelay(20);
+      task_reset=Read_Button(14);
+    osDelay(10);
   }
   /* USER CODE END RobotTask */
 }
@@ -355,7 +371,7 @@ void manual_move(void *argument)
   for(;;)
   {
           instruction_refresh();
-      if(Read_Button(23)==manualmode||flags[auto_drive_status]!=moving)
+      if(Read_Button(23)==manualmode||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||flags[auto_drive_status]==stop)
       {
         flags[0]=manualmode;
         static int rocker[4]={0};
@@ -388,8 +404,8 @@ void manual_move(void *argument)
             rocker[2]=0;
             rocker[3]=0;
         }
-        dX=rocker[0]/90.0f;
-        dY=rocker[1]/90.0f;
+        dX=(0.00002998236f*rocker[0]*rocker[0]*rocker[0]+0.3063492f*rocker[0])/90.0f;
+        dY=(0.00002998236f*rocker[1]*rocker[1]*rocker[1]+0.3063492f*rocker[1])/90.0f;
         if(Read_Button(22)==1)
         {
             dX/=10;
@@ -470,6 +486,47 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
     return;
 }
 
+void save_status(void)
+{
+    for(int i=0;i<total_flags;i++)
+    {
+        backup_flags[i]=flags[i];
+    }
+    backup_mission_queue_head=mission_queue_head;
+    backup_block_num=block_num;
+    return;
+}
+
+void load_status(void)
+{
+    Ort info;
+    TaskHandle_t temp;
+    uint8_t setflags[20];
+    for(int i=0;i<total_flags;i++)
+    {
+        setflags[i]=either;
+    }
+    task_reset=1;
+    mission_queue_head=NULL;//暂定为清空任务队列
+    temp=xTaskGetHandle("defaultTask");
+    vTaskSuspend(temp);
+    osDelay(100);
+    for(int i=0;i<total_flags;i++)
+    {
+        flags[i]=backup_flags[i];
+    }
+    info.x=flags[grab_pos];
+    add_mission(GRABPOSSET,setflags,0,&info);
+    info.x=flags[switcher_pos];
+    add_mission(SWITCHERDIRECTIONSET,setflags,0,&info);
+    block_num=backup_block_num;
+    for(int i=0;i<8;i++)
+        cmd_feedback[i]=0;
+    vTaskResume(temp);
+    task_reset=0;
+    return;
+}
+
 void task_handler(void *task_info)//条件满足的时候这里会开始执行任务，任务具体函数在user_task.c里面
 {
     mission_queue *current_task=(mission_queue*)task_info;
@@ -490,9 +547,10 @@ void task_handler(void *task_info)//条件满足的时候这里会开始执行任务，任务具体函
             free(current_task);
             for(int i=0;i<total_flags;i++)
                 flags[i]=0;
+            
             vTaskDelete(current_handle);   
         }
-        osDelay(5);
+        osDelay(10);
     }
 }
 /* USER CODE END Application */

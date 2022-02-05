@@ -41,3 +41,4 @@ trrebuild743\remote_control.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal
 trrebuild743\remote_control.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h
 trrebuild743\remote_control.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 trrebuild743\remote_control.o: ..\User\Remote_Control.h
+trrebuild743\remote_control.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h

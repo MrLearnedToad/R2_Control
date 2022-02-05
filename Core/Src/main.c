@@ -65,19 +65,19 @@ int debug;
 float last_pos_x=0,last_pos_y=0;
 uint8_t rxtemp=0;
 int rocker[4];
-int debug;
 uint8_t turret_buffer[8];
 uint8_t dma_buffer[30]={0};
 uint8_t Rx_buffer[16]={0};
 Ort current_acceration;
 Ort current_speed;
-Ort current_pos;
+Ort current_pos={.x=6,.y=0.5};
 Ort correction_value;
 uint8_t cmd_feedback[8];
 Ort pos_buffer[9];
 Ort target_relative_pos;
 int global_clock;
-float vx[5],vy[5];
+int speed_clock;
+float vx[10],vy[10],ababa;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -133,11 +133,10 @@ int main(void)
   MX_TIM8_Init();
   MX_FDCAN1_Init();
   MX_FDCAN2_Init();
-  MX_TIM16_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 nrf_mode = true;
-Handle_Init(&hspi1,77);
+Handle_Init(&hspi1,01);
 HAL_Delay(200);
 FDCAN2_Init(&hfdcan1);
 HAL_Delay(200);
@@ -148,7 +147,6 @@ HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_Delay(200);
 HAL_TIM_Base_Start_IT(&htim6);
-HAL_TIM_Base_Start_IT(&htim16);
 extern uint8_t block_num;
 block_num=2;
   /* USER CODE END 2 */
@@ -276,26 +274,32 @@ void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_Ha
 
 void speed_cal(void)
 {
-    static float lastx=0,lasty=0,lastsx=0,lastsy=0;
-    static int time=0,last_gyrox=0,last_gyroy=0;
+    static float lastx[2]={0},lasty[2]={0};
+    static int last_gyrox=0,last_gyroy=0;
+    static int clock1,clock2;
+    vx[0]=vx[1];
+    vy[0]=vy[1];
+    clock1=clock2;
+    clock2=speed_clock;
+    speed_clock=0;
     
-    vx[time]=(current_pos.x-lastx)/0.001f;
-    vy[time]=(current_pos.y-lasty)/0.001f;
-    time++;
+    vx[1]=(current_pos.x-lastx[0])/(0.0001f*(clock1+clock2));
+    vy[1]=(current_pos.y-lasty[0])/(0.0001f*(clock1+clock2));
     
-    current_speed.x=(vx[0]+vx[1]+vx[2]+vx[3]+vx[4])/5.0f;
-    current_speed.y=(vy[0]+vy[1]+vy[2]+vy[3]+vy[4])/5.0f;
     
-    if(time==5)
-        time=0;
+    current_speed.x=(vx[0]+vx[1])/2.0f;
+    current_speed.y=(vy[0]+vy[1])/2.0f;
     
-    current_acceration.x=(current_speed.x-lastsx)/0.001f;
-    current_acceration.y=(current_speed.y-lastsy)/0.001f;
- 
-    lastx=current_pos.x;
-    lasty=current_pos.y;
-    lastsx=current_speed.x;
-    lastsy=current_speed.y;
+//    current_acceration.x=(current_speed.x-lastsx)/0.001f;
+//    current_acceration.y=(current_speed.y-lastsy)/0.001f;
+    
+    
+    lastx[0]=lastx[1];
+    lasty[0]=lasty[1];
+    lastx[1]=current_pos.x;
+    lasty[1]=current_pos.y;
+//    lastsx=current_speed.x;
+//    lastsy=current_speed.y;
     
     current_pos.x=current_pos.x+((float)(gyro.x-last_gyrox)/1000.0f)*arm_cos_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(-arm_sin_f32(-correction_value.z*3.1415926f/180.0f));
     current_pos.y=current_pos.y+((float)(gyro.x-last_gyrox)/1000.0f)*arm_sin_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(arm_cos_f32(-correction_value.z*3.1415926f/180.0f));
@@ -318,7 +322,7 @@ void speed_cal(void)
 void update_target_info(uint8_t *data)
 {
     int temp[2];
-
+    Ort temp1;
     uint8_t temp2;
     memcpy(temp,data+3,4);
     memcpy(temp+1,data+7,4);
@@ -387,7 +391,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         DMA_recieve();
         Set_Pos();
         Elmo_Run();
-        speed_cal();
+        
         if(global_clock<2499)
             global_clock++;
         if(flags[auto_drive_status]==moving)
@@ -400,19 +404,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dY=0;
         }
         
-        //send_log(0x01,vx[1],vy[1],current_speed.x,current_speed.y,&huart3);
+        //send_log(0x01,dX,ababa,current_speed.x,vx[0],&huart3);
 	}
 	else if(htim->Instance == TIM7)
 	{
 		Elmo_SendCmd(&hfdcan2);
-//        if(count%10==0)
-//        {
-//            pos_buffer[count/10].x=gyro.x;
-//            pos_buffer[count/10].y=gyro.y;
-//        }
-//        count++;
-//        if(count==90)
-//           count=0;
+        speed_clock++;
 	}
     else if(htim->Instance == TIM16)
     {

@@ -43,7 +43,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.010)
+    if(distance<0.010||global_clock>500||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
 //        dX=0;
 //        dY=0;
@@ -413,11 +413,11 @@ int auto_pick_up(mission_queue *current_task)
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
         osDelay(5);
         }
-        osDelay(400);
+        osDelay(300);
         flag_running=1;
         return 0;
     }
-    if(count<20)
+    if(count<10)
     {
         if(count2>10&&(target_relative_pos.y!=0))
         {
@@ -428,22 +428,22 @@ int auto_pick_up(mission_queue *current_task)
     }
     else
     {
-        for(int i=0;i<20;i++)
+        for(int i=0;i<10;i++)
         {
             tmp+=ortbuffer[i].x;
         }
-        target_pos.x=tmp/20.0f;
+        target_pos.x=tmp/10.0f;
         tmp=0;
-        for(int i=0;i<20;i++)
+        for(int i=0;i<10;i++)
         {
             tmp+=ortbuffer[i].y;
         }
-        target_pos.y=tmp/20.0f;
+        target_pos.y=tmp/10.0f;
     }
     if(Read_Button(13)==1)
         count=0;
         
-    if(flags[auto_drive_status]==stop&&count2==200&&count>10)
+    if(flags[auto_drive_status]==stop&&count2==100&&count>5)
     {
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
@@ -458,7 +458,6 @@ int auto_pick_up(mission_queue *current_task)
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
         __HAL_UART_CLEAR_OREFLAG(&huart8);
-        HAL_UART_Receive_IT(&huart8,&rxtemp, 1);
     }
     if(flags[auto_drive_status]==moving_complete)
     {
@@ -473,10 +472,10 @@ int auto_pick_up(mission_queue *current_task)
         msg_buffer[2]=2;
         for(int i=3;i<15;i++)msg_buffer[i]=0;
         msg_buffer[15]='!';
-        for(int j=0;j<4;j++)
+        for(int j=0;j<8;j++)
         {
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
-            osDelay(10);
+            osDelay(5);
         }
         return 0;
     }
@@ -526,7 +525,7 @@ int auto_place(mission_queue *current_task)
         flag_running=1;
         return 0;
     }
-    if(count<20)
+    if(count<10)
     {
         if(count2>10&&(target_relative_pos.y!=0))
         {
@@ -537,23 +536,23 @@ int auto_place(mission_queue *current_task)
     }
     else
     {
-        for(int i=0;i<20;i++)
+        for(int i=0;i<10;i++)
         {
             tmp+=ortbuffer[i].x;
         }
-        target_pos.x=tmp/20.0f;
+        target_pos.x=tmp/10.0f;
         tmp=0;
-        for(int i=0;i<20;i++)
+        for(int i=0;i<10;i++)
         {
             tmp+=ortbuffer[i].y;
         }
-        target_pos.y=tmp/20.0f;
+        target_pos.y=tmp/10.0f;
     }
     if(Read_Button(13)==1)
         count=0;
     
-    if(flags[auto_drive_status]==stop&&count2==200&&count>10&&flag_running==1)
-    {
+    if(flags[auto_drive_status]==stop&&count2==100&&count>5&&flag_running==1)
+    { 
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         flag_running=2;
@@ -568,8 +567,8 @@ int auto_place(mission_queue *current_task)
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete;
-        release_pos.x=current_pos.x+(release_pos.x-target_pos.x)*0.6f;
-        release_pos.y=current_pos.y+(release_pos.y-target_pos.y)*0.6f;
+        release_pos.x=current_pos.x-(release_pos.x-target_pos.x)*0.4f;
+        release_pos.y=current_pos.y-(release_pos.y-target_pos.y)*0.4f;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         release_pos.x=tower_bottom;
         set_flags[grab_status]=stop;
@@ -580,7 +579,6 @@ int auto_place(mission_queue *current_task)
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
         __HAL_UART_CLEAR_OREFLAG(&huart8);
-        HAL_UART_Receive_IT(&huart8,&rxtemp, 1);
     }
     if(flags[auto_drive_status]==moving_complete)
     {
@@ -595,10 +593,10 @@ int auto_place(mission_queue *current_task)
         msg_buffer[2]=4;
         for(int i=3;i<15;i++)msg_buffer[i]=0;
         msg_buffer[15]='!';
-        for(int j=0;j<4;j++)
+        for(int j=0;j<8;j++)
         {
         HAL_UART_Transmit(&huart8,msg_buffer,16,200);
-            osDelay(10);
+            osDelay(5);
         }
         return 0;
     }

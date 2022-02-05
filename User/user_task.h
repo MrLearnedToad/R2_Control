@@ -144,6 +144,7 @@ typedef struct mission_queue
     uint8_t request[20];
     uint8_t flag_finish;
     uint8_t flag_necessary;
+    short ID;
     Ort info;
     struct mission_queue *next;
     TaskHandle_t *handle;

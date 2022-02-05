@@ -100,8 +100,8 @@ typedef struct heap_node
 //宏定义区
 #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
 #define deadzone 0.4//路径点死区大小
-#define acceleration_limit_increase 0.8
-#define acceleration_limit_decrease 0.8
+#define acceleration_limit_increase 0.9
+#define acceleration_limit_decrease 0.9
 #define acceleration_limit_turn 1
 #define speed_limit 1
 #define control_period 0.01
@@ -137,5 +137,6 @@ void shift(heap_node *root[], int i, int len);
 void add_node(heap_node *root[], int len, heap_node *item);
 heap_node *out_node(heap_node *root[], int len);
 double cal_average(short a[5000][2],int head,int end);
+Ort coordinate_transform(Ort realtive_pos);
 
 #endif

@@ -7,16 +7,16 @@
 
 
 int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
-PID_T pid_speedx={.KP=0.3,.PID_MAX=4,.Dead_Zone=0.02};
-PID_T pid_speedy={.KP=0.3,.PID_MAX=4,.Dead_Zone=0.02};
+PID_T pid_speedx={.KP=1,.PID_MAX=4,.Dead_Zone=0.08};
+PID_T pid_speedy={.KP=1,.PID_MAX=4,.Dead_Zone=0.08};
 PID_T pid_deg={.KP=12,.PID_MAX=200};
-PID_T pid_pos={.KP=1.8,.KI=0,.KD=0,.PID_MAX=1};
+PID_T pid_pos={.KP=2.2,.KI=0,.KD=0,.PID_MAX=2};
 extern Ort current_pos;
 extern Ort current_speed;
 float dY;
 float dX;
 float dZ;
-
+extern float ababa;
 
 /*到达指定位置*/
 /********************************************************************************
@@ -32,7 +32,7 @@ void Set_Pos(void)
 //    ddy=Pid_Run(&pid_speedy,dY,current_speed.y);
     ddx=dX;
     ddy=dY;
-    
+    ababa=ddx;
     dx=ddx*arm_cos_f32(current_pos.z*3.1415926f/180.0f)-ddy*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
     dy=ddx*arm_sin_f32(current_pos.z*3.1415926f/180.0f)+ddy*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     int speed;

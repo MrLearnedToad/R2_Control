@@ -2,11 +2,14 @@
 #include "stdlib.h"
 #include "math.h"
 #include "Remote_Control.h"
+#include "string.h"
 GYRO gyro;
-
+extern int debug;
 uint8_t Yaw[4] = {0};
 uint8_t X[4] = {0};
 uint8_t Y[4] = {0};
+extern void speed_cal(void);
+
 
 void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 {
@@ -32,12 +35,13 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 			memcpy(X,RxData,4);
 			gyro.x = *(int*)X;
 			//gyro.sum_x += (gyro.x - gyro.last_x)*cos(gyro.z-gyro.last_z);
-			
+			//debug++;
 			gyro.last_y = gyro.y;
 			memcpy(Y,&RxData[4],4);
 			gyro.y = *(int*)Y;
 			//gyro.sum_y += (gyro.y - gyro.last_y)*cos(gyro.z-gyro.last_z);
             gyro.y=gyro.y;
+            speed_cal();
 		}
 	}
 }

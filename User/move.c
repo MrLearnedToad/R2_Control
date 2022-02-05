@@ -37,7 +37,6 @@ void pre_plan(Ort pos_Goal)
     double maxT=acceleration_limit_turn;
     double dT=control_period;
 
-    
     int i=0;
     double tmp;
     double speed=0;
@@ -965,6 +964,21 @@ void move_execute(Ort current__final_goal)
     {
         time_tick++;
     }
+}
+
+/*********************************************************************************
+  *@  name      : coordinate_transform
+  *@  function  : 相对坐标到绝对坐标的转换
+  *@  input     : 相对坐标
+  *@  output    : 绝对坐标
+  *@  note      : NULL
+*********************************************************************************/
+Ort coordinate_transform(Ort realtive_pos)
+{
+    Ort absolute_pos;
+    absolute_pos.x=cosf(-current_pos.z*3.1415926f/180.0f)*realtive_pos.x+(-sinf(-current_pos.z*3.1415926f/180.0f))*realtive_pos.y+current_pos.x;
+    absolute_pos.y=sinf(-current_pos.z*3.1415926f/180.0f)*realtive_pos.x+cosf(-current_pos.z*3.1415926f/180.0f)*realtive_pos.y+current_pos.y;
+    return absolute_pos;
 }
 
 /*********************************************************************************
