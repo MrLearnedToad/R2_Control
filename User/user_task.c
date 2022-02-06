@@ -50,6 +50,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         current_task->flag_finish=1;
         flags[auto_drive_status]=moving_complete;
         flag_running=0;
+        flags[drivemode]=manualmode;
     }
     return 0;
 }
@@ -387,73 +388,45 @@ void pick_up(uint8_t pos)
 int auto_pick_up(mission_queue *current_task)
 {
     static uint8_t flag_running,count=0;
-    static int count2=0;
-    static Ort ortbuffer[20];
+    barrier *target;
     Ort grasp_pos;
-    double tmp=0,distance,distance_2_move;
+    double distance,distance_2_move;
     uint8_t set_flags[20];
+    instruction_refresh();
     for(int i=0;i<total_flags;i++)
     {
         set_flags[i]=either;
     }
-    uint8_t msg_buffer[30];
     if(flag_running==0)
     {         
         flags[lock_mode_status]=moving;
-        if(flags[auto_drive_status]==moving_complete)
-            flags[auto_drive_status]=stop;
-        msg_buffer[0]='?';
-        msg_buffer[1]='!';
-        msg_buffer[2]=1;
-        for(int i=3;i<15;i++)msg_buffer[i]=0;
-        msg_buffer[11]=7-(uint8_t)current_task->info.x;
-        msg_buffer[15]='!';
-        for(int j=0;j<8;j++)
-        {
-        HAL_UART_Transmit(&huart8,msg_buffer,16,200);
-        osDelay(5);
-        }
-        osDelay(300);
         flag_running=1;
-        return 0;
+        flags[auto_drive_status]=stop;
     }
-    if(count<10)
+    
+    if(count==0)
     {
-        if(count2>10&&(target_relative_pos.y!=0))
-        {
-            ortbuffer[count].x=cosf(-current_pos.z*3.1415926f/180.0f)*target_relative_pos.x+(-sinf(-current_pos.z*3.1415926f/180.0f))*target_relative_pos.y+current_pos.x;
-            ortbuffer[count].y=sinf(-current_pos.z*3.1415926f/180.0f)*target_relative_pos.x+cosf(-current_pos.z*3.1415926f/180.0f)*target_relative_pos.y+current_pos.y;
-            count++;
-        }
-    }
-    else
-    {
-        for(int i=0;i<10;i++)
-        {
-            tmp+=ortbuffer[i].x;
-        }
-        target_pos.x=tmp/10.0f;
-        tmp=0;
-        for(int i=0;i<10;i++)
-        {
-            tmp+=ortbuffer[i].y;
-        }
-        target_pos.y=tmp/10.0f;
+        target=find_barrier(block_num);
+        target_pos.x=target->location.x;
+        target_pos.y=target->location.y;
+        target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
+        dZ=-target_pos.z;
+        count=1;
     }
     if(Read_Button(13)==1)
         count=0;
         
-    if(flags[auto_drive_status]==stop&&count2==100&&count>5)
+    if(flags[auto_drive_status]==stop&&count==1)
     {
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.36f;
+        distance_2_move=distance-0.56f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
         flags[auto_drive_status]=moving;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&grasp_pos);
-        pick_up(target_relative_pos.z);
+        pick_up(target->location.z);
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
@@ -466,22 +439,7 @@ int auto_pick_up(mission_queue *current_task)
         current_task->flag_finish=1;
         flag_running=0;
         count=0;
-        count2=0;
-        msg_buffer[0]='?';
-        msg_buffer[1]='!';
-        msg_buffer[2]=2;
-        for(int i=3;i<15;i++)msg_buffer[i]=0;
-        msg_buffer[15]='!';
-        for(int j=0;j<8;j++)
-        {
-        HAL_UART_Transmit(&huart8,msg_buffer,16,200);
-            osDelay(5);
-        }
         return 0;
-    }
-    if(count2<200)
-    {
-        count2++;
     }
     return 0;
 }

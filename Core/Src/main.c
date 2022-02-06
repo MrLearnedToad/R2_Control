@@ -90,6 +90,7 @@ void update_target_info(uint8_t *data);
 void DMA_recieve(void);
 void executive_auto_move(void);
 void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_HandleTypeDef *uart);
+void send_msg(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -249,6 +250,27 @@ void acceration_limit()
     return;
 }
 
+void send_msg(void)
+{
+    uint8_t msg_buffer[30];
+    msg_buffer[0]='?';
+    msg_buffer[1]='!';
+    msg_buffer[2]=0x05;
+    int ax,ay,az;
+    ax=current_pos.x*1000000/0.037f;
+    ay=current_pos.y*1000000/0.037f;
+    memcpy(msg_buffer+3,&ax,4);
+    memcpy(msg_buffer+7,&ay,4);
+    az=(int)(gyro.z*1000);
+    if(az<0)
+        az=360000-az;
+    memcpy(msg_buffer+11,&az,4);
+    for(int i=15;i<30;i++)msg_buffer[i]=0;
+    msg_buffer[29]='!';
+    HAL_UART_Transmit(&huart8,msg_buffer,30,200);
+    return;
+}
+
 void executive_auto_move(void)
 {
     double distance,pid_distance;
@@ -323,17 +345,39 @@ void update_target_info(uint8_t *data)
 {
     int temp[2];
     Ort temp1;
-    uint8_t temp2;
-    memcpy(temp,data+3,4);
-    memcpy(temp+1,data+7,4);
-    temp2=data[11];
-    if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
+    uint8_t temp2,cmd;
+    cmd=data[2];
+    if(cmd>0&&cmd<6)
     {
-        return;
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        temp2=data[11];
+        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
+        {
+            return;
+        }
+        cmd=7-cmd;
+        temp1.x=(float)temp[0]/1000.0f;
+        temp1.y=(float)(temp[1]+200)/1000.0f;
+        temp1.z=temp2;
+        temp1=coordinate_transform(temp1);
+        update_barrier(cmd,temp1,0.7);
     }
-    target_relative_pos.x=(float)temp[0]/1000.0f;
-    target_relative_pos.y=(float)temp[1]/1000.0f;
-    target_relative_pos.z=temp2;
+    else if(cmd==6)
+    {
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        temp2=data[11];
+        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
+        {
+            return;
+        }
+        temp1.x=(float)temp[0]/1000.0f;
+        temp1.y=(float)(temp[1]+200)/1000.0f;
+        temp1.z=temp2;
+        temp1=coordinate_transform(temp1);
+        update_barrier(1,temp1,0.7);
+    }
     return;
 }
 
@@ -403,7 +447,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dX=0;
             dY=0;
         }
-        
+        //send_msg();
         //send_log(0x01,dX,ababa,current_speed.x,vx[0],&huart3);
 	}
 	else if(htim->Instance == TIM7)

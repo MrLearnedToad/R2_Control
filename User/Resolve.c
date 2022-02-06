@@ -21,7 +21,7 @@ extern float ababa;
 /*到达指定位置*/
 /********************************************************************************
   *@  name      : Set_Pos
-  *@  function  : 给定速度和坐标，让车子按照速度到达指定位置
+  *@  function  : 不要碰它，这里面水很深，你把握不住
   *@  input     : 无
   *@  output    : 无
 ********************************************************************************/
@@ -83,8 +83,8 @@ void Set_Pos(void)
         Wheel_Speed[i]+=-1000*tmp[i];
     }
         Wheel_Speed[0]=Wheel_Speed[0];
-        Wheel_Speed[1]=Wheel_Speed[1]/16*28.5f;
-        Wheel_Speed[2]=Wheel_Speed[2]/16*28.5f;
+        Wheel_Speed[1]=Wheel_Speed[1]/19*28.5f;
+        Wheel_Speed[2]=Wheel_Speed[2]/19*28.5f;
         Wheel_Speed[3]=Wheel_Speed[3];
 
 	/*解算到车轮的速度*/

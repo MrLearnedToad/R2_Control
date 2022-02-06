@@ -263,6 +263,7 @@ void add_barrier(Ort pos,double range,int barrier_id)
     tmp->barrier_ID=barrier_id;
     tmp->location.x=pos.x;
     tmp->location.y=pos.y;
+    tmp->location.z=pos.z;
     tmp->range=range;
     tmp->next = NULL;
     return;
@@ -279,17 +280,20 @@ void update_barrier(int barrier_ID,Ort pos,double range)
 {
     barrier *tmp=barrier_head;
     int find_flag=0;
-    while (tmp->next!=NULL)
+    while (tmp!=NULL)
     {
+            
         if(tmp->barrier_ID==barrier_ID)
         {
+       
             tmp->location.x=pos.x;
             tmp->location.y=pos.y;
+            tmp->location.z=pos.z;
             tmp->range=range;
             find_flag=1;
         }
         tmp=tmp->next;
-    }
+     }
     if(find_flag==0)
     {
         add_barrier(pos,range,barrier_ID);
@@ -329,9 +333,14 @@ void remove_barrier(int barrier_ID)
 {
     barrier *tmp=barrier_head;
     barrier *tmp2;
+    if(tmp->barrier_ID==barrier_ID)
+    {
+        free(tmp);
+        barrier_head=NULL;
+        return;
+    }
     if(barrier_head->next==NULL)
     {
-        free(barrier_head);
         return;
     }
     while (tmp->next!=NULL)
@@ -973,11 +982,12 @@ void move_execute(Ort current__final_goal)
   *@  output    : 绝对坐标
   *@  note      : NULL
 *********************************************************************************/
-Ort coordinate_transform(Ort realtive_pos)
+Ort coordinate_transform(Ort relative_pos)
 {
     Ort absolute_pos;
-    absolute_pos.x=cosf(-current_pos.z*3.1415926f/180.0f)*realtive_pos.x+(-sinf(-current_pos.z*3.1415926f/180.0f))*realtive_pos.y+current_pos.x;
-    absolute_pos.y=sinf(-current_pos.z*3.1415926f/180.0f)*realtive_pos.x+cosf(-current_pos.z*3.1415926f/180.0f)*realtive_pos.y+current_pos.y;
+    absolute_pos.x=cosf(-current_pos.z*3.1415926f/180.0f)*relative_pos.x+(-sinf(-current_pos.z*3.1415926f/180.0f))*relative_pos.y+current_pos.x;
+    absolute_pos.y=sinf(-current_pos.z*3.1415926f/180.0f)*relative_pos.x+cosf(-current_pos.z*3.1415926f/180.0f)*relative_pos.y+current_pos.y;
+    absolute_pos.z=relative_pos.z;
     return absolute_pos;
 }
 
