@@ -992,6 +992,73 @@ Ort coordinate_transform(Ort relative_pos)
 }
 
 /*********************************************************************************
+  *@  name      : evaluate_approach_pos
+  *@  function  : 
+  *@  input     : 
+  *@  output    : 
+  *@  note      : NULL
+*********************************************************************************/
+Ort evaluate_approach_pos(int target_ID)
+{
+    Ort target=find_barrier(target_ID)->location;
+    float temp;
+    if(target_ID==1)
+    {
+        temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
+        if(temp>=-22.5f&&temp<22.5f)
+        {
+            target.x=target.x;
+            target.y=target.y-1.25f;
+            target.z=0;
+        }
+        else if(temp>=22.5f&&temp<67.5f)
+        {
+            target.x=target.x+0.8f;
+            target.y=target.y-0.8f;
+            target.z=45;
+        }
+        else if(temp>=67.5f&&temp<112.5f)
+        {
+            target.x=target.x+1.25f;
+            target.y=target.y;
+            target.z=90;
+        }
+        else if(temp>=112.5f&&temp<157.5f)
+        {
+            target.x=target.x+0.8f;
+            target.y=target.y+0.8f;
+            target.z=135;
+        }
+        else if(temp>=-157.5f&&temp<-112.5f)
+        {
+            target.x=target.x-0.8f;
+            target.y=target.y+0.8f;
+            target.z=-135;
+        }
+        else if(temp>=-112.5f&&temp<-67.5f)
+        {
+            target.x=target.x-1.25f;
+            target.y=target.y;
+            target.z=-90;
+        }
+        else if(temp>=-67.5f&&temp<-22.5f)
+        {
+            target.x=target.x-0.8f;
+            target.y=target.y-0.8f;
+            target.z=-45;
+        }
+        else
+        {
+            target.x=target.x;
+            target.y=target.y+1.25f;
+            target.z=179.9f;
+        }
+    }
+    
+    
+    return target;
+}
+/*********************************************************************************
   *@  name      : Pid_Run
   *@  function  : PID函数
   *@  input     : pid设置，目标，反馈

@@ -32,7 +32,7 @@ void Set_Pos(void)
 //    ddy=Pid_Run(&pid_speedy,dY,current_speed.y);
     ddx=dX;
     ddy=dY;
-    ababa=ddx;
+    ababa=ddy;
     dx=ddx*arm_cos_f32(current_pos.z*3.1415926f/180.0f)-ddy*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
     dy=ddx*arm_sin_f32(current_pos.z*3.1415926f/180.0f)+ddy*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     int speed;
