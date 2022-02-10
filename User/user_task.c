@@ -6,6 +6,7 @@
 #include "move.h"
 /*函数指针区*/
 int (*autodirveshortdistance)(mission_queue*)=auto_drive_shortdistance;
+int (*autodrivelongdistance)(mission_queue*)=auto_drive_longdistance;
 int (*grabposset)(mission_queue*)=grab_pos_set;
 int (*hookgrasp)(mission_queue*)=hook_grasp;
 int (*hookrelease)(mission_queue*)=hook_release;
@@ -48,7 +49,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
 //        dX=0;
 //        dY=0;
         current_task->flag_finish=1;
-        flags[auto_drive_status]=moving_complete;
+        flags[auto_drive_status]=current_task->info.z;
         flag_running=0;
         flags[drivemode]=manualmode;
     }
@@ -79,7 +80,7 @@ int auto_drive_longdistance(mission_queue *current_task)
     
     if(check_point_head!=NULL)//检测路径点队列是否为空
     {
-        #if 1
+        #if 0
         barrier_id=check_barrier(current_pos,check_point_head->pos);//检测当前路径上受否有障碍，返回第一个检测到的障碍的编号
         if (barrier_id!=0&&global_clock>=turn_end_time)//若检测到了障碍，且不在弯道当中，进行一次局部路径规划避障
         {
@@ -180,7 +181,7 @@ int auto_drive_longdistance(mission_queue *current_task)
     if(((current_task->info.x-current_pos.x)*(current_task->info.x-current_pos.x)+(current_task->info.y-current_pos.y)*(current_task->info.y-current_pos.y))<0.010f)//到达目的地附近
     {
         current_task->flag_finish=1;
-        flags[auto_drive_status]=moving_complete;
+        flags[auto_drive_status]=current_task->info.z;
         flag_running=0;
     }
     return 0;
@@ -337,7 +338,7 @@ void pick_up(uint8_t pos)
     set_flags[hook_status]=stop;
     set_flags[grab_status]=stop;
     set_flags[switcher_status]=stop;
-    set_flags[auto_drive_status]=moving_complete;
+    set_flags[auto_drive_status]=moving_complete1;
     add_mission(HOOKGRASP,set_flags,1,&info);
     for(int i=0;i<total_flags;i++)
     {
@@ -349,7 +350,7 @@ void pick_up(uint8_t pos)
         set_flags[grab_status]=stop;
         set_flags[grab_pos]=tower_bottom;
         set_flags[hook_status]=stop;
-        set_flags[auto_drive_status]=moving_complete;
+        set_flags[auto_drive_status]=moving_complete1;
         info.x=tower_block_2;
         add_mission(GRABPOSSET,set_flags,1,&info);
         for(int i=0;i<total_flags;i++)
@@ -424,6 +425,7 @@ int auto_pick_up(mission_queue *current_task)
         distance_2_move=distance-0.56f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
+        grasp_pos.z=moving_complete1;
         flags[auto_drive_status]=moving;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&grasp_pos);
         pick_up(target->location.z);
@@ -432,7 +434,7 @@ int auto_pick_up(mission_queue *current_task)
     {
         __HAL_UART_CLEAR_OREFLAG(&huart8);
     }
-    if(flags[auto_drive_status]==moving_complete)
+    if(flags[auto_drive_status]==moving_complete1)
     {
         
         flags[lock_mode_status]=stop;
@@ -465,7 +467,7 @@ int auto_place(mission_queue *current_task)
     {         
         flag_running=1;
         flags[lock_mode_status]=moving;
-        if(flags[auto_drive_status]==moving_complete)
+        if(flags[auto_drive_status]!=moving)
             flags[auto_drive_status]=stop;
     }
     target_pos=find_barrier(1)->location;
@@ -474,33 +476,36 @@ int auto_place(mission_queue *current_task)
     { 
         dZ=stop_pos.z;
         flag_running=2;
+        stop_pos.z=moving_complete1;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
         distance_2_move=distance-0.56f;
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
+        release_pos.z=moving_complete2;
         //flags[auto_drive_status]=moving;
         place_block(block_num);
         set_flags[grab_status]=stop;
-        set_flags[auto_drive_status]=moving_complete;
+        set_flags[auto_drive_status]=moving_complete1;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
-        set_flags[auto_drive_status]=moving_complete;
-        release_pos.x=stop_pos.x-(release_pos.x-target_pos.x)*0.4f;
-        release_pos.y=stop_pos.y-(release_pos.y-target_pos.y)*0.4f;
+        set_flags[auto_drive_status]=moving_complete2;
+        release_pos.x=stop_pos.x-(release_pos.x-target_pos.x)*0.2f;
+        release_pos.y=stop_pos.y-(release_pos.y-target_pos.y)*0.2f;
+        release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         release_pos.x=tower_bottom;
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
-        set_flags[auto_drive_status]=moving_complete;
+        set_flags[auto_drive_status]=moving_complete3;
         add_mission(GRABPOSSET,set_flags,0,&release_pos);
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
         __HAL_UART_CLEAR_OREFLAG(&huart8);
     }
-    if(flags[auto_drive_status]==moving_complete)
+    if(flags[auto_drive_status]==moving_complete3)
     {
         current_task->flag_finish=1;
         block_num++;
@@ -537,7 +542,7 @@ void place_block(uint8_t tower_num)
     info.x=0;
     
     set_flags[grab_status]=stop;
-    set_flags[auto_drive_status]=moving_complete;
+    set_flags[auto_drive_status]=moving_complete2;
     add_mission(HOOKRELEASE,set_flags,0,&info);
     for(int i=0;i<total_flags;i++)
     {

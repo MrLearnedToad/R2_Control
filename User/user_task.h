@@ -87,7 +87,9 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 //任务状态宏定义
 #define stop 0
 #define moving 1
-#define moving_complete 2
+#define moving_complete1 2
+#define moving_complete2 3
+#define moving_complete3 4
 //夹具状态
 #define release 0
 #define grasp 1
@@ -113,6 +115,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define CATAPULTACTIVATE 5
 #define AUTOPICKUP 6
 #define AUTOPLACE 7
+#define AUTODRIVELONGDISTANCE 8
 
 #define either 114
 #define total_flags 9 //定义标志位总数量
@@ -152,6 +155,7 @@ typedef struct mission_queue
 
 /*Private variables*/
 extern int (*autodirveshortdistance)(mission_queue*);
+extern int (*autodrivelongdistance)(mission_queue*);
 extern int (*grabposset)(mission_queue*);
 extern int (*hookgrasp)(mission_queue*);
 extern int (*hookrelease)(mission_queue*);
@@ -180,6 +184,7 @@ extern int current_target_ID;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);
+int auto_drive_longdistance(mission_queue *current_task);
 int grab_pos_set(mission_queue *current_task);
 int hook_grasp(mission_queue *current_task);
 int hook_release(mission_queue *current_task);

@@ -174,7 +174,12 @@ void StartDefaultTask(void *argument)
               {
                   task_handle_temp=(TaskHandle_t*)malloc(sizeof(TaskHandle_t));
                   task_temp->handle=task_handle_temp;
-                  xTaskCreate(task_handler,"abab",0x100,(void*)task_temp,(osPriority_t) osPriorityNormal,task_handle_temp);
+                  if(task_temp->taskname==autodrivelongdistance)
+                  {
+                      xTaskCreate(task_handler,"abab",14400,(void*)task_temp,(osPriority_t) osPriorityNormal,task_handle_temp);
+                  }
+                  else
+                      xTaskCreate(task_handler,"abab",0x100,(void*)task_temp,(osPriority_t) osPriorityNormal,task_handle_temp);
                   if(task_temp==mission_queue_head)
                   {
                       mission_queue_head=mission_queue_head->next;
@@ -231,9 +236,9 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
       {
-          info.x=1;
-          info.y=1;
-          add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&info);
+          info.x=2;
+          info.y=4;
+          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
           last_key_status[1]=1;
       }
       else if(Read_Button(2)==1&&last_key_status[2]==0)
@@ -457,6 +462,9 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
         case 7:{
             temp->taskname=autoplace;
             break;
+        }
+        case 8:{
+            temp->taskname=autodrivelongdistance;
         }
     }   
     temp->flag_necessary=flag_nessary;//决定是否为关键任务（不可跳过）

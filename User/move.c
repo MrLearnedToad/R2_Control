@@ -1,8 +1,8 @@
 #include "move.h"
 
-Ort speed_plan[2500];
-Ort pos_plan[2500];
-float acceleration_plan[2500][2];//加速度计划数组，第一位为x方向加速度，第二位为y方向加速度
+Ort speed_plan[1500];
+Ort pos_plan[1500];
+float acceleration_plan[1500][2];//加速度计划数组，第一位为x方向加速度，第二位为y方向加速度
 check_point *check_point_head;
 barrier *barrier_head=NULL;
 extern Ort current_pos;
@@ -13,7 +13,7 @@ int turn_end_time=0;
 double dT=0.01;
 Ort output;
 int flag_center_access=0;
-    float speed_st[2500];
+    float speed_st[1500];
 
 /*********************************************************************************
   *@  name      : pre_plan
@@ -223,7 +223,7 @@ void pre_plan(Ort pos_Goal)
         i++;
         
     }
-    for(;i<2499;i++)
+    for(;i<1499;i++)
     {
         speed_plan[i+1].x=0;
         speed_plan[i+1].y=0;
@@ -363,7 +363,7 @@ void remove_barrier(int barrier_ID)
   *@  output    : 两个元素（含头尾）之间所有元素的平均值
   *@  note      : NULL
 *********************************************************************************/
-double cal_average(short a[5000][2],int head,int end)
+double cal_average(uint8_t a[5000][2],int head,int end)
 {
     int total=0;
     for (int i = head; i <=end; i++)
@@ -518,11 +518,11 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
 {
     heap_node *boundary[3000];
     heap_node *searched_path[6000];
-    short result[5000][2];
+    uint8_t result[5000][2];
     heap_node *tmp2,*tmp3;
     int boundary_len=0;
     int searched_path_len = 0, result_len = 0;
-    short map[120][120]={0};  //地图方格单位：1分米
+    uint8_t map[120][120]={0};  //地图方格单位：1分米
     barrier *tmp=barrier_head;
     short barrier_x,barrier_y,barrier_range;
     int finalx = current__final_goal.x * 10;

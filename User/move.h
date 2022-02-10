@@ -100,16 +100,16 @@ typedef struct heap_node
 //宏定义区
 #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
 #define deadzone 0.4//路径点死区大小
-#define acceleration_limit_increase 0.9
-#define acceleration_limit_decrease 0.9
+#define acceleration_limit_increase 1.2
+#define acceleration_limit_decrease 1.2
 #define acceleration_limit_turn 1
-#define speed_limit 1
+#define speed_limit 1.5
 #define control_period 0.01
 
 //全局变量区
-extern Ort speed_plan[2500];
-extern Ort pos_plan[2500];
-extern float acceleration_plan[2500][2];//加速度计划数组，第一位为x方向加速度，第二位为y方向加速度
+extern Ort speed_plan[1500];
+extern Ort pos_plan[1500];
+extern float acceleration_plan[1500][2];//加速度计划数组，第一位为x方向加速度，第二位为y方向加速度
 extern check_point *check_point_head;
 extern barrier *barrier_head;
 extern Ort current_pos;
@@ -136,7 +136,7 @@ extern float Pid_Run(PID_T *Pid, float Target, float Feedback);
 void shift(heap_node *root[], int i, int len);
 void add_node(heap_node *root[], int len, heap_node *item);
 heap_node *out_node(heap_node *root[], int len);
-double cal_average(short a[5000][2],int head,int end);
+double cal_average(uint8_t a[5000][2],int head,int end);
 Ort coordinate_transform(Ort realtive_pos);
 Ort evaluate_approach_pos(int target_ID);
 

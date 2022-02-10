@@ -10,7 +10,7 @@
       <TargetName>TRrebuild743</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\ARMCC</pCCUsed>
+      <pCCUsed>6160000::V6.16::ARMCLANG</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -112,7 +112,7 @@
           <SimDllName>SARMCM3.DLL</SimDllName>
           <SimDllArguments>-REMAP -MPU</SimDllArguments>
           <SimDlgDll>DCM.DLL</SimDlgDll>
-          <SimDlgDllArguments>-pSTM32H743VI</SimDlgDllArguments>
+          <SimDlgDllArguments>-pCM7</SimDlgDllArguments>
           <TargetDllName>SARMCM3.DLL</TargetDllName>
           <TargetDllArguments>-MPU</TargetDllArguments>
           <TargetDlgDll>TCM.DLL</TargetDlgDll>

@@ -70,7 +70,7 @@ uint8_t dma_buffer[30]={0};
 uint8_t Rx_buffer[16]={0};
 Ort current_acceration;
 Ort current_speed;
-Ort current_pos={.x=6,.y=0.5};
+Ort current_pos={.x=6,.y=0.41f};
 Ort correction_value;
 uint8_t cmd_feedback[8];
 Ort pos_buffer[9];
@@ -150,6 +150,8 @@ HAL_Delay(200);
 HAL_TIM_Base_Start_IT(&htim6);
 extern uint8_t block_num;
 block_num=2;
+//    Ort ababaa={.x=1,.y=1};
+//    static_path_planning(current_pos,ababaa);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -257,17 +259,16 @@ void send_msg(void)
     msg_buffer[1]='!';
     msg_buffer[2]=0x05;
     int ax,ay,az;
-    ax=current_pos.x*1000000/0.037f;
-    ay=current_pos.y*1000000/0.037f;
+    ax=current_pos.x*1000;
+    ay=current_pos.y*1000;
     memcpy(msg_buffer+3,&ax,4);
     memcpy(msg_buffer+7,&ay,4);
     az=(int)(gyro.z*1000);
     if(az<0)
-        az=360000-az;
+        az=360000+az;
     memcpy(msg_buffer+11,&az,4);
-    for(int i=15;i<30;i++)msg_buffer[i]=0;
-    msg_buffer[29]='!';
-    HAL_UART_Transmit(&huart8,msg_buffer,30,200);
+    msg_buffer[15]='!';
+    HAL_UART_Transmit(&huart8,msg_buffer,16,200);
     return;
 }
 
@@ -276,8 +277,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.5f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.5f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.8f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.8f*speed_plan[global_clock].y;
     return;
 }
 
@@ -368,15 +369,28 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
-        {
-            return;
-        }
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)(temp[1]+200)/1000.0f;
         temp1.z=temp2;
+        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+            return;
         temp1=coordinate_transform(temp1);
         update_barrier(1,temp1,0.7);
+    }
+    else if(cmd==114)
+    {
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        
+        temp1.x=(float)temp[0]/1000.0f;
+        temp1.y=(float)temp[1]/1000.0f;
+        memcpy(&temp1.z,data+11,4);
+        if(Read_Button(13)==1)
+        {
+            correction_value.x=temp1.x-current_pos.x;
+            correction_value.y=temp1.y-current_pos.y;
+            //correction_value.z=temp1.z-current_pos.z;
+        }
     }
     return;
 }
@@ -436,18 +450,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         Set_Pos();
         Elmo_Run();
         
-        if(global_clock<2499)
+        if(global_clock<1499)
             global_clock++;
         if(flags[auto_drive_status]==moving)
         {
             executive_auto_move();
         }
-        else if(flags[auto_drive_status]==moving_complete)
+        else if(flags[auto_drive_status]==moving_complete1||flags[auto_drive_status]==moving_complete2||flags[auto_drive_status]==moving_complete3)
         {
             dX=0;
             dY=0;
         }
-        //send_msg();
+        send_msg();
         //send_log(0x01,dX,ababa,current_speed.x,vx[0],&huart3);
 	}
 	else if(htim->Instance == TIM7)

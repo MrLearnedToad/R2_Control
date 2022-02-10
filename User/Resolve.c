@@ -36,7 +36,7 @@ void Set_Pos(void)
     dx=ddx*arm_cos_f32(current_pos.z*3.1415926f/180.0f)-ddy*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
     dy=ddx*arm_sin_f32(current_pos.z*3.1415926f/180.0f)+ddy*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     int speed;
-    speed=-dx*32313*2*1.2f;
+    speed=-dx*80638;
     speed=-(int)((double)speed*1.414);
     int tmp[4]={0};
     tmp[0]=-speed;
@@ -47,7 +47,7 @@ void Set_Pos(void)
     {
         Wheel_Speed[i]=-tmp[i];
     }
-	speed=dy*32313*2*1.05f;
+	speed=dy*80638;
     for(int i=0;i<4;i++)
     {
         tmp[i]=speed;

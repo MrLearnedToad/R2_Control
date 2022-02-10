@@ -44,7 +44,7 @@
 "trrebuild743\tasks.o"
 "trrebuild743\timers.o"
 "trrebuild743\cmsis_os2.o"
-"trrebuild743\heap_4.o"
+"trrebuild743\heap_4_1.o"
 "trrebuild743\port.o"
 "trrebuild743\fdcan_bsp.o"
 "trrebuild743\elmo_fdcan.o"
