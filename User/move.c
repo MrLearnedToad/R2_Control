@@ -179,7 +179,7 @@ void pre_plan(Ort pos_Goal)
             }
             j++;
         }
-        tmp=j+0.95f*(path_len-(0.5f*(tmp+maxspeed)*((maxspeed-tmp)/maxA)+0.5f*(maxspeed/maxD)*maxspeed))/maxspeed/dT;
+        tmp=j+0.94f*(path_len-(0.5f*(tmp+maxspeed)*((maxspeed-tmp)/maxA)+0.5f*(maxspeed/maxD)*maxspeed))/maxspeed/dT;
         for(;j<=tmp;j++)
         {
             speed_st[j+1]=speed_st[j];
@@ -1005,57 +1005,82 @@ Ort evaluate_approach_pos(int target_ID)
     if(target_ID==1)
     {
         temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
-        if(temp>=-22.5f&&temp<22.5f)
-        {
-            target.x=target.x;
-            target.y=target.y-1.25f;
-            target.z=0;
-        }
-        else if(temp>=22.5f&&temp<67.5f)
+
+//        if(temp>=-22.5f&&temp<22.5f)
+//        {
+//            target.x=target.x;
+//            target.y=target.y-1.25f;
+//            target.z=0;
+//        }
+//        else if(temp>=22.5f&&temp<67.5f)
+//        {
+//            target.x=target.x+0.8f;
+//            target.y=target.y-0.8f;
+//            target.z=45;
+//        }
+//        else if(temp>=67.5f&&temp<112.5f)
+//        {
+//            target.x=target.x+1.25f;
+//            target.y=target.y;
+//            target.z=90;
+//        }
+//        else if(temp>=112.5f&&temp<157.5f)
+//        {
+//            target.x=target.x+0.8f;
+//            target.y=target.y+0.8f;
+//            target.z=135;
+//        }
+//        else if(temp>=-157.5f&&temp<-112.5f)
+//        {
+//            target.x=target.x-0.8f;
+//            target.y=target.y+0.8f;
+//            target.z=-135;
+//        }
+//        else if(temp>=-112.5f&&temp<-67.5f)
+//        {
+//            target.x=target.x-1.25f;
+//            target.y=target.y;
+//            target.z=-90;
+//        }
+//        else if(temp>=-67.5f&&temp<-22.5f)
+//        {
+//            target.x=target.x-0.8f;
+//            target.y=target.y-0.8f;
+//            target.z=-45;
+//        }
+//        else
+//        {
+//            target.x=target.x;
+//            target.y=target.y+1.25f;
+//            target.z=179.9f;
+//        }
+//    }
+
+        if(temp>=0&&temp<90)
         {
             target.x=target.x+0.8f;
             target.y=target.y-0.8f;
             target.z=45;
         }
-        else if(temp>=67.5f&&temp<112.5f)
-        {
-            target.x=target.x+1.25f;
-            target.y=target.y;
-            target.z=90;
-        }
-        else if(temp>=112.5f&&temp<157.5f)
+        else if(temp>=90&&temp<180)
         {
             target.x=target.x+0.8f;
             target.y=target.y+0.8f;
             target.z=135;
         }
-        else if(temp>=-157.5f&&temp<-112.5f)
+        else if(temp>=-180&&temp<-90)
         {
             target.x=target.x-0.8f;
             target.y=target.y+0.8f;
             target.z=-135;
         }
-        else if(temp>=-112.5f&&temp<-67.5f)
-        {
-            target.x=target.x-1.25f;
-            target.y=target.y;
-            target.z=-90;
-        }
-        else if(temp>=-67.5f&&temp<-22.5f)
+        else if(temp>=-90&&temp<0)
         {
             target.x=target.x-0.8f;
             target.y=target.y-0.8f;
             target.z=-45;
         }
-        else
-        {
-            target.x=target.x;
-            target.y=target.y+1.25f;
-            target.z=179.9f;
-        }
     }
-    
-    
     return target;
 }
 /*********************************************************************************
@@ -1063,7 +1088,7 @@ Ort evaluate_approach_pos(int target_ID)
   *@  function  : PID函数
   *@  input     : pid设置，目标，反馈
   *@  output    : 输出
-  *@  note      : NULL
+  *@  note      : NULL              
 *********************************************************************************/
 //float Pid_Run(PID_T *Pid, float Target, float Feedback)
 //{

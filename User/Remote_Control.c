@@ -5,6 +5,7 @@
 #include "string.h"
 GYRO gyro;
 extern int debug;
+extern float dZ;
 uint8_t Yaw[4] = {0};
 uint8_t X[4] = {0};
 uint8_t Y[4] = {0};
@@ -13,6 +14,7 @@ extern void speed_cal(void);
 
 void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 {
+    static uint8_t flag_init=0;
 	/*接收角度和角速度信息*/
 	if(StdId == 0x351 || StdId == 0x352)
 	{
@@ -26,6 +28,11 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
             gyro.z=-gyro.z;
 //			while(gyro.z >180){gyro.z-=180;}
 //			while(gyro.z <-180){gyro.z+=180;}
+            if(flag_init==0)
+            {
+                dZ=-gyro.z;
+                flag_init=1;
+            }
 		}
 		
 		/*接收位置信息*/
@@ -41,7 +48,6 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 			gyro.y = *(int*)Y;
 			//gyro.sum_y += (gyro.y - gyro.last_y)*cos(gyro.z-gyro.last_z);
             gyro.y=gyro.y;
-            speed_cal();
 		}
 	}
 }

@@ -337,9 +337,9 @@ void RobotTask(void *argument)
               block_num--;
           last_key_status[19]=1;
       }
-      else if(Read_Button(21)==automode&&flags[0]==manualmode)//全局重启
+      else if(Read_Button(21)==1)//全局重启
       {
-          __set_FAULTMASK(1);//关闭总中断
+          __disable_irq();//关闭总中断
           NVIC_SystemReset();//请求单片机重启
           last_key_status[21]=1;
       }
@@ -354,7 +354,6 @@ void RobotTask(void *argument)
               last_key_status[i]=0;
           }
       }
-      flags[drivemode]=Read_Button(23);
       task_reset=Read_Button(14);
     osDelay(10);
   }
@@ -380,7 +379,7 @@ void manual_move(void *argument)
       {
         flags[0]=manualmode;
         static int rocker[4]={0};
-        if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100)
+        if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100&&(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))<189*189)
         {
             rocker[0]=Read_Rocker(0);
             rocker[1]=Read_Rocker(1);
@@ -390,7 +389,7 @@ void manual_move(void *argument)
             rocker[0]=0;
             rocker[1]=0;
         }
-        if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+        if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))<189*189)
         {
             rocker[2]=Read_Rocker(2);
             rocker[3]=Read_Rocker(3);

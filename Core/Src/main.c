@@ -269,6 +269,27 @@ void send_msg(void)
     memcpy(msg_buffer+11,&az,4);
     msg_buffer[15]='!';
     HAL_UART_Transmit(&huart8,msg_buffer,16,200);
+    //HAL_UART_Transmit(&huart3,msg_buffer,16,200);
+    return;
+}
+
+void send_debug_msg(UART_HandleTypeDef *uart,float data1,float data2,uint8_t ID)
+{
+    uint8_t msg_buffer[16];
+    msg_buffer[0]='?';
+    msg_buffer[1]='!';
+    msg_buffer[2]=ID;
+//    int ax,ay,az;
+//    ax=data1*1000;
+//    ay=data2*1000;
+//    memcpy(msg_buffer+3,&ax,4);
+//    memcpy(msg_buffer+7,&ay,4);
+//    az=(int)(gyro.z*1000);
+//    memcpy(msg_buffer+11,&az,4);
+    msg_buffer[15]='!';
+    for(int i=0;i<15;i++)
+        msg_buffer[i]=0x13;
+    HAL_UART_Transmit(uart,msg_buffer,16,200);
     return;
 }
 
@@ -297,30 +318,14 @@ void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_Ha
 
 void speed_cal(void)
 {
-    static float lastx[2]={0},lasty[2]={0};
+//    static float lastx[2]={0},lasty[2]={0};
     static int last_gyrox=0,last_gyroy=0;
-    static int clock1,clock2;
-    vx[0]=vx[1];
-    vy[0]=vy[1];
-    clock1=clock2;
-    clock2=speed_clock;
-    speed_clock=0;
     
-    vx[1]=(current_pos.x-lastx[0])/(0.0001f*(clock1+clock2));
-    vy[1]=(current_pos.y-lasty[0])/(0.0001f*(clock1+clock2));
-    
-    
-    current_speed.x=(vx[0]+vx[1])/2.0f;
-    current_speed.y=(vy[0]+vy[1])/2.0f;
     
 //    current_acceration.x=(current_speed.x-lastsx)/0.001f;
 //    current_acceration.y=(current_speed.y-lastsy)/0.001f;
     
-    
-    lastx[0]=lastx[1];
-    lasty[0]=lasty[1];
-    lastx[1]=current_pos.x;
-    lasty[1]=current_pos.y;
+
 //    lastsx=current_speed.x;
 //    lastsy=current_speed.y;
     
@@ -338,6 +343,20 @@ void speed_cal(void)
         else
             current_pos.z+=360.0f;
     }
+    
+    for(int i=4;i>=0;i--)
+    {
+        vx[i+1]=vx[i];
+        vy[i+1]=vy[i];
+    }
+    vx[0]=current_pos.x;
+    vy[0]=current_pos.y;
+    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.036f;
+    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.036f;
+    if(current_speed.x<0.1f)
+        current_speed.x=0;
+    if(current_speed.y<0.1f)
+        current_speed.y=0;
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     return;
 }
@@ -374,7 +393,8 @@ void update_target_info(uint8_t *data)
         temp1.z=temp2;
         if(fabs(temp1.x)>14||fabs(temp1.y)>14)
             return;
-        temp1=coordinate_transform(temp1);
+        //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
+        temp1=coordinate_transform(temp1);        
         update_barrier(1,temp1,0.7);
     }
     else if(cmd==114)
@@ -462,12 +482,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dY=0;
         }
         send_msg();
+//        send_debug_msg(&huart8,0,0,0);
+        if(fabs(dX)>2.0f)
+            send_log(0x01,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);
         //send_log(0x01,dX,ababa,current_speed.x,vx[0],&huart3);
 	}
 	else if(htim->Instance == TIM7)
 	{
 		Elmo_SendCmd(&hfdcan2);
         speed_clock++;
+        if(speed_clock==4)
+        {
+            speed_cal();
+            speed_clock=0;
+        }
 	}
     else if(htim->Instance == TIM16)
     {

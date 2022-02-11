@@ -44,7 +44,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.010||global_clock>500||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if(distance<0.008||global_clock>500||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
 //        dX=0;
 //        dY=0;
@@ -351,7 +351,7 @@ void pick_up(uint8_t pos)
         set_flags[grab_pos]=tower_bottom;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete1;
-        info.x=tower_block_2;
+        info.x=block_num;
         add_mission(GRABPOSSET,set_flags,1,&info);
         for(int i=0;i<total_flags;i++)
         {
@@ -365,15 +365,12 @@ void pick_up(uint8_t pos)
         add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
         info.x=0;
         set_flags[hook_status]=either;
-        
-        info.x=tower_holding;
-        add_mission(GRABPOSSET,set_flags,1,&info);
     }
     else
     {
         
         set_flags[hook_status]=stop;
-        info.x=tower_holding;
+        info.x=block_num;
         add_mission(GRABPOSSET,set_flags,1,&info);
     }
     return;
@@ -408,6 +405,14 @@ int auto_pick_up(mission_queue *current_task)
     if(count==0)
     {
         target=find_barrier(block_num);
+        if(target==NULL)
+        {
+            flags[lock_mode_status]=stop;
+            current_task->flag_finish=1;
+            flag_running=0;
+            count=0;
+            return 0;
+        }
         target_pos.x=target->location.x;
         target_pos.y=target->location.y;
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
@@ -533,8 +538,6 @@ void place_block(uint8_t tower_num)
     Ort info={.x=0,.y=0,.z=0};
     
     
-    info.x=tower_num;
-    add_mission(GRABPOSSET,set_flags,0,&info);
     for(int i=0;i<total_flags;i++)
     {
         set_flags[i]=either;
@@ -552,5 +555,3 @@ void place_block(uint8_t tower_num)
     
     return;
 }
-
-
