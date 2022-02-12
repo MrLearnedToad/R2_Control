@@ -44,7 +44,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.008||global_clock>500||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if(distance<0.004||global_clock>500||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
 //        dX=0;
 //        dY=0;

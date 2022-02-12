@@ -263,12 +263,12 @@ void send_msg(void)
     ay=current_pos.y*1000;
     memcpy(msg_buffer+3,&ax,4);
     memcpy(msg_buffer+7,&ay,4);
-    az=(int)(gyro.z*1000);
+    az=(int)(current_pos.z*1000);
     if(az<0)
         az=360000+az;
     memcpy(msg_buffer+11,&az,4);
     msg_buffer[15]='!';
-    HAL_UART_Transmit(&huart8,msg_buffer,16,200);
+    HAL_UART_Transmit(&huart8,msg_buffer,16,20);
     //HAL_UART_Transmit(&huart3,msg_buffer,16,200);
     return;
 }
@@ -353,9 +353,9 @@ void speed_cal(void)
     vy[0]=current_pos.y;
     current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.036f;
     current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.036f;
-    if(current_speed.x<0.1f)
+    if(current_speed.x<0.05f)
         current_speed.x=0;
-    if(current_speed.y<0.1f)
+    if(current_speed.y<0.05f)
         current_speed.y=0;
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     return;
@@ -491,7 +491,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		Elmo_SendCmd(&hfdcan2);
         speed_clock++;
-        if(speed_clock==4)
+        if(speed_clock==40)
         {
             speed_cal();
             speed_clock=0;

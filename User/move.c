@@ -179,7 +179,7 @@ void pre_plan(Ort pos_Goal)
             }
             j++;
         }
-        tmp=j+0.94f*(path_len-(0.5f*(tmp+maxspeed)*((maxspeed-tmp)/maxA)+0.5f*(maxspeed/maxD)*maxspeed))/maxspeed/dT;
+        tmp=j+0.93f*(path_len-(0.5f*(tmp+maxspeed)*((maxspeed-tmp)/maxA)+0.5f*(maxspeed/maxD)*maxspeed))/maxspeed/dT;
         for(;j<=tmp;j++)
         {
             speed_st[j+1]=speed_st[j];
