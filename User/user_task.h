@@ -196,5 +196,5 @@ int auto_place(mission_queue *current_task);
 void pick_up(uint8_t pos);
 void place_block(uint8_t tower_num);
 /*Disposable Private Function Prototypes*/
-
+extern void save_status(void);
 #endif

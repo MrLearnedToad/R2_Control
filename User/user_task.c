@@ -65,6 +65,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
 *********************************************************************************/
 int auto_drive_longdistance(mission_queue *current_task)
 {
+    save_status();
     flags[auto_drive_status]=moving;
     static int flag_running=0;
     static int barrier_id=0;
@@ -385,6 +386,7 @@ void pick_up(uint8_t pos)
 *********************************************************************************/
 int auto_pick_up(mission_queue *current_task)
 {
+    save_status();
     static uint8_t flag_running,count=0;
     barrier *target;
     Ort grasp_pos;
@@ -460,8 +462,10 @@ int auto_pick_up(mission_queue *current_task)
 *********************************************************************************/
 int auto_place(mission_queue *current_task)
 {
+    save_status();
     static uint8_t flag_running=0;
     Ort release_pos,stop_pos;
+    barrier *target;
     double distance,distance_2_move;
     uint8_t set_flags[20];
     for(int i=0;i<total_flags;i++)
@@ -475,7 +479,15 @@ int auto_place(mission_queue *current_task)
         if(flags[auto_drive_status]!=moving)
             flags[auto_drive_status]=stop;
     }
-    target_pos=find_barrier(1)->location;
+    target=find_barrier(1);
+    if(target==NULL)
+    {
+        flags[lock_mode_status]=stop;
+        current_task->flag_finish=1;
+        flag_running=0;
+        return 0;
+    }
+    target_pos=target->location;
     stop_pos=evaluate_approach_pos(1);
     if(flags[auto_drive_status]==stop&&flag_running==1)
     { 

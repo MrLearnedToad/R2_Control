@@ -138,7 +138,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 nrf_mode = true;
 Handle_Init(&hspi1,01);
-HAL_Delay(200);
+HAL_Delay(20);
 FDCAN2_Init(&hfdcan1);
 HAL_Delay(200);
 Elmo_Init(&hfdcan2,&htim7);
@@ -146,7 +146,6 @@ HAL_Delay(200);
 Elmo_Pre_PVM(0);
 HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
-HAL_Delay(200);
 HAL_TIM_Base_Start_IT(&htim6);
 extern uint8_t block_num;
 block_num=2;
@@ -298,8 +297,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.8f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.8f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.4f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.4f*speed_plan[global_clock].y;
     return;
 }
 
@@ -464,17 +463,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 	else if(htim->Instance == TIM6)	/**/
 	{
-		
-        acceration_limit();
+		static uint8_t ID=2,flag_sendlog=0;
+        if(flags[auto_drive_status]!=moving)
+            acceration_limit();
         DMA_recieve();
         Set_Pos();
         Elmo_Run();
         
         if(global_clock<1499)
             global_clock++;
-        if(flags[auto_drive_status]==moving)
+        if(flags[auto_drive_status]==moving&&global_clock<600)
         {
             executive_auto_move();
+            send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+            flag_sendlog=0;
+        }
+        if(flags[auto_drive_status]!=moving&&flags[auto_drive_status]!=stop&&flag_sendlog==0)
+        {
+            ID++;
+            flag_sendlog=1;
         }
         else if(flags[auto_drive_status]==moving_complete1||flags[auto_drive_status]==moving_complete2||flags[auto_drive_status]==moving_complete3)
         {
@@ -483,9 +490,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         send_msg();
 //        send_debug_msg(&huart8,0,0,0);
-        if(fabs(dX)>2.0f)
-            send_log(0x01,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);
-        //send_log(0x01,dX,ababa,current_speed.x,vx[0],&huart3);
+//        if(fabs(dX)>2.0f)
+//            send_log(0x03,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);
+        //send_log(0x01,current_speed.y,vy[0],current_speed.x,vx[0],&huart3);
+        
 	}
 	else if(htim->Instance == TIM7)
 	{
