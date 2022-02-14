@@ -297,8 +297,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.4f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.4f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.5f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.5f*speed_plan[global_clock].y;
     return;
 }
 
@@ -472,10 +472,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         
         if(global_clock<1499)
             global_clock++;
-        if(flags[auto_drive_status]==moving&&global_clock<600)
+        if(flags[auto_drive_status]==moving)
         {
             executive_auto_move();
-            send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+            if(global_clock%4==0)
+               // send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;
         }
         if(flags[auto_drive_status]!=moving&&flags[auto_drive_status]!=stop&&flag_sendlog==0)
@@ -483,7 +484,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-        else if(flags[auto_drive_status]==moving_complete1||flags[auto_drive_status]==moving_complete2||flags[auto_drive_status]==moving_complete3)
+        else if(flags[auto_drive_status]!=stop&&flags[auto_drive_status]!=moving)
         {
             dX=0;
             dY=0;

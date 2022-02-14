@@ -1,0 +1,30 @@
+diff a/Core/Src/main.c b/Core/Src/main.c	(rejected hunks)
+@@ -463,17 +463,25 @@
+   /* USER CODE BEGIN Callback 1 */
+ 	else if(htim->Instance == TIM6)	/**/
+ 	{
+-		
+-        acceration_limit();
++		static uint8_t ID=2,flag_sendlog=0;
++        if(flags[auto_drive_status]!=moving)
++            acceration_limit();
+         DMA_recieve();
+         Set_Pos();
+         Elmo_Run();
+         
+         if(global_clock<1499)
+             global_clock++;
+-        if(flags[auto_drive_status]==moving)
++        if(flags[auto_drive_status]==moving&&global_clock<600)
+         {
+             executive_auto_move();
++            send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
++            flag_sendlog=0;
++        }
++        if(flags[auto_drive_status]!=moving&&flags[auto_drive_status]!=stop&&flag_sendlog==0)
++        {
++            ID++;
++            flag_sendlog=1;
+         }
+         else if(flags[auto_drive_status]==moving_complete1||flags[auto_drive_status]==moving_complete2||flags[auto_drive_status]==moving_complete3)
+         {

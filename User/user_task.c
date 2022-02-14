@@ -53,8 +53,19 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
+    if(distance<0.1&&current_task->info.z>6)
+    {
+//        dX=0;
+//        dY=0;
+        current_task->flag_finish=1;
+        flags[auto_drive_status]=current_task->info.z;
+        flag_running=0;
+        flags[drivemode]=manualmode;
+    }
     return 0;
 }
+
+
 
 /*********************************************************************************
   *@  name      : auto_drive_longdistance
@@ -65,7 +76,6 @@ int auto_drive_shortdistance(mission_queue *current_task)
 *********************************************************************************/
 int auto_drive_longdistance(mission_queue *current_task)
 {
-    save_status();
     flags[auto_drive_status]=moving;
     static int flag_running=0;
     static int barrier_id=0;
@@ -386,7 +396,6 @@ void pick_up(uint8_t pos)
 *********************************************************************************/
 int auto_pick_up(mission_queue *current_task)
 {
-    save_status();
     static uint8_t flag_running,count=0;
     barrier *target;
     Ort grasp_pos;
@@ -462,10 +471,8 @@ int auto_pick_up(mission_queue *current_task)
 *********************************************************************************/
 int auto_place(mission_queue *current_task)
 {
-    save_status();
     static uint8_t flag_running=0;
     Ort release_pos,stop_pos;
-    barrier *target;
     double distance,distance_2_move;
     uint8_t set_flags[20];
     for(int i=0;i<total_flags;i++)
@@ -479,36 +486,28 @@ int auto_place(mission_queue *current_task)
         if(flags[auto_drive_status]!=moving)
             flags[auto_drive_status]=stop;
     }
-    target=find_barrier(1);
-    if(target==NULL)
-    {
-        flags[lock_mode_status]=stop;
-        current_task->flag_finish=1;
-        flag_running=0;
-        return 0;
-    }
-    target_pos=target->location;
+    target_pos=find_barrier(1)->location;
     stop_pos=evaluate_approach_pos(1);
     if(flags[auto_drive_status]==stop&&flag_running==1)
     { 
         dZ=stop_pos.z;
         flag_running=2;
-        stop_pos.z=moving_complete1;
+        stop_pos.z=moving_partially_complete1;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
-        distance_2_move=distance-0.56f;
+        distance_2_move=distance-0.58f;
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
         release_pos.z=moving_complete2;
         //flags[auto_drive_status]=moving;
         place_block(block_num);
         set_flags[grab_status]=stop;
-        set_flags[auto_drive_status]=moving_complete1;
+        set_flags[auto_drive_status]=moving_partially_complete1;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete2;
-        release_pos.x=stop_pos.x-(release_pos.x-target_pos.x)*0.2f;
+        release_pos.x=stop_pos. x-(release_pos.x-target_pos.x)*0.2f;
         release_pos.y=stop_pos.y-(release_pos.y-target_pos.y)*0.2f;
         release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);

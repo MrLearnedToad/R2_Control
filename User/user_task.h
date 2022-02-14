@@ -90,6 +90,9 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define moving_complete1 2
 #define moving_complete2 3
 #define moving_complete3 4
+#define moving_partially_complete1 7
+#define moving_partially_complete2 8
+#define moving_partially_complete3 9
 //¼Ð¾ß×´Ì¬
 #define release 0
 #define grasp 1
@@ -196,5 +199,5 @@ int auto_place(mission_queue *current_task);
 void pick_up(uint8_t pos);
 void place_block(uint8_t tower_num);
 /*Disposable Private Function Prototypes*/
-extern void save_status(void);
+
 #endif

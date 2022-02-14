@@ -229,7 +229,6 @@ void RobotTask(void *argument)
 	  instruction_refresh();
       if(Read_Button(0)==1&&last_key_status[0]==0)
       {
-          set_flags[grab_status]=stop;
           info.x=1;
           add_mission(0,set_flags,0,&info);
           last_key_status[0]=1;
@@ -267,39 +266,28 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(6)==1&&last_key_status[6]==0)
       {
-          set_flags[hook_pos]=release;
-          set_flags[hook_status]=stop;
-          set_flags[grab_status]=stop;
-          set_flags[switcher_status]=stop;
           add_mission(2,set_flags,0,&info);
           last_key_status[6]=1;
       }
       else if(Read_Button(7)==1&&last_key_status[7]==0)
       {
-          set_flags[hook_pos]=grasp;
-          set_flags[hook_status]=stop;
-          set_flags[grab_status]=stop;
-          set_flags[switcher_status]=stop;
           add_mission(3,set_flags,0,&info);
           last_key_status[7]=1;
       }
       else if(Read_Button(8)==1&&last_key_status[8]==0)
       {
-          set_flags[hook_status]=stop;
           info.x=up;
           add_mission(4,set_flags,0,&info);
           last_key_status[8]=1;
       }
       else if(Read_Button(9)==1&&last_key_status[9]==0)
       {
-          set_flags[hook_status]=stop;
           info.x=forward;
           add_mission(4,set_flags,0,&info);
           last_key_status[9]=1;
       }
       else if(Read_Button(10)==1&&last_key_status[10]==0)
       {
-          set_flags[hook_status]=stop;
           info.x=down;
           add_mission(4,set_flags,0,&info);
           last_key_status[10]=1;
@@ -379,7 +367,7 @@ void manual_move(void *argument)
       {
         flags[0]=manualmode;
         static int rocker[4]={0};
-        if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100&&(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))<189*189)
+        if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100&&(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))<=190*190)
         {
             rocker[0]=Read_Rocker(0);
             rocker[1]=Read_Rocker(1);
@@ -389,7 +377,7 @@ void manual_move(void *argument)
             rocker[0]=0;
             rocker[1]=0;
         }
-        if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))<189*189)
+        if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))<=190*190)
         {
             rocker[2]=Read_Rocker(2);
             rocker[3]=Read_Rocker(3);
