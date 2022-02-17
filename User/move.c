@@ -982,11 +982,11 @@ void move_execute(Ort current__final_goal)
   *@  output    : 绝对坐标
   *@  note      : NULL
 *********************************************************************************/
-Ort coordinate_transform(Ort relative_pos)
+Ort coordinate_transform(Ort relative_pos,Ort target_pos)
 {
     Ort absolute_pos;
-    absolute_pos.x=cosf(-current_pos.z*3.1415926f/180.0f)*relative_pos.x+(-sinf(-current_pos.z*3.1415926f/180.0f))*relative_pos.y+current_pos.x;
-    absolute_pos.y=sinf(-current_pos.z*3.1415926f/180.0f)*relative_pos.x+cosf(-current_pos.z*3.1415926f/180.0f)*relative_pos.y+current_pos.y;
+    absolute_pos.x=cosf(-target_pos.z*3.1415926f/180.0f)*relative_pos.x+(-sinf(-target_pos.z*3.1415926f/180.0f))*relative_pos.y+target_pos.x;
+    absolute_pos.y=sinf(-target_pos.z*3.1415926f/180.0f)*relative_pos.x+cosf(-target_pos.z*3.1415926f/180.0f)*relative_pos.y+target_pos.y;
     absolute_pos.z=relative_pos.z;
     return absolute_pos;
 }

@@ -108,7 +108,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define tower_block_4 5
 #define tower_block_5 6
 #define tower_bottom 1 
-#define tower_holding 7
+#define tower_bottom2 7
 //ÈÎÎñÌí¼ÓÐòºÅ
 #define GRABPOSSET 0
 #define AUTODRIVESHORTDISTANCE 1
@@ -184,6 +184,7 @@ extern check_point *check_point_head;
 extern barrier *barrier_head;
 extern uint8_t block_num;
 extern int current_target_ID;
+extern uint8_t pos_reset;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);

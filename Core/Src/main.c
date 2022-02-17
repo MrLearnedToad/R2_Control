@@ -61,7 +61,7 @@
 extern float dX;
 extern float dY;
 extern float dZ;
-int debug;
+Ort debug;
 float last_pos_x=0,last_pos_y=0;
 uint8_t rxtemp=0;
 int rocker[4];
@@ -78,6 +78,8 @@ Ort target_relative_pos;
 int global_clock;
 int speed_clock;
 float vx[10],vy[10],ababa;
+Ort pos_log[10];
+uint8_t pos_reset=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -366,6 +368,8 @@ void update_target_info(uint8_t *data)
     Ort temp1;
     uint8_t temp2,cmd;
     cmd=data[2];
+    
+    
     if(cmd>0&&cmd<6)
     {
         memcpy(temp,data+3,4);
@@ -379,7 +383,7 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)(temp[1]+200)/1000.0f;
         temp1.z=temp2;
-        temp1=coordinate_transform(temp1);
+        temp1=coordinate_transform(temp1,pos_log[1]);
         update_barrier(cmd,temp1,0.7);
     }
     else if(cmd==6)
@@ -387,13 +391,13 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        temp1.x=(float)temp[0]/1000.0f;
-        temp1.y=(float)(temp[1]+200)/1000.0f;
+        temp1.x=(float)(temp[0]+debug.x)/1000.0f;
+        temp1.y=(float)(temp[1]+200+debug.y)/1000.0f;
         temp1.z=temp2;
         if(fabs(temp1.x)>14||fabs(temp1.y)>14)
             return;
         //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
-        temp1=coordinate_transform(temp1);        
+        temp1=coordinate_transform(temp1,pos_log[5]);        
         update_barrier(1,temp1,0.7);
     }
     else if(cmd==114)
@@ -404,10 +408,11 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)temp[1]/1000.0f;
         memcpy(&temp1.z,data+11,4);
-        if(Read_Button(13)==1)
+        if(pos_reset==1)
         {
-            correction_value.x=temp1.x-current_pos.x;
-            correction_value.y=temp1.y-current_pos.y;
+            pos_reset=0;
+            correction_value.x=temp1.x-pos_log[5].x;
+            correction_value.y=temp1.y-pos_log[5].y;
             //correction_value.z=temp1.z-current_pos.z;
         }
     }
@@ -416,6 +421,16 @@ void update_target_info(uint8_t *data)
 
 void DMA_recieve(void)
 {
+    for(int i=8;i>=0;i--)
+    {
+        pos_log[i+1].x=pos_log[i].x;
+        pos_log[i+1].y=pos_log[i].y;
+        pos_log[i+1].z=pos_log[i].z;
+    }
+    pos_log[0].x=current_pos.x;
+    pos_log[0].y=current_pos.y;
+    pos_log[0].z=current_pos.z;
+    
     int i,j;
     for(i=0;i<15;i++)
     {

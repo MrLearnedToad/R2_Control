@@ -137,7 +137,7 @@ void shift(heap_node *root[], int i, int len);
 void add_node(heap_node *root[], int len, heap_node *item);
 heap_node *out_node(heap_node *root[], int len);
 double cal_average(uint8_t a[5000][2],int head,int end);
-Ort coordinate_transform(Ort realtive_pos);
+Ort coordinate_transform(Ort realtive_pos,Ort target_pos);
 Ort evaluate_approach_pos(int target_ID);
 
 #endif

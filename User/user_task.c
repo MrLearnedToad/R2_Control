@@ -332,18 +332,29 @@ void pick_up(uint8_t pos)
     Ort info={.x=0,.y=0,.z=0};
     
     add_mission(HOOKRELEASE,set_flags,1,&info);
-    
-    set_flags[grab_status]=stop;
-    info.x=1;
-    add_mission(GRABPOSSET,set_flags,1,&info);
-    set_flags[grab_status]=either;
-    info.x=0;
-    
+        
     set_flags[hook_status]=stop;
     info.x=pos;
     add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
     info.x=0;
     set_flags[hook_status]=either;
+    
+    if(pos==forward||pos==backward)
+    {
+        set_flags[grab_status]=stop;
+        info.x=tower_bottom2;
+        add_mission(GRABPOSSET,set_flags,1,&info);
+        set_flags[grab_status]=either;
+        info.x=0;
+    }
+    else
+    {
+        set_flags[grab_status]=stop;
+        info.x=tower_bottom;
+        add_mission(GRABPOSSET,set_flags,1,&info);
+        set_flags[grab_status]=either;
+        info.x=0;
+    }
 
     set_flags[hook_pos]=release;
     set_flags[hook_status]=stop;
@@ -359,7 +370,7 @@ void pick_up(uint8_t pos)
     if(pos!=up)
     {
         set_flags[grab_status]=stop;
-        set_flags[grab_pos]=tower_bottom;
+        
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete1;
         info.x=block_num;
@@ -511,7 +522,7 @@ int auto_place(mission_queue *current_task)
         release_pos.y=stop_pos.y-(release_pos.y-target_pos.y)*0.2f;
         release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
-        release_pos.x=tower_bottom;
+        release_pos.x=tower_bottom2;
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete3;
@@ -523,6 +534,7 @@ int auto_place(mission_queue *current_task)
     }
     if(flags[auto_drive_status]==moving_complete3)
     {
+        pos_reset=1;
         current_task->flag_finish=1;
         block_num++;
         flags[lock_mode_status]=stop;
