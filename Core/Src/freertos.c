@@ -71,7 +71,7 @@ osThreadId_t RobotHandle;
 const osThreadAttr_t Robot_attributes = {
   .name = "Robot",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for manualmove */
 osThreadId_t manualmoveHandle;

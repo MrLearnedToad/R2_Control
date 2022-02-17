@@ -68,6 +68,7 @@ int rocker[4];
 uint8_t turret_buffer[8];
 uint8_t dma_buffer[30]={0};
 uint8_t Rx_buffer[16]={0};
+uint8_t huart3_rxbuffer[16]={0};
 Ort current_acceration;
 Ort current_speed;
 Ort current_pos={.x=6,.y=0.41f};
@@ -148,10 +149,12 @@ HAL_Delay(200);
 Elmo_Pre_PVM(0);
 HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
+HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
 HAL_TIM_Base_Start_IT(&htim6);
 extern uint8_t block_num;
 block_num=2;
-//    Ort ababaa={.x=1,.y=1};
+Ort base={.x=8,.y=6};
+update_barrier(1,base,0.8f);
 //    static_path_planning(current_pos,ababaa);
   /* USER CODE END 2 */
 

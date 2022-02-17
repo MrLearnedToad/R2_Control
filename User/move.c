@@ -1,4 +1,5 @@
 #include "move.h"
+#include "arm_math.h"
 
 Ort speed_plan[1500];
 Ort pos_plan[1500];
@@ -12,8 +13,8 @@ int flag_final_goal_change=0;
 int turn_end_time=0;
 double dT=0.01;
 Ort output;
-int flag_center_access=0;
-    float speed_st[1500];
+int flag_center_access=1;
+float speed_st[1500];
 
 /*********************************************************************************
   *@  name      : pre_plan
@@ -378,7 +379,7 @@ double cal_average(uint8_t a[5000][2],int head,int end)
   *@  function  : 检查两个坐标之间是否有障碍
   *@  input     : 起点坐标pos1，终点坐标pos2
   *@  output    : 第一个检测到的障碍ID
-  *@  note      : NULL
+  *@  note      : 有问题
 *********************************************************************************/
 int check_barrier(Ort pos1,Ort pos2)
 {
@@ -422,19 +423,43 @@ int check_barrier(Ort pos1,Ort pos2)
 
     while (tmp2!=NULL)
     { 
-        if(4*(tmp2->location.x-b+tmp2->location.y)*(tmp2->location.x-b+tmp2->location.y)-4*(k*k+1)*(tmp2->location.x*tmp2->location.x+(b-tmp2->location.y)*(b-tmp2->location.y)+tmp2->range*tmp2->range)>0&&tmp2->barrier_ID!=current_target_ID)
+        if(4*(tmp2->location.x-b+tmp2->location.y)*(tmp2->location.x-b+tmp2->location.y)-4*(k*k+1)*(tmp2->location.x*tmp2->location.x+(b-tmp2->location.y)*(b-tmp2->location.y)+tmp2->range*tmp2->range)>0 //????
+            &&tmp2->barrier_ID!=current_target_ID)
         {
             if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<tmp2->range*tmp2->range)
             {
                 return 100-tmp2->barrier_ID;
             }
-            return tmp2->barrier_ID;//如果检测到了移动障碍物则返回障碍物的ID
+            if(pow((pos1.x-pos2.x),2)+pow((pos1.y-pos2.y),2)>=pow((pos1.x-tmp2->location.x),2)+pow((pos1.y-tmp2->location.y),2)&&pow((pos1.x-pos2.x),2)+pow((pos1.y-pos2.y),2)>=pow((pos2.x-tmp2->location.x),2)+pow((pos2.y-tmp2->location.y),2))
+                return tmp2->barrier_ID;//如果检测到了移动障碍物则返回障碍物的ID
         }
         tmp2 = tmp2->next;
     }
 
     
 
+    return 0;
+}
+
+/*********************************************************************************
+  *@  name      : check_barrier_point
+  *@  function  : 检查坐标附近是否有障碍
+  *@  input     : 坐标pos
+  *@  output    : 第一个检测到的障碍ID
+  *@  note      : NULL
+*********************************************************************************/
+int check_barrier_point(Ort pos)
+{
+    barrier *tmp2=barrier_head;
+    if(barrier_head==NULL)return 0;
+    while (tmp2!=NULL)
+    {         
+        if(((pos.x-tmp2->location.x)*(pos.x-tmp2->location.x)+(pos.y-tmp2->location.y)*(pos.y-tmp2->location.y))<(tmp2->range+0.35)*(tmp2->range+0.35))
+        {
+            return tmp2->barrier_ID;
+        }
+        tmp2 = tmp2->next;
+    }
     return 0;
 }
 
@@ -992,97 +1017,79 @@ Ort coordinate_transform(Ort relative_pos,Ort target_pos)
 }
 
 /*********************************************************************************
-  *@  name      : evaluate_approach_pos
+  *@  name      : evaluate_place_pos
   *@  function  : 
   *@  input     : 
   *@  output    : 
   *@  note      : NULL
 *********************************************************************************/
-Ort evaluate_approach_pos(int target_ID)
+Ort evaluate_place_pos(int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location;
     float temp;
     if(target_ID==1)
     {
         temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
-
-//        if(temp>=-22.5f&&temp<22.5f)
-//        {
-//            target.x=target.x;
-//            target.y=target.y-1.25f;
-//            target.z=0;
-//        }
-//        else if(temp>=22.5f&&temp<67.5f)
-//        {
-//            target.x=target.x+0.8f;
-//            target.y=target.y-0.8f;
-//            target.z=45;
-//        }
-//        else if(temp>=67.5f&&temp<112.5f)
-//        {
-//            target.x=target.x+1.25f;
-//            target.y=target.y;
-//            target.z=90;
-//        }
-//        else if(temp>=112.5f&&temp<157.5f)
-//        {
-//            target.x=target.x+0.8f;
-//            target.y=target.y+0.8f;
-//            target.z=135;
-//        }
-//        else if(temp>=-157.5f&&temp<-112.5f)
-//        {
-//            target.x=target.x-0.8f;
-//            target.y=target.y+0.8f;
-//            target.z=-135;
-//        }
-//        else if(temp>=-112.5f&&temp<-67.5f)
-//        {
-//            target.x=target.x-1.25f;
-//            target.y=target.y;
-//            target.z=-90;
-//        }
-//        else if(temp>=-67.5f&&temp<-22.5f)
-//        {
-//            target.x=target.x-0.8f;
-//            target.y=target.y-0.8f;
-//            target.z=-45;
-//        }
-//        else
-//        {
-//            target.x=target.x;
-//            target.y=target.y+1.25f;
-//            target.z=179.9f;
-//        }
-//    }
-
         if(temp>=0&&temp<90)
         {
-            target.x=target.x+0.8f;
-            target.y=target.y-0.8f;
+            target.x=target.x+dist;
+            target.y=target.y-dist;
             target.z=45;
         }
         else if(temp>=90&&temp<180)
         {
-            target.x=target.x+0.8f;
-            target.y=target.y+0.8f;
+            target.x=target.x+dist;
+            target.y=target.y+dist;
             target.z=135;
         }
         else if(temp>=-180&&temp<-90)
         {
-            target.x=target.x-0.8f;
-            target.y=target.y+0.8f;
+            target.x=target.x-dist;
+            target.y=target.y+dist;
             target.z=-135;
         }
         else if(temp>=-90&&temp<0)
         {
-            target.x=target.x-0.8f;
-            target.y=target.y-0.8f;
+            target.x=target.x-dist;
+            target.y=target.y-dist;
             target.z=-45;
         }
     }
     return target;
 }
+
+/*********************************************************************************
+  *@  name      : evaluate_approach_pos
+  *@  function  : 
+  *@  input     : 
+  *@  output    : 
+  *@  note      : NULL
+*********************************************************************************/
+Ort evaluate_approach_pos(int target_ID,float dist)
+{
+    Ort target=find_barrier(target_ID)->location,temp;
+    float current_deg=atan2f(current_pos.y-target.y,current_pos.x-target.x);
+    uint8_t direction=1;
+    float offset_deg=0;
+    current_target_ID=target_ID;
+    temp.x=target.x+dist*arm_sin_f32(direction*offset_deg+current_deg);
+    temp.y=target.y+dist*arm_cos_f32(direction*offset_deg+current_deg);
+    while(check_barrier(current_pos,temp)!=0)
+    {
+        offset_deg+=0.0436332312f;
+        direction=-direction;
+        temp.x=target.x+dist*arm_sin_f32(direction*offset_deg+current_deg);
+        temp.y=target.y+dist*arm_cos_f32(direction*offset_deg+current_deg);
+        if(offset_deg>1.570796326f)
+        {
+            temp.x=-1;
+            return temp;
+        }
+    }
+    temp.z=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
+    return temp;
+}
+
 /*********************************************************************************
   *@  name      : Pid_Run
   *@  function  : PID函数

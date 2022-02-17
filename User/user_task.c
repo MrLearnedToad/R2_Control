@@ -189,7 +189,8 @@ int auto_drive_longdistance(mission_queue *current_task)
         }
     }
     
-    if(((current_task->info.x-current_pos.x)*(current_task->info.x-current_pos.x)+(current_task->info.y-current_pos.y)*(current_task->info.y-current_pos.y))<0.010f)//到达目的地附近
+    if(((current_task->info.x-current_pos.x)*(current_task->info.x-current_pos.x)+(current_task->info.y-current_pos.y)*(current_task->info.y-current_pos.y))<0.010f||
+        (Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)//到达目的地附近
     {
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
@@ -342,6 +343,7 @@ void pick_up(uint8_t pos)
     if(pos==forward||pos==backward)
     {
         set_flags[grab_status]=stop;
+        set_flags[switcher_status]=stop;
         info.x=tower_bottom2;
         add_mission(GRABPOSSET,set_flags,1,&info);
         set_flags[grab_status]=either;
@@ -350,6 +352,7 @@ void pick_up(uint8_t pos)
     else
     {
         set_flags[grab_status]=stop;
+        set_flags[switcher_status]=stop;
         info.x=tower_bottom;
         add_mission(GRABPOSSET,set_flags,1,&info);
         set_flags[grab_status]=either;
@@ -498,7 +501,7 @@ int auto_place(mission_queue *current_task)
             flags[auto_drive_status]=stop;
     }
     target_pos=find_barrier(1)->location;
-    stop_pos=evaluate_approach_pos(1);
+    stop_pos=evaluate_place_pos(1,0.8);
     if(flags[auto_drive_status]==stop&&flag_running==1)
     { 
         dZ=stop_pos.z;
@@ -534,6 +537,7 @@ int auto_place(mission_queue *current_task)
     }
     if(flags[auto_drive_status]==moving_complete3)
     {
+        remove_barrier(block_num);
         pos_reset=1;
         current_task->flag_finish=1;
         block_num++;
