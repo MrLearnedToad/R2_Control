@@ -81,6 +81,10 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define switcher_status 6
 #define auto_drive_status 7
 #define lock_mode_status 8
+#define regulator_pos 9
+#define regulator_status 10
+#define place_last_block_air_cylinder_pos 11
+#define place_last_block_air_cylinder_status 12
 //操作状态宏定义
 #define automode 1
 #define manualmode 0
@@ -119,9 +123,12 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define AUTOPICKUP 6
 #define AUTOPLACE 7
 #define AUTODRIVELONGDISTANCE 8
+#define POSREGULATORSET 9
+#define PLACELASTAIRCYLINDERPOSSET 10
+#define AUTOTURN 11
 
 #define either 114
-#define total_flags 9 //定义标志位总数量
+#define total_flags 13 //定义标志位总数量
 /*Private Typedef*/
 typedef struct Ort
 {
@@ -135,6 +142,7 @@ typedef struct barrier
     Ort location;
     double range;
     int barrier_ID;
+    int last_update_time;
     struct barrier *next;
 }barrier;
 
@@ -158,6 +166,7 @@ typedef struct mission_queue
 
 /*Private variables*/
 extern int (*autodirveshortdistance)(mission_queue*);
+extern int (*autoturn)(mission_queue *current_task);
 extern int (*autodrivelongdistance)(mission_queue*);
 extern int (*grabposset)(mission_queue*);
 extern int (*hookgrasp)(mission_queue*);
@@ -166,6 +175,8 @@ extern int (*switcherdirectionset)(mission_queue*);
 extern int (*catapultactivate)(mission_queue*);
 extern int (*autopickup)(mission_queue *current_task);
 extern int (*autoplace)(mission_queue *current_task);
+extern int (*posregulatorset)(mission_queue *current_task);
+extern int (*placelastblockaircylinderposset)(mission_queue *current_task);
 
 extern uint8_t flags[20];
 extern float dX;
@@ -196,8 +207,11 @@ int switcher_direction_set(mission_queue *current_task);
 int catapult_activate(mission_queue *current_task);
 int auto_pick_up(mission_queue *current_task);
 int auto_place(mission_queue *current_task);
+int pos_regulator_set(mission_queue *current_task);
+int place_last_block_air_cylinder_pos_set(mission_queue *current_task);
+int auto_turn(mission_queue *current_task);
 /*Advanced Private Function Prototypes*/
-void pick_up(uint8_t pos);
+void pick_up(uint8_t pos,uint8_t mode);
 void place_block(uint8_t tower_num);
 /*Disposable Private Function Prototypes*/
 

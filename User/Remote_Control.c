@@ -26,10 +26,16 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 		   //gyro.z= *(float*)Yaw;
 			gyro.sum_z += gyro.z - gyro.last_z;
             gyro.z=-gyro.z;
-//			while(gyro.z >180){gyro.z-=180;}
-//			while(gyro.z <-180){gyro.z+=180;}
+
             if(flag_init==0)
             {
+                while(fabs(gyro.z)>180)
+                {
+                    if(gyro.z>0)
+                        gyro.z-=360.0f;
+                    else
+                        gyro.z+=360.0f;
+                }
                 dZ=-gyro.z;
                 flag_init=1;
             }

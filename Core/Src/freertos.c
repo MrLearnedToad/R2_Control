@@ -31,6 +31,7 @@
 #include "nrf.h"
 #include "math.h"
 #include "fdcan_bsp.h"
+#include "move.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,6 +59,8 @@ uint8_t task_reset=0;
 uint8_t block_num=0;//计数器
 uint8_t backup_block_num=0;//备份计数器
 mission_queue *running_task;
+extern Ort debug;
+uint8_t get_block_flag=0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -176,7 +179,7 @@ void StartDefaultTask(void *argument)
                   task_temp->handle=task_handle_temp;
                   if(task_temp->taskname==autodrivelongdistance)
                   {
-                      xTaskCreate(task_handler,"abab",14400,(void*)task_temp,(osPriority_t) osPriorityNormal,task_handle_temp);
+                      xTaskCreate(task_handler,"abab",16000,(void*)task_temp,(osPriority_t) osPriorityAboveNormal,task_handle_temp);
                   }
                   else
                       xTaskCreate(task_handler,"abab",0x100,(void*)task_temp,(osPriority_t) osPriorityNormal,task_handle_temp);
@@ -223,6 +226,7 @@ void RobotTask(void *argument)
     uint8_t set_flags[10]={either};
     uint8_t last_key_status[25]={0};
     Ort info={.x=0,.y=0,.z=0};
+    barrier *target;
   /* Infinite loop */
   for(;;)
   {
@@ -235,9 +239,12 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
       {
-          info.x=2;
-          info.y=4;
-          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
+          info=evaluate_approach_pos(1,1.5);
+          if(info.x>0)
+          {
+              add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
+              //dZ=info.z;
+          }
           last_key_status[1]=1;
       }
       else if(Read_Button(2)==1&&last_key_status[2]==0)
@@ -261,7 +268,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(5)==1&&last_key_status[5]==0)
       {
-          pick_up(down);
+          pick_up(down,manualmode);
           last_key_status[5]=1;
       }
       else if(Read_Button(6)==1&&last_key_status[6]==0)
@@ -295,6 +302,7 @@ void RobotTask(void *argument)
       else if(Read_Button(12)==1&&last_key_status[12]==0&&flags[lock_mode_status]==stop)
       {
           info.x=block_num;
+          get_block_flag=1;
           add_mission(AUTOPICKUP,set_flags,0,&info);
           last_key_status[12]=1;
       }
@@ -305,7 +313,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(16)==1&&last_key_status[16]==0)
       {
-          save_status();
+          get_block_flag=0;
           last_key_status[16]=1;
       }
       else if(Read_Button(17)==1&&last_key_status[17]==0)
@@ -343,6 +351,18 @@ void RobotTask(void *argument)
           }
       }
       task_reset=Read_Button(14);
+      
+      target=find_barrier(block_num);
+      debug.x=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f);
+      debug.y=fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
+      if(fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&get_block_flag==0&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)
+      {
+          if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f)
+          {
+            pick_up(target->location.z,manualmode);
+            get_block_flag=1;
+          }
+      }
     osDelay(10);
   }
   /* USER CODE END RobotTask */
@@ -367,7 +387,7 @@ void manual_move(void *argument)
       {
         flags[0]=manualmode;
         static int rocker[4]={0};
-        if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100&&(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))<=190*190)
+        if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100&&abs(Read_Rocker(1))<=190&&abs(Read_Rocker(0))<=190)
         {
             rocker[0]=Read_Rocker(0);
             rocker[1]=Read_Rocker(1);
@@ -377,7 +397,7 @@ void manual_move(void *argument)
             rocker[0]=0;
             rocker[1]=0;
         }
-        if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))<=190*190)
+        if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&abs(Read_Rocker(2))<=190&&abs(Read_Rocker(3))<=190)
         {
             rocker[2]=Read_Rocker(2);
             rocker[3]=Read_Rocker(3);
@@ -452,6 +472,14 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
         }
         case 8:{
             temp->taskname=autodrivelongdistance;
+            break;
+        }
+        case 9:{
+            temp->taskname=posregulatorset;
+            break;
+        }
+        case 10:{
+            temp->taskname=placelastblockaircylinderposset;
         }
     }   
     temp->flag_necessary=flag_nessary;//决定是否为关键任务（不可跳过）

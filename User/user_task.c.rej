@@ -1,0 +1,9 @@
+diff a/User/user_task.c b/User/user_task.c	(rejected hunks)
+@@ -84,6 +84,7 @@
+     if(flag_running==0)//��ʼ�𲽲���
+     {
+         flag_running=1;
++        flags[drivemode]=automode;
+         check_point_head=static_path_planning(current_pos,current_task->info);
+         pre_plan(check_point_head->pos);   
+         global_clock=0;

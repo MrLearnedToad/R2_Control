@@ -266,6 +266,7 @@ void add_barrier(Ort pos,double range,int barrier_id)
     tmp->location.y=pos.y;
     tmp->location.z=pos.z;
     tmp->range=range;
+    tmp->last_update_time=0;
     tmp->next = NULL;
     return;
 }
@@ -291,6 +292,7 @@ void update_barrier(int barrier_ID,Ort pos,double range)
             tmp->location.y=pos.y;
             tmp->location.z=pos.z;
             tmp->range=range;
+            tmp->last_update_time=0;
             find_flag=1;
         }
         tmp=tmp->next;
@@ -355,6 +357,37 @@ void remove_barrier(int barrier_ID)
         }
     }
     return;
+}
+
+/*********************************************************************************
+  *@  name      : check_dead_barrier
+  *@  function  : 检查长期未更新的可变障碍
+  *@  input     : NULL
+  *@  output    : NULL
+  *@  note      : NULL
+*********************************************************************************/
+void check_dead_barrier(void)
+{
+    barrier *tmp=barrier_head,*tmp2;
+    while(tmp!=NULL)
+    {
+        if(tmp->last_update_time>4000&&tmp->barrier_ID!=1)
+        {
+            tmp2=tmp->next;
+            remove_barrier(tmp->barrier_ID);
+            tmp=tmp2;
+            continue;
+        }
+        if(tmp->barrier_ID<block_num&&tmp->barrier_ID!=1)
+        {
+            tmp2=tmp->next;
+            remove_barrier(tmp->barrier_ID);
+            tmp=tmp2;
+            continue;
+        }
+        tmp->last_update_time++;
+        tmp=tmp->next;
+    }
 }
 
 /*********************************************************************************
@@ -423,14 +456,14 @@ int check_barrier(Ort pos1,Ort pos2)
 
     while (tmp2!=NULL)
     { 
-        if(4*(tmp2->location.x-b+tmp2->location.y)*(tmp2->location.x-b+tmp2->location.y)-4*(k*k+1)*(tmp2->location.x*tmp2->location.x+(b-tmp2->location.y)*(b-tmp2->location.y)+tmp2->range*tmp2->range)>0 //????
+        if(4*pow(tmp2->location.x-b*k+k*tmp2->location.y,2)-4*(k*k+1)*(pow(tmp2->location.x,2)+pow(b-tmp2->location.y,2)-pow(tmp2->range+0.30f,2))>0 //????
             &&tmp2->barrier_ID!=current_target_ID)
         {
-            if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<tmp2->range*tmp2->range)
+            if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<pow(tmp2->range,2))
             {
                 return 100-tmp2->barrier_ID;
             }
-            if(pow((pos1.x-pos2.x),2)+pow((pos1.y-pos2.y),2)>=pow((pos1.x-tmp2->location.x),2)+pow((pos1.y-tmp2->location.y),2)&&pow((pos1.x-pos2.x),2)+pow((pos1.y-pos2.y),2)>=pow((pos2.x-tmp2->location.x),2)+pow((pos2.y-tmp2->location.y),2))
+            if(((tmp2->location.x-pos1.x)*(pos2.x-pos1.x)+(tmp2->location.y-pos1.y)*(pos2.y-pos1.y))>0&&((tmp2->location.x-pos2.x)*(pos1.x-pos2.x)+(tmp2->location.y-pos2.y)*(pos1.y-pos2.y))>0)
                 return tmp2->barrier_ID;//如果检测到了移动障碍物则返回障碍物的ID
         }
         tmp2 = tmp2->next;
@@ -581,7 +614,10 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
     while (tmp!=NULL)//导入可变障碍到地图中，标记障碍为“2”
     {
         if(tmp->barrier_ID==current_target_ID)//当前目标豁免
+        {   
+            tmp=tmp->next;
             continue;
+        }
         barrier_x=tmp->location.x*10;
         barrier_y=tmp->location.y*10;
         barrier_range=tmp->range*10;
@@ -756,7 +792,7 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
     for (int i = result_len-1; i > 0; )
     {
         j=i-1;
-        while ((R2<0.01&&j>0&&i-j+1<35)||(i-j+1<8))//设定最大偏差，最大，最小长度
+        while ((R2<0.01&&j>0&&i-j+1<35&&j>6)||(i-j+1<8&&j>0))//设定最大偏差，最大，最小长度
         {
             if((result[i][0]-result[j][0])!=0)
             {
@@ -1069,24 +1105,26 @@ Ort evaluate_approach_pos(int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location,temp;
     float current_deg=atan2f(current_pos.y-target.y,current_pos.x-target.x);
-    uint8_t direction=1;
+    int direction=1;
     float offset_deg=0;
     current_target_ID=target_ID;
-    temp.x=target.x+dist*arm_sin_f32(direction*offset_deg+current_deg);
-    temp.y=target.y+dist*arm_cos_f32(direction*offset_deg+current_deg);
-    while(check_barrier(current_pos,temp)!=0)
+    temp.x=target.x+dist*arm_cos_f32(direction*offset_deg+current_deg);
+    temp.y=target.y+dist*arm_sin_f32(direction*offset_deg+current_deg);
+    while(check_barrier(temp,target)!=0)
     {
-        offset_deg+=0.0436332312f;
+        offset_deg+=0.0466332312f;
         direction=-direction;
-        temp.x=target.x+dist*arm_sin_f32(direction*offset_deg+current_deg);
-        temp.y=target.y+dist*arm_cos_f32(direction*offset_deg+current_deg);
+        temp.x=target.x+dist*arm_cos_f32(direction*offset_deg+current_deg);
+        temp.y=target.y+dist*arm_sin_f32(direction*offset_deg+current_deg);
         if(offset_deg>1.570796326f)
         {
             temp.x=-1;
             return temp;
         }
     }
-    temp.z=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
+    temp.z=-atan2f(target.x-temp.x,target.y-temp.y)*180.0f/3.1415926f;
+    
+    current_target_ID=0;
     return temp;
 }
 

@@ -2504,6 +2504,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\move.c</FilePath>
             </File>
+            <File>
+              <FileName>HMI.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\HMI.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

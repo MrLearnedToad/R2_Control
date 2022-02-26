@@ -39,6 +39,7 @@
 #include "move.h"
 #include "Remote_Control.h"
 #include "arm_math.h"
+#include "HMI.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -154,7 +155,9 @@ HAL_TIM_Base_Start_IT(&htim6);
 extern uint8_t block_num;
 block_num=2;
 Ort base={.x=8,.y=6};
-update_barrier(1,base,0.8f);
+update_barrier(1,base,0.7f);
+
+hmi_init(&huart3);
 //    static_path_planning(current_pos,ababaa);
   /* USER CODE END 2 */
 
@@ -357,10 +360,6 @@ void speed_cal(void)
     vy[0]=current_pos.y;
     current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.036f;
     current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.036f;
-    if(current_speed.x<0.05f)
-        current_speed.x=0;
-    if(current_speed.y<0.05f)
-        current_speed.y=0;
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     return;
 }
@@ -386,21 +385,24 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)(temp[1]+200)/1000.0f;
         temp1.z=temp2;
-        temp1=coordinate_transform(temp1,pos_log[1]);
-        update_barrier(cmd,temp1,0.7);
+        temp1=coordinate_transform(temp1,current_pos);
+        if(cmd<=block_num)
+            update_barrier(cmd,temp1,0.5f-(cmd-2)*0.075f);
     }
     else if(cmd==6)
     {
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        temp1.x=(float)(temp[0]+debug.x)/1000.0f;
-        temp1.y=(float)(temp[1]+200+debug.y)/1000.0f;
+        temp1.x=(float)(temp[0])/1000.0f;
+        temp1.y=(float)(temp[1])/1000.0f;
+        temp1.x-=pos_log[0].x-pos_log[5].x;
+        temp1.y-=pos_log[0].y-pos_log[5].y;
         temp1.z=temp2;
         if(fabs(temp1.x)>14||fabs(temp1.y)>14)
             return;
         //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
-        temp1=coordinate_transform(temp1,pos_log[5]);        
+        //temp1=coordinate_transform(temp1,pos_log[5]);        
         update_barrier(1,temp1,0.7);
     }
     else if(cmd==114)
@@ -460,6 +462,8 @@ void DMA_recieve(void)
     update_target_info(Rx_buffer);
     return;
 }
+
+
 /* USER CODE END 4 */
 
 /**
@@ -485,16 +489,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(flags[auto_drive_status]!=moving)
             acceration_limit();
         DMA_recieve();
-        Set_Pos();
-        Elmo_Run();
         
+        
+        
+        check_dead_barrier();
         if(global_clock<1499)
             global_clock++;
         if(flags[auto_drive_status]==moving)
         {
             executive_auto_move();
-            if(global_clock%4==0)
-               // send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+//            if(global_clock%8==0)
+//                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;
         }
         if(flags[auto_drive_status]!=moving&&flags[auto_drive_status]!=stop&&flag_sendlog==0)
@@ -502,12 +507,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-        else if(flags[auto_drive_status]!=stop&&flags[auto_drive_status]!=moving)
+        Set_Pos();
+        Elmo_Run();
+        if(drivemode==manualmode)
         {
             dX=0;
             dY=0;
         }
         send_msg();
+        
 //        send_debug_msg(&huart8,0,0,0);
 //        if(fabs(dX)>2.0f)
 //            send_log(0x03,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);

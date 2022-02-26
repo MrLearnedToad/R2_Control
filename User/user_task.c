@@ -14,10 +14,14 @@ int (*switcherdirectionset)(mission_queue*)=switcher_direction_set;
 int (*catapultactivate)(mission_queue*)=catapult_activate;
 int (*autopickup)(mission_queue *current_task)=auto_pick_up;
 int (*autoplace)(mission_queue *current_task)=auto_place;
+int (*posregulatorset)(mission_queue *current_task)=pos_regulator_set;
+int (*placelastblockaircylinderposset)(mission_queue *current_task)=place_last_block_air_cylinder_pos_set;
+int (*autoturn)(mission_queue *current_task)=auto_turn;
 /*全局变量区*/
 Ort target_pos;
 int current_target_ID=0;
-
+float short_drive_deadzone=0.2f;
+extern uint8_t get_block_flag;
 /*********************************************************************************
   *@  name      : auto_drive_shortdistance
   *@  function  : 机器人短距离移动函数
@@ -44,7 +48,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.004||global_clock>500||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if(distance<0.002||global_clock>500||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
 //        dX=0;
 //        dY=0;
@@ -53,7 +57,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
-    if(distance<0.1&&current_task->info.z>6)
+    if(distance<short_drive_deadzone&&current_task->info.z>6)
     {
 //        dX=0;
 //        dY=0;
@@ -65,7 +69,12 @@ int auto_drive_shortdistance(mission_queue *current_task)
     return 0;
 }
 
-
+int auto_turn(mission_queue *current_task)
+{
+    dZ=current_task->info.z;
+    current_task->flag_finish=1;
+    return 0;
+}
 
 /*********************************************************************************
   *@  name      : auto_drive_longdistance
@@ -195,6 +204,7 @@ int auto_drive_longdistance(mission_queue *current_task)
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
         flag_running=0;
+        flags[drivemode]=manualmode;
     }
     return 0;
 }
@@ -316,13 +326,65 @@ int catapult_activate(mission_queue *current_task)
 }
 
 /*********************************************************************************
+  *@  name      : pos_regulator_set
+  *@  function  : NULL
+  *@  input     : current_task
+  *@  output    : NULL
+  *@  note      : NULL
+*********************************************************************************/
+int pos_regulator_set(mission_queue *current_task)
+{
+    uint8_t can_msg[8]={0};
+    if(flags[regulator_status]==stop)
+    {
+        flags[regulator_status]=moving;
+        flags[regulator_pos]=current_task->info.x;
+        can_msg[4]=current_task->info.x+1;
+        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+    }
+    if(cmd_feedback[4]==1)
+    {
+        current_task->flag_finish=1;
+        flags[regulator_status]=stop;
+        cmd_feedback[4]=0;
+    }
+    return 0;
+}
+
+/*********************************************************************************
+  *@  name      : place_last_block_air_cylinder_pos_set
+  *@  function  : NULL
+  *@  input     : current_task
+  *@  output    : NULL
+  *@  note      : NULL
+*********************************************************************************/
+int place_last_block_air_cylinder_pos_set(mission_queue *current_task)
+{
+    uint8_t can_msg[8]={0};
+    if(flags[place_last_block_air_cylinder_status]==stop)
+    {
+        flags[place_last_block_air_cylinder_status]=moving;
+        flags[place_last_block_air_cylinder_pos]=current_task->info.x;
+        can_msg[5]=current_task->info.x+1;
+        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+    }
+    if(cmd_feedback[5]==1)
+    {
+        current_task->flag_finish=1;
+        flags[place_last_block_air_cylinder_status]=stop;
+        cmd_feedback[5]=0;
+    }
+    return 0;
+}
+
+/*********************************************************************************
   *@  name      : pick_up
   *@  function  : 抓取塔块流程函数
   *@  input     : 塔块朝向
   *@  output    : NULL
   *@  note      : NULL
 *********************************************************************************/
-void pick_up(uint8_t pos)
+void pick_up(uint8_t pos,uint8_t mode)
 {
     
     uint8_t set_flags[20]={either};
@@ -331,12 +393,21 @@ void pick_up(uint8_t pos)
         set_flags[i]=either;
     }
     Ort info={.x=0,.y=0,.z=0};
-    
-    add_mission(HOOKRELEASE,set_flags,1,&info);
+    if(mode==automode)
+        add_mission(HOOKRELEASE,set_flags,1,&info);
         
     set_flags[hook_status]=stop;
-    info.x=pos;
-    add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
+    if(pos==up||pos==down)
+    {
+        if(flags[switcher_pos]!=up&&flags[switcher_pos]!=down)
+            info.x=up;
+    }
+    else
+    {
+        info.x=forward;
+    }
+    if(mode==automode)
+        add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
     info.x=0;
     set_flags[hook_status]=either;
     
@@ -363,7 +434,8 @@ void pick_up(uint8_t pos)
     set_flags[hook_status]=stop;
     set_flags[grab_status]=stop;
     set_flags[switcher_status]=stop;
-    set_flags[auto_drive_status]=moving_complete1;
+    if(mode==automode)
+        set_flags[auto_drive_status]=moving_partially_complete1;
     add_mission(HOOKGRASP,set_flags,1,&info);
     for(int i=0;i<total_flags;i++)
     {
@@ -375,7 +447,8 @@ void pick_up(uint8_t pos)
         set_flags[grab_status]=stop;
         
         set_flags[hook_status]=stop;
-        set_flags[auto_drive_status]=moving_complete1;
+        if(mode==automode)
+            set_flags[auto_drive_status]=moving_partially_complete1;
         info.x=block_num;
         add_mission(GRABPOSSET,set_flags,1,&info);
         for(int i=0;i<total_flags;i++)
@@ -386,8 +459,22 @@ void pick_up(uint8_t pos)
     
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
-        info.x=up;
-        add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
+        if(pos==down)
+        {
+            if(flags[switcher_pos]==up)
+                info.x=down;
+            else
+                info.x=up;
+        }
+        else if(pos==forward)
+        {
+            info.x=up;
+        }
+        else
+        {
+            info.x=down;
+        }
+        add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
         info.x=0;
         set_flags[hook_status]=either;
     }
@@ -412,6 +499,7 @@ int auto_pick_up(mission_queue *current_task)
 {
     static uint8_t flag_running,count=0;
     barrier *target;
+    static uint8_t direction;
     Ort grasp_pos;
     double distance,distance_2_move;
     uint8_t set_flags[20];
@@ -438,6 +526,7 @@ int auto_pick_up(mission_queue *current_task)
             count=0;
             return 0;
         }
+        
         target_pos.x=target->location.x;
         target_pos.y=target->location.y;
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
@@ -449,23 +538,34 @@ int auto_pick_up(mission_queue *current_task)
         
     if(flags[auto_drive_status]==stop&&count==1)
     {
+        short_drive_deadzone=0.2f;
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.56f;
+        distance_2_move=distance-0.43f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
-        grasp_pos.z=moving_complete1;
+        grasp_pos.z=moving_partially_complete1;
         flags[auto_drive_status]=moving;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&grasp_pos);
-        pick_up(target->location.z);
+        direction=(uint8_t)target->location.z;
+        pick_up(target->location.z,automode);
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
         __HAL_UART_CLEAR_OREFLAG(&huart8);
     }
-    if(flags[auto_drive_status]==moving_complete1)
+    if(flags[auto_drive_status]==moving_partially_complete1&&flags[hook_status]==stop)
     {
+        remove_barrier(block_num);
+        if(direction==up||direction==down)
+        {
+            grasp_pos=evaluate_approach_pos(1,1.5f);
+            if(grasp_pos.x>0)
+            {
+              add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&grasp_pos);
+            }
+        }
         
         flags[lock_mode_status]=stop;
         current_task->flag_finish=1;
@@ -504,6 +604,7 @@ int auto_place(mission_queue *current_task)
     stop_pos=evaluate_place_pos(1,0.8);
     if(flags[auto_drive_status]==stop&&flag_running==1)
     { 
+        short_drive_deadzone=0.1f;
         dZ=stop_pos.z;
         flag_running=2;
         stop_pos.z=moving_partially_complete1;
@@ -537,6 +638,7 @@ int auto_place(mission_queue *current_task)
     }
     if(flags[auto_drive_status]==moving_complete3)
     {
+        get_block_flag=0;
         remove_barrier(block_num);
         pos_reset=1;
         current_task->flag_finish=1;

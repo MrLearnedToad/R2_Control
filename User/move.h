@@ -99,10 +99,10 @@ typedef struct heap_node
 
 //宏定义区
 #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
-#define deadzone 0.4//路径点死区大小
+#define deadzone 0.45//路径点死区大小
 #define acceleration_limit_increase 1.2
-#define acceleration_limit_decrease 1.1
-#define acceleration_limit_turn 1
+#define acceleration_limit_decrease 1.3
+#define acceleration_limit_turn 1.4
 #define speed_limit 1.3
 #define control_period 0.01
 
@@ -128,6 +128,7 @@ void pre_plan(Ort pos_Goal);
 void add_barrier(Ort pos,double range,int barrier_id);
 void update_barrier(int barrier_ID,Ort pos,double range);
 void remove_barrier(int barrier_ID);
+void check_dead_barrier(void);
 int check_barrier(Ort pos1,Ort pos2);
 check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal);
 check_point* dynamic_path_planning(Ort pos1,Ort pos2,int barrier_id);
@@ -140,5 +141,5 @@ double cal_average(uint8_t a[5000][2],int head,int end);
 Ort coordinate_transform(Ort realtive_pos,Ort target_pos);
 Ort evaluate_place_pos(int target_ID,float dist);
 int check_barrier_point(Ort pos);
-
+Ort evaluate_approach_pos(int target_ID,float dist);
 #endif
