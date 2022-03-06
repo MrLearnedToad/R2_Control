@@ -48,7 +48,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.002||global_clock>500||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if(distance<0.004||global_clock>500||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
 //        dX=0;
 //        dY=0;
@@ -401,13 +401,15 @@ void pick_up(uint8_t pos,uint8_t mode)
     {
         if(flags[switcher_pos]!=up&&flags[switcher_pos]!=down)
             info.x=up;
+        else
+            info.x=flags[switcher_pos];
     }
     else
     {
         info.x=forward;
-    }
-    if(mode==automode)
         add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
+    }
+        
     info.x=0;
     set_flags[hook_status]=either;
     
@@ -538,11 +540,11 @@ int auto_pick_up(mission_queue *current_task)
         
     if(flags[auto_drive_status]==stop&&count==1)
     {
-        short_drive_deadzone=0.2f;
+        short_drive_deadzone=0.1f;
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.43f;
+        distance_2_move=distance-0.50f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
         grasp_pos.z=moving_partially_complete1;
@@ -558,14 +560,14 @@ int auto_pick_up(mission_queue *current_task)
     if(flags[auto_drive_status]==moving_partially_complete1&&flags[hook_status]==stop)
     {
         remove_barrier(block_num);
-        if(direction==up||direction==down)
-        {
-            grasp_pos=evaluate_approach_pos(1,1.5f);
-            if(grasp_pos.x>0)
-            {
-              add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&grasp_pos);
-            }
-        }
+//        if(direction==up||direction==down)
+//        {
+//            grasp_pos=evaluate_approach_pos(1,1.5f);
+//            if(grasp_pos.x>0)
+//            {
+//              add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&grasp_pos);
+//            }
+//        }
         
         flags[lock_mode_status]=stop;
         current_task->flag_finish=1;
@@ -604,7 +606,7 @@ int auto_place(mission_queue *current_task)
     stop_pos=evaluate_place_pos(1,0.8);
     if(flags[auto_drive_status]==stop&&flag_running==1)
     { 
-        short_drive_deadzone=0.1f;
+        short_drive_deadzone=0.12f;
         dZ=stop_pos.z;
         flag_running=2;
         stop_pos.z=moving_partially_complete1;

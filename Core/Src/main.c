@@ -99,6 +99,7 @@ void DMA_recieve(void);
 void executive_auto_move(void);
 void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_HandleTypeDef *uart);
 void send_msg(void);
+void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -155,6 +156,11 @@ Elmo_Pre_PVM(0);
 HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
+for(int i=0;i<10;i++)
+{
+    send_init_msg(&huart8,0x02);
+    HAL_Delay(10);
+}
 HAL_TIM_Base_Start_IT(&htim6);
 extern uint8_t block_num;
 //float 
@@ -261,10 +267,10 @@ void acceration_limit()
     current_acceration=sqrtf((dX-lastdx)*(dX-lastdx)+(dY-lastdy)*(dY-lastdy));
     if((lastdx*lastdx+lastdy*lastdy)>0.16f)
     {
-    if(current_acceration>0.02f)
+    if(current_acceration>0.04f)
     {
-        dX=(dX-lastdx)*0.02f+lastdx;
-        dY=(dY-lastdy)*0.02f+lastdy;
+        dX=(dX-lastdx)*0.04f+lastdx;
+        dY=(dY-lastdy)*0.04f+lastdy;
     }
     }
         lastdx=dX;
@@ -293,7 +299,7 @@ void send_msg(void)
     return;
 }
 
-void send_debug_msg(UART_HandleTypeDef *uart,float data1,float data2,uint8_t ID)
+void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID)
 {
     uint8_t msg_buffer[16];
     msg_buffer[0]='?';
@@ -307,8 +313,6 @@ void send_debug_msg(UART_HandleTypeDef *uart,float data1,float data2,uint8_t ID)
 //    az=(int)(gyro.z*1000);
 //    memcpy(msg_buffer+11,&az,4);
     msg_buffer[15]='!';
-    for(int i=0;i<15;i++)
-        msg_buffer[i]=0x13;
     HAL_UART_Transmit(uart,msg_buffer,16,200);
     return;
 }
@@ -339,7 +343,7 @@ void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_Ha
 void speed_cal(void)
 {
 //    static float lastx[2]={0},lasty[2]={0};
-    static int last_gyrox=0,last_gyroy=0;
+//    static int last_gyrox=0,last_gyroy=0;
     
     
 //    current_acceration.x=(current_speed.x-lastsx)/0.001f;
@@ -354,8 +358,8 @@ void speed_cal(void)
     current_pos.x=(float)gyro.x/1000.0f+correction_value.x;
     current_pos.y=(float)gyro.y/1000.0f+correction_value.y;
     current_pos.z=gyro.z+correction_value.z;
-    last_gyrox=gyro.x;
-    last_gyroy=gyro.y;
+//    last_gyrox=gyro.x;
+//    last_gyroy=gyro.y;
     while(fabs(current_pos.z)>180)
     {
         if(current_pos.z>0)
@@ -398,7 +402,7 @@ void update_target_info(uint8_t *data)
         temp1.y=(float)(temp[1]+200)/1000.0f;
         temp1.z=temp2;
         temp1=coordinate_transform(temp1,current_pos);
-        if(cmd<=block_num)
+        if(cmd>=block_num)
             update_barrier(cmd,temp1,0.5f-(cmd-2)*0.075f);
     }
     else if(cmd==6)
@@ -428,8 +432,8 @@ void update_target_info(uint8_t *data)
         if(pos_reset==1)
         {
             pos_reset=0;
-            correction_value.x=temp1.x-pos_log[5].x;
-            correction_value.y=temp1.y-pos_log[5].y;
+            correction_value.x=temp1.x-pos_log[5].x+6.0f;
+            correction_value.y=temp1.y-pos_log[5].y+0.41f;
             //correction_value.z=temp1.z-current_pos.z;
         }
     }
