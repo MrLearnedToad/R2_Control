@@ -185,6 +185,7 @@ extern float dZ;
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern UART_HandleTypeDef huart8;
+extern UART_HandleTypeDef huart3;
 extern uint8_t cmd_feedback[8];
 extern Ort target_relative_pos;
 extern Ort current_pos;

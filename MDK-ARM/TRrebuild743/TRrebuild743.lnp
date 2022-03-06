@@ -12,6 +12,7 @@
 "trrebuild743\stm32h7xx_it.o"
 "trrebuild743\stm32h7xx_hal_msp.o"
 "trrebuild743\stm32h7xx_hal_timebase_tim.o"
+"trrebuild743\tinn.o"
 "trrebuild743\system_stm32h7xx.o"
 "trrebuild743\stm32h7xx_hal_cortex.o"
 "trrebuild743\stm32h7xx_hal_rcc.o"

@@ -67,3 +67,4 @@ trrebuild743\resolve.o: ../Core/Inc/spi.h
 trrebuild743\resolve.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\resolve.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
 trrebuild743\resolve.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h
+trrebuild743\resolve.o: ..\User\Tinn.h

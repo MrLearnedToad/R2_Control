@@ -40,6 +40,7 @@
 #include "Remote_Control.h"
 #include "arm_math.h"
 #include "HMI.h"
+#include "Tinn.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -73,15 +74,18 @@ uint8_t huart3_rxbuffer[16]={0};
 Ort current_acceration;
 Ort current_speed;
 Ort current_pos={.x=6,.y=0.41f};
-Ort correction_value;
+Ort correction_value={.x=6,.y=0.41f};
 uint8_t cmd_feedback[8];
 Ort pos_buffer[9];
+Ort speed_buffer[6];
 Ort target_relative_pos;
 int global_clock;
 int speed_clock;
 float vx[10],vy[10],ababa;
 Ort pos_log[10];
 uint8_t pos_reset=0;
+Tinn velocity_nn_x,velocity_nn_y;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -153,12 +157,21 @@ HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
 HAL_TIM_Base_Start_IT(&htim6);
 extern uint8_t block_num;
+//float 
+//tnn_buffer1_1[12]={-0.416729,-0.337441,0.190049,0.40271,0.229096,0.463848,0.240863,0.377448,-0.0322686,0.223719,0.123895,0.563927},
+//tnn_buffer1_2[2]={-0.257041,0.419105},
+//tnn_buffer2_1[12]={0.13623,-0.440966,0.308962,0.0377088,0.434576,0.490001,0.0025015,0.445981,-0.0441973,0.395057,0.0753355,0.442013},
+//tnn_buffer2_2[2]={0.326608,-0.0178685};
+
 block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
-
+//velocity_nn_x=xtload(2,4,1,tnn_buffer2_1,tnn_buffer2_2);
+//velocity_nn_y=xtload(2,4,1,tnn_buffer2_1,tnn_buffer2_2);
+//velocity_nn_x=xtbuild(2,5,1);
+//velocity_nn_y=xtbuild(2,5,1);
 hmi_init(&huart3);
-//    static_path_planning(current_pos,ababaa);
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -336,10 +349,10 @@ void speed_cal(void)
 //    lastsx=current_speed.x;
 //    lastsy=current_speed.y;
     
-    current_pos.x=current_pos.x+((float)(gyro.x-last_gyrox)/1000.0f)*arm_cos_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(-arm_sin_f32(-correction_value.z*3.1415926f/180.0f));
-    current_pos.y=current_pos.y+((float)(gyro.x-last_gyrox)/1000.0f)*arm_sin_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(arm_cos_f32(-correction_value.z*3.1415926f/180.0f));
-//    current_pos.x=(float)gyro.x/1000.0f;
-//    current_pos.y=(float)gyro.y/1000.0f;
+//    current_pos.x=current_pos.x+((float)(gyro.x-last_gyrox)/1000.0f)*arm_cos_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(-arm_sin_f32(-correction_value.z*3.1415926f/180.0f));
+//    current_pos.y=current_pos.y+((float)(gyro.x-last_gyrox)/1000.0f)*arm_sin_f32(-correction_value.z*3.1415926f/180.0f)+((float)(gyro.y-last_gyroy)/1000.0f)*(arm_cos_f32(-correction_value.z*3.1415926f/180.0f));
+    current_pos.x=(float)gyro.x/1000.0f+correction_value.x;
+    current_pos.y=(float)gyro.y/1000.0f+correction_value.y;
     current_pos.z=gyro.z+correction_value.z;
     last_gyrox=gyro.x;
     last_gyroy=gyro.y;
@@ -370,8 +383,7 @@ void update_target_info(uint8_t *data)
     Ort temp1;
     uint8_t temp2,cmd;
     cmd=data[2];
-    
-    
+        
     if(cmd>0&&cmd<6)
     {
         memcpy(temp,data+3,4);
@@ -463,7 +475,22 @@ void DMA_recieve(void)
     return;
 }
 
-
+float *Fifo_update(float num1,float num2,float num3,float num4,int retnum)
+{
+    static float buffer[10][4];
+    for(int i=8;i>=0;i--)
+    {
+        buffer[i+1][0]=buffer[i][0];
+        buffer[i+1][1]=buffer[i][1];
+        buffer[i+1][2]=buffer[i][2];
+        buffer[i+1][3]=buffer[i][3];
+    }
+    buffer[0][0]=num1;
+    buffer[0][1]=num2;
+    buffer[0][2]=num1;
+    buffer[0][3]=num1;
+    return buffer[retnum];
+}
 /* USER CODE END 4 */
 
 /**
@@ -486,11 +513,22 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim->Instance == TIM6)	/**/
 	{
 		static uint8_t ID=2,flag_sendlog=0;
+//        float *temp;
+//        float nninput[2];
         if(flags[auto_drive_status]!=moving)
             acceration_limit();
         DMA_recieve();
-        
-        
+        //训练X，Y轴速度控制神经网络
+//        if(Read_Button(25)==1)
+//        {
+//            temp=Fifo_update(dX,dY,current_speed.x,current_speed.y,6);
+//            nninput[0]=temp[0];
+//            nninput[1]=temp[2];
+//            xttrain(velocity_nn_x,nninput,&current_speed.x,nninput,0.03);
+//            nninput[0]=temp[1];
+//            nninput[1]=temp[3];
+//            xttrain(velocity_nn_y,nninput,&current_speed.y,nninput,0.03);
+//        }
         
         check_dead_barrier();
         if(global_clock<1499)
@@ -509,6 +547,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         Set_Pos();
         Elmo_Run();
+        //send_log(0x01,current_speed.x,(vx[0]-vx[1])/0.004,current_speed.y,(vy[0]-vy[1])/0.004,&huart3);
         if(drivemode==manualmode)
         {
             dX=0;
@@ -519,7 +558,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //        send_debug_msg(&huart8,0,0,0);
 //        if(fabs(dX)>2.0f)
 //            send_log(0x03,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);
-        //send_log(0x01,current_speed.y,vy[0],current_speed.x,vx[0],&huart3);
+        
         
 	}
 	else if(htim->Instance == TIM7)

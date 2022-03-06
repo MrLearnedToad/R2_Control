@@ -32,6 +32,7 @@
 #include "math.h"
 #include "fdcan_bsp.h"
 #include "move.h"
+#include "Tinn.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,6 +62,7 @@ uint8_t backup_block_num=0;//备份计数器
 mission_queue *running_task;
 extern Ort debug;
 uint8_t get_block_flag=0;
+extern Tinn velocity_nn_x,velocity_nn_y;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -226,6 +228,7 @@ void RobotTask(void *argument)
     uint8_t set_flags[10]={either};
     uint8_t last_key_status[25]={0};
     Ort info={.x=0,.y=0,.z=0};
+    
     barrier *target;
   /* Infinite loop */
   for(;;)
@@ -333,6 +336,12 @@ void RobotTask(void *argument)
               block_num--;
           last_key_status[19]=1;
       }
+      else if(Read_Button(20)==1&&last_key_status[20]==0)
+      {
+          xtsave(velocity_nn_x,&huart3);
+          xtsave(velocity_nn_y,&huart3);
+          last_key_status[20]=1;
+      }
       else if(Read_Button(21)==1)//全局重启
       {
           __disable_irq();//关闭总中断
@@ -351,16 +360,19 @@ void RobotTask(void *argument)
           }
       }
       task_reset=Read_Button(14);
-      
+            
       target=find_barrier(block_num);
-      debug.x=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f);
+      debug.x=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5);
       debug.y=fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
-      if(fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&get_block_flag==0&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)
+      if(target!=NULL)
       {
-          if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f)
+          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
           {
-            pick_up(target->location.z,manualmode);
-            get_block_flag=1;
+              if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5));
+              {
+                pick_up(target->location.z,manualmode);
+                get_block_flag=1;
+              }
           }
       }
     osDelay(10);

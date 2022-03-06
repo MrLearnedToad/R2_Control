@@ -65,3 +65,4 @@ trrebuild743\freertos.o: ..\User\nrf.h
 trrebuild743\freertos.o: ../Core/Inc/spi.h
 trrebuild743\freertos.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\freertos.o: ..\User\move.h
+trrebuild743\freertos.o: ..\User\Tinn.h

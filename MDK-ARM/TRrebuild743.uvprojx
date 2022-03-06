@@ -453,6 +453,11 @@
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32h7xx_hal_timebase_tim.c</FilePath>
             </File>
+            <File>
+              <FileName>Tinn.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Tinn.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

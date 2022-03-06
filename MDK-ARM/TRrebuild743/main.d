@@ -73,3 +73,4 @@ trrebuild743\main.o: ..\User\Remote_Control.h
 trrebuild743\main.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
 trrebuild743\main.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h
 trrebuild743\main.o: ..\User\HMI.h
+trrebuild743\main.o: ..\User\Tinn.h
