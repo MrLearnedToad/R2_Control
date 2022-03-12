@@ -120,6 +120,8 @@ extern int turn_end_time;
 extern double dT;
 extern Ort output;
 extern int flag_center_access;
+extern Ort planned_path[3];
+extern Ort final_point;
 
 //函数声明区
 void move_execute(Ort current__final_goal);
@@ -141,4 +143,5 @@ Ort coordinate_transform(Ort realtive_pos,Ort target_pos);
 Ort evaluate_place_pos(int target_ID,float dist);
 int check_barrier_point(Ort pos);
 Ort evaluate_approach_pos(int target_ID,float dist);
+void update_check_point(Ort point,uint8_t id);
 #endif

@@ -392,8 +392,9 @@ void update_target_info(uint8_t *data)
 {
     int temp[3];
     Ort temp1;
-    uint8_t temp2,cmd;
+    uint8_t temp2,cmd,id;
     cmd=data[2];
+    barrier *base;
         
     if(cmd>0&&cmd<6)
     {
@@ -428,26 +429,49 @@ void update_target_info(uint8_t *data)
         //temp1=coordinate_transform(temp1,pos_log[5]);        
         update_barrier(1,temp1,0.7);
     }
-    else if(cmd>=7&&cmd<50)
+    else if(cmd==7)
     {
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
-        memcpy(temp+2,data+11,4);
+        id=data[11];
         temp1.x=(float)(temp[0])/1000.0f;
         temp1.y=(float)(temp[1])/1000.0f;
-        temp1.z=(float)(temp[2])/1000.0f;
-        if(fabs(temp1.x)>14||fabs(temp1.y)>14||temp1.z>2||temp1.z<0)
-            return;
-        temp1.x-=pos_log[0].x-pos_log[5].x;
-        temp1.y-=pos_log[0].y-pos_log[5].y;
         if(fabs(temp1.x)>14||fabs(temp1.y)>14)
-            return;      
-        update_barrier(cmd,temp1,temp1.z+0.3f);
+            return;
+        update_check_point(temp1,id);
     }
-    else if(cmd>=50&&cmd!=114)
+    else if(cmd==8)
     {
-        remove_barrier(cmd-50);
+        base=find_barrier(1);
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        temp1.x=(float)(temp[0])/1000.0f;
+        temp1.y=(float)(temp[1])/1000.0f;
+        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+            return;
+        final_point=temp1;
+        final_point.z=-atan2f(base->location.x-temp1.x,base->location.y-temp1.y)*180.0f/3.1415926f;
     }
+//    else if(cmd>=7&&cmd<50)
+//    {
+//        memcpy(temp,data+3,4);
+//        memcpy(temp+1,data+7,4);
+//        memcpy(temp+2,data+11,4);
+//        temp1.x=(float)(temp[0])/1000.0f;
+//        temp1.y=(float)(temp[1])/1000.0f;
+//        temp1.z=(float)(temp[2])/1000.0f;
+//        if(fabs(temp1.x)>14||fabs(temp1.y)>14||temp1.z>2||temp1.z<0)
+//            return;
+//        temp1.x-=pos_log[0].x-pos_log[5].x;
+//        temp1.y-=pos_log[0].y-pos_log[5].y;
+//        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+//            return;      
+//        update_barrier(cmd,temp1,temp1.z+0.3f);
+//    }
+//    else if(cmd>=50&&cmd!=114)
+//    {
+//        remove_barrier(cmd-50);
+//    }
     else if(cmd==114)
     {
         memcpy(temp,data+3,4);
