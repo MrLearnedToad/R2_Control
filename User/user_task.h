@@ -197,6 +197,7 @@ extern barrier *barrier_head;
 extern uint8_t block_num;
 extern int current_target_ID;
 extern uint8_t pos_reset;
+extern uint8_t thread_lock;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);

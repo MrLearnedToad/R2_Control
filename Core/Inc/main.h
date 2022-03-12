@@ -77,7 +77,6 @@ void Error_Handler(void);
 #define Sensor2_Pin GPIO_PIN_5
 #define Sensor2_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

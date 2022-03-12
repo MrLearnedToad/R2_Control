@@ -14,7 +14,8 @@ int turn_end_time=0;
 double dT=0.01;
 Ort output;
 int flag_center_access=1;
-float speed_st[1500];
+float speed_st[1500]={0};
+
 
 /*********************************************************************************
   *@  name      : pre_plan
@@ -44,6 +45,7 @@ void pre_plan(Ort pos_Goal)
     double path_len;
     Ort direction;
     Ort direction_dV;
+    
     Ort dV;
     path_len=sqrt((pos_Goal.x-current_pos.x)*(pos_Goal.x-current_pos.x)+(pos_Goal.y-current_pos.y)*(pos_Goal.y-current_pos.y));
     direction.x=(pos_Goal.x-current_pos.x)/path_len;
@@ -165,18 +167,18 @@ void pre_plan(Ort pos_Goal)
     else
     {
         tmp=speed;
-        while (speed<maxspeed-0.0001)
+        while (fabs(speed-maxspeed)>0.0001)
         {
             if(j==0) speed_st[j]=speed;
-            if((maxspeed-0.0001)-speed<dT*maxA) 
+            if(fabs((maxspeed-0.0001)-speed)<dT*maxA) 
             {
                 speed=maxspeed;
                 speed_st[j+1]=maxspeed;
             }
             else 
             {
-                speed_st[j+1]=speed_st[j]+maxA*dT;
-                speed+=maxA*dT;
+                speed_st[j+1]=speed_st[j]+maxA*dT*(fabs(maxspeed-speed)/(maxspeed-speed));
+                speed+=maxA*dT*(fabs(maxspeed-speed)/(maxspeed-speed));
             }
             j++;
         }
@@ -250,6 +252,10 @@ void add_barrier(Ort pos,double range,int barrier_id)
     if(barrier_head==NULL)
     {
         barrier_head=(barrier*)malloc(sizeof(barrier));
+        if(barrier_head==NULL)
+        {
+            Error_Handler();
+        }
         tmp=barrier_head;
     }
     else
@@ -259,6 +265,10 @@ void add_barrier(Ort pos,double range,int barrier_id)
             tmp=tmp->next;
         }
         tmp->next=(barrier*)malloc(sizeof(barrier));
+        if(barrier_head==NULL)
+        {
+            Error_Handler();
+        }
         tmp=tmp->next;
     }
     tmp->barrier_ID=barrier_id;
@@ -371,7 +381,14 @@ void check_dead_barrier(void)
     barrier *tmp=barrier_head,*tmp2;
     while(tmp!=NULL)
     {
-        if(tmp->last_update_time>4000&&tmp->barrier_ID!=1)
+        if(tmp->last_update_time>2000&&tmp->barrier_ID!=1&&tmp->barrier_ID<7)
+        {
+            tmp2=tmp->next;
+            remove_barrier(tmp->barrier_ID);
+            tmp=tmp2;
+            continue;
+        }
+        else if(tmp->last_update_time>1000&&tmp->barrier_ID!=1&&tmp->barrier_ID>=7)
         {
             tmp2=tmp->next;
             remove_barrier(tmp->barrier_ID);
@@ -414,7 +431,7 @@ double cal_average(uint8_t a[5000][2],int head,int end)
   *@  output    : 第一个检测到的障碍ID
   *@  note      : 有问题
 *********************************************************************************/
-int check_barrier(Ort pos1,Ort pos2)
+int check_barrier(Ort pos1,Ort pos2,float offset_len)
 {
     barrier *tmp2=barrier_head;
     if(barrier_head==NULL)return 0;
@@ -456,10 +473,10 @@ int check_barrier(Ort pos1,Ort pos2)
 
     while (tmp2!=NULL)
     { 
-        if(4*pow(tmp2->location.x-b*k+k*tmp2->location.y,2)-4*(k*k+1)*(pow(tmp2->location.x,2)+pow(b-tmp2->location.y,2)-pow(tmp2->range+0.30f,2))>0 //????
+        if(4*pow(tmp2->location.x-b*k+k*tmp2->location.y,2)-4*(k*k+1)*(pow(tmp2->location.x,2)+pow(b-tmp2->location.y,2)-pow(tmp2->range+offset_len,2))>0 //????
             &&tmp2->barrier_ID!=current_target_ID)
         {
-            if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<pow(tmp2->range,2))
+            if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<pow(tmp2->range+offset_len,2))
             {
                 return 100-tmp2->barrier_ID;
             }
@@ -574,9 +591,14 @@ heap_node* out_node(heap_node *root[],int len)
 *********************************************************************************/
 check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
 {
-    heap_node *boundary[3000];
-    heap_node *searched_path[6000];
-    uint8_t result[5000][2];
+    if(current__final_goal.x>12||current__final_goal.x<0||current__final_goal.y>12||current__final_goal.y<0)
+    {
+        return NULL;
+    }
+    
+    heap_node *boundary[1000];
+    heap_node *searched_path[3000];
+    uint8_t result[3000][2];
     heap_node *tmp2,*tmp3;
     int boundary_len=0;
     int searched_path_len = 0, result_len = 0;
@@ -621,13 +643,13 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
         barrier_x=tmp->location.x*10;
         barrier_y=tmp->location.y*10;
         barrier_range=tmp->range*10;
-        for (int i = barrier_x-barrier_range*10-3; i <=barrier_x+barrier_range*10+3; i++)
+        for (int i = barrier_x-barrier_range*10-6; i <=barrier_x+barrier_range*10+6; i++)
         {
-            for(int j = barrier_y-barrier_range*10-3; j<= barrier_y+barrier_range*10+3; j++)
+            for(int j = barrier_y-barrier_range*10-6; j<= barrier_y+barrier_range*10+6; j++)
             {
                 if(i<120&&j<120&&i>=0&&j>=0)
                 {
-                    if (((barrier_x-i)*(barrier_x-i)+(barrier_y-j)*(barrier_y-j))<=(barrier_range+3)*(barrier_range+3))
+                    if (((barrier_x-i)*(barrier_x-i)+(barrier_y-j)*(barrier_y-j))<=(barrier_range+6)*(barrier_range+6))
                     {
                         map[i][j]=2;//将障碍标为2
                     }
@@ -637,6 +659,8 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
         tmp=tmp->next;
     }
 
+    
+    
     tmp2 = (heap_node *)malloc(sizeof(heap_node));
     tmp2->cost_current = 0;
     tmp2->last_x = -1;
@@ -647,6 +671,7 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
     map[tmp2->x][tmp2->y] = 4;//标记边界为4
     add_node(boundary, boundary_len, tmp2);//将起点加入到边界，准备开始搜索
     boundary_len++;
+    
     while (boundary_len!=0)//开始搜索
     {
         tmp2 = out_node(boundary, boundary_len);
@@ -654,6 +679,16 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
         boundary_len--;
         searched_path[searched_path_len] = tmp2;
         searched_path_len++;
+        
+        if(searched_path_len==2999||boundary_len>990)//溢出保护
+        {
+            for(int i=0;i<searched_path_len;i++)
+                free(searched_path[i]);
+            for(int i=1;i<boundary_len;i++)
+                free(boundary[i]);
+            return NULL;
+        }
+        
         if (tmp2->x==finalx&&tmp2->y==finaly)
         {
             break;
@@ -818,10 +853,10 @@ check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal)
         i=j;
     }
     tmp4->next=NULL;
-    for (int i = 0; i < searched_path_len; i++)
-    {
+    for(int i=0;i<searched_path_len;i++)
         free(searched_path[i]);
-    }
+    for(int i=1;i<boundary_len;i++)
+        free(boundary[i]);
     return path;
 }
 
@@ -889,7 +924,7 @@ check_point* dynamic_path_planning(Ort pos1,Ort pos2,int barrier_id)
     }
     
     
-    if(check_barrier(pos1,point1)==0)
+    if(check_barrier(pos1,point1,0.5)==0)
     {
         rtn->pos.x = point1.x;
         rtn->pos.y = point1.y;
@@ -929,13 +964,13 @@ void move_execute(Ort current__final_goal)
         if(check_point_head!=NULL)//检测路径点队列是否为空
         {
             #if 1
-            barrier_id=check_barrier(current_pos,check_point_head->pos);//检测当前路径上受否有障碍，返回第一个检测到的障碍的编号
+            barrier_id=check_barrier(current_pos,check_point_head->pos,0.5);//检测当前路径上受否有障碍，返回第一个检测到的障碍的编号
             if (barrier_id!=0&&time_tick>=turn_end_time)//若检测到了障碍，且不在弯道当中，进行一次局部路径规划避障
             {
                 if(barrier_id>50)//如果路径点被障碍物遮挡
                 {
                     barrier_id=100-barrier_id;
-                    barrier_id=check_barrier(current_pos,check_point_head->next->pos);
+                    barrier_id=check_barrier(current_pos,check_point_head->next->pos,0.5f);
                     if(barrier_id<50&&barrier_id!=0)//如果下一个路径点还被遮挡，则重新进行全局路径规划，否则则删除当前目标点，直接尝试前往下一个路径点
                     {
                         new_path=dynamic_path_planning(current_pos,check_point_head->next->pos,barrier_id);
@@ -966,7 +1001,7 @@ void move_execute(Ort current__final_goal)
             while (tmp1->next!=NULL&&time_tick>=turn_end_time)//检测是否可以抄近路,不在弯道当中时，则立刻抄近路
             {
                 tmp1=tmp1->next;
-                barrier_id=check_barrier(current_pos,tmp1->pos);
+                barrier_id=check_barrier(current_pos,tmp1->pos,0.5f);
                 if (barrier_id==0)
                 {
                     check_point_head=tmp1;
@@ -980,7 +1015,7 @@ void move_execute(Ort current__final_goal)
                 tmp2=tmp1->next;
                 while (tmp2!=NULL)
                 {
-                    barrier_id=check_barrier(current_pos,tmp1->pos);
+                    barrier_id=check_barrier(current_pos,tmp1->pos,0.5f);
                     if (barrier_id!=0&&tmp2==tmp1->next)
                     {
                         if(barrier_id<50)
@@ -1110,7 +1145,7 @@ Ort evaluate_approach_pos(int target_ID,float dist)
     current_target_ID=target_ID;
     temp.x=target.x+dist*arm_cos_f32(direction*offset_deg+current_deg);
     temp.y=target.y+dist*arm_sin_f32(direction*offset_deg+current_deg);
-    while(check_barrier(temp,target)!=0)
+    while(check_barrier(temp,target,0.10f)!=0)
     {
         offset_deg+=0.0466332312f;
         direction=-direction;

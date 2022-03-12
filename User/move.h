@@ -83,14 +83,13 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #include "stdlib.h"
 #include "user_task.h"
 #include "Resolve.h"
-
 //结构体声明区
 typedef struct heap_node
 {
-    short x;
-    short y;
-    short last_x;
-    short last_y;
+    int8_t x;
+    int8_t y;
+    int8_t last_x;
+    int8_t last_y;
     float cost;
     float cost_current;
 }heap_node;
@@ -100,10 +99,10 @@ typedef struct heap_node
 //宏定义区
 #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
 #define deadzone 0.45//路径点死区大小
-#define acceleration_limit_increase 1.7
-#define acceleration_limit_decrease 1.7
-#define acceleration_limit_turn 1.9
-#define speed_limit 1.8
+#define acceleration_limit_increase 1.3
+#define acceleration_limit_decrease 1.3
+#define acceleration_limit_turn 1.8
+#define speed_limit 0.4
 #define control_period 0.01
 
 //全局变量区
@@ -129,7 +128,7 @@ void add_barrier(Ort pos,double range,int barrier_id);
 void update_barrier(int barrier_ID,Ort pos,double range);
 void remove_barrier(int barrier_ID);
 void check_dead_barrier(void);
-int check_barrier(Ort pos1,Ort pos2);
+int check_barrier(Ort pos1,Ort pos2,float offset_len);
 check_point* static_path_planning(Ort start_coordinate,Ort current__final_goal);
 check_point* dynamic_path_planning(Ort pos1,Ort pos2,int barrier_id);
 barrier* find_barrier(int barrier_ID);

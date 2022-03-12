@@ -181,7 +181,7 @@ void StartDefaultTask(void *argument)
                   task_temp->handle=task_handle_temp;
                   if(task_temp->taskname==autodrivelongdistance)
                   {
-                      xTaskCreate(task_handler,"abab",16000,(void*)task_temp,(osPriority_t) osPriorityAboveNormal,task_handle_temp);
+                      xTaskCreate(task_handler,"abab",30000,(void*)task_temp,(osPriority_t) osPriorityHigh,task_handle_temp);
                   }
                   else
                       xTaskCreate(task_handler,"abab",0x100,(void*)task_temp,(osPriority_t) osPriorityNormal,task_handle_temp);
@@ -225,11 +225,11 @@ void StartDefaultTask(void *argument)
 void RobotTask(void *argument)
 {
   /* USER CODE BEGIN RobotTask */
-    uint8_t set_flags[10]={either};
+    uint8_t set_flags[20]={either};
     uint8_t last_key_status[25]={0};
     Ort info={.x=0,.y=0,.z=0};
     
-    barrier *target;
+//    barrier *target;
   /* Infinite loop */
   for(;;)
   {
@@ -242,11 +242,10 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
       {
-          info=evaluate_approach_pos(1,1.5);
+          info.x=6;info.y=8;
           if(info.x>0)
           {
               add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
-              //dZ=info.z;
           }
           last_key_status[1]=1;
       }
@@ -361,20 +360,20 @@ void RobotTask(void *argument)
       }
       task_reset=Read_Button(14);
             
-      target=find_barrier(block_num);
-      debug.x=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5);
-      debug.y=fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
-      if(target!=NULL)
-      {
-          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
-          {
-              if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5));
-              {
-                pick_up(target->location.z,manualmode);
-                get_block_flag=1;
-              }
-          }
-      }
+//      target=find_barrier(block_num);
+//      debug.x=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5);
+//      debug.y=fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
+//      if(target!=NULL)
+//      {
+//          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
+//          {
+//              if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5));
+//              {
+//                pick_up(target->location.z,manualmode);
+//                get_block_flag=1;
+//              }
+//          }
+//      }
     osDelay(10);
   }
   /* USER CODE END RobotTask */

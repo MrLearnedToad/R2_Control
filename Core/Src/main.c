@@ -172,6 +172,13 @@ extern uint8_t block_num;
 block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
+
+//base.x=6;
+//base.y=5;
+//update_barrier(2,base,0.325f);
+//base.x=7;
+//base.y=5;
+//update_barrier(3,base,0.375f);
 //velocity_nn_x=xtload(2,4,1,tnn_buffer2_1,tnn_buffer2_2);
 //velocity_nn_y=xtload(2,4,1,tnn_buffer2_1,tnn_buffer2_2);
 //velocity_nn_x=xtbuild(2,5,1);
@@ -322,8 +329,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.5f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.5f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.6f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.6f*speed_plan[global_clock].y;
     return;
 }
 
@@ -383,7 +390,7 @@ void speed_cal(void)
 
 void update_target_info(uint8_t *data)
 {
-    int temp[2];
+    int temp[3];
     Ort temp1;
     uint8_t temp2,cmd;
     cmd=data[2];
@@ -420,6 +427,26 @@ void update_target_info(uint8_t *data)
         //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
         //temp1=coordinate_transform(temp1,pos_log[5]);        
         update_barrier(1,temp1,0.7);
+    }
+    else if(cmd>=7&&cmd<50)
+    {
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        memcpy(temp+2,data+11,4);
+        temp1.x=(float)(temp[0])/1000.0f;
+        temp1.y=(float)(temp[1])/1000.0f;
+        temp1.z=(float)(temp[2])/1000.0f;
+        if(fabs(temp1.x)>14||fabs(temp1.y)>14||temp1.z>2||temp1.z<0)
+            return;
+        temp1.x-=pos_log[0].x-pos_log[5].x;
+        temp1.y-=pos_log[0].y-pos_log[5].y;
+        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+            return;      
+        update_barrier(cmd,temp1,temp1.z+0.3f);
+    }
+    else if(cmd>=50&&cmd!=114)
+    {
+        remove_barrier(cmd-50);
     }
     else if(cmd==114)
     {
@@ -521,7 +548,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //        float nninput[2];
         if(flags[auto_drive_status]!=moving)
             acceration_limit();
-        DMA_recieve();
+        
         //训练X，Y轴速度控制神经网络
 //        if(Read_Button(25)==1)
 //        {
@@ -535,13 +562,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //        }
         
         check_dead_barrier();
-        if(global_clock<1499)
+        if(global_clock<1499&&thread_lock==0)
             global_clock++;
         if(flags[auto_drive_status]==moving)
         {
             executive_auto_move();
-//            if(global_clock%8==0)
-//                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+            if(global_clock%8==0)
+                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;
         }
         if(flags[auto_drive_status]!=moving&&flags[auto_drive_status]!=stop&&flag_sendlog==0)
@@ -569,6 +596,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		Elmo_SendCmd(&hfdcan2);
         speed_clock++;
+        if(speed_clock==30)
+            DMA_recieve();
         if(speed_clock==40)
         {
             speed_cal();

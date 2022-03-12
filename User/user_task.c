@@ -22,6 +22,7 @@ Ort target_pos;
 int current_target_ID=0;
 float short_drive_deadzone=0.2f;
 extern uint8_t get_block_flag;
+uint8_t thread_lock=0;
 /*********************************************************************************
   *@  name      : auto_drive_shortdistance
   *@  function  : 机器人短距离移动函数
@@ -85,67 +86,83 @@ int auto_turn(mission_queue *current_task)
 *********************************************************************************/
 int auto_drive_longdistance(mission_queue *current_task)
 {
-    flags[auto_drive_status]=moving;
+    
     static int flag_running=0;
     static int barrier_id=0;
-    check_point *check_point_temp0,*check_point_temp1,*check_point_temp2;
+    check_point *check_point_temp0,*check_point_temp1,*check_point_temp2,*check_point_temp3;
+    int flag_CP_blocked=0;
     
     if(flag_running==0)//开始起步部分
     {
         flag_running=1;
         check_point_head=static_path_planning(current_pos,current_task->info);
+        if(check_point_head==NULL)
+        {
+            flags[auto_drive_status]=stop;
+            current_task->flag_finish=1;
+            flag_running=0;
+            flags[drivemode]=manualmode;
+            return 0;
+        }
         pre_plan(check_point_head->pos);   
+        flags[auto_drive_status]=moving;
         global_clock=0;
     }
     
     if(check_point_head!=NULL)//检测路径点队列是否为空
     {
         #if 0
-        barrier_id=check_barrier(current_pos,check_point_head->pos);//检测当前路径上受否有障碍，返回第一个检测到的障碍的编号
-        if (barrier_id!=0&&global_clock>=turn_end_time)//若检测到了障碍，且不在弯道当中，进行一次局部路径规划避障
+//        barrier_id=check_barrier(current_pos,check_point_head->pos,0.5f);//检测当前路径上受否有障碍，返回第一个检测到的障碍的编号
+//        if (barrier_id!=0&&global_clock>=turn_end_time+10)//若检测到了障碍，且不在弯道当中，进行一次局部路径规划避障
+//        {
+//            if(barrier_id>50)//如果路径点被障碍物遮挡,向后搜索直到找到一个未被遮挡的路径点
+//            {
+//                check_point_temp1=check_point_head;
+//                while(check_point_temp1->next!=NULL&&check_barrier(check_point_temp1->pos,check_point_temp1->next->pos,0.5f)>50)
+//                {
+//                    check_point_temp1=check_point_temp1->next;
+//                }
+//                if(check_point_temp1->next!=NULL)
+//                    check_point_temp0=static_path_planning(current_pos,check_point_temp1->next->pos);
+//                else
+//                    check_point_temp0=check_point_head;
+//                check_point_head=check_point_temp0;
+//                while(check_point_temp0->next!=NULL)
+//                {
+//                    check_point_temp0=check_point_temp0->next;
+//                }
+//                check_point_temp0->next=check_point_temp1->next->next;
+//                pre_plan(check_point_head->pos);
+//                global_clock=0;
+//            }
+//            else//如果是中间出现障碍物
+//            {
+//                check_point_temp0=static_path_planning(current_pos,check_point_head->next->pos);
+//                check_point_temp1=check_point_head->next;
+//                check_point_head=check_point_temp0;
+//                while(check_point_temp0->next!=NULL)
+//                {
+//                    check_point_temp0=check_point_temp0->next;
+//                }
+//                check_point_temp0->next=check_point_temp1->next;
+//                pre_plan(check_point_head->pos);
+//                global_clock=0;
+//            }
+//            barrier_id=0;
+//        }
+        barrier_id=check_barrier(current_pos,check_point_head->pos,0.5f);//检测当前路径上受否有障碍
+        if (barrier_id!=0&&global_clock>=turn_end_time+10)//若检测到了障碍，且不在弯道当中，记录
         {
-            if(barrier_id>50)//如果路径点被障碍物遮挡,向后搜索直到找到一个未被遮挡的路径点
-            {
-                check_point_temp1=check_point_head;
-                while(check_point_temp1->next!=NULL&&check_barrier(check_point_temp1->pos,check_point_temp1->next->pos)>50)
-                {
-                    check_point_temp1=check_point_temp1->next;
-                }
-                if(check_point_temp1->next!=NULL)
-                    check_point_temp0=static_path_planning(current_pos,check_point_temp1->next->pos);
-                else
-                    check_point_temp0=check_point_head;
-                check_point_head=check_point_temp0;
-                while(check_point_temp0->next!=NULL)
-                {
-                    check_point_temp0=check_point_temp0->next;
-                }
-                check_point_temp0->next=check_point_temp1->next->next;
-                pre_plan(check_point_head->pos);
-                global_clock=0;
-            }
-            else//如果是中间出现障碍物
-            {
-                check_point_temp0=static_path_planning(current_pos,check_point_head->next->pos);
-                check_point_temp1=check_point_head->next;
-                check_point_head=check_point_temp0;
-                while(check_point_temp0->next!=NULL)
-                {
-                    check_point_temp0=check_point_temp0->next;
-                }
-                check_point_temp0->next=check_point_temp1->next;
-                pre_plan(check_point_head->pos);
-                global_clock=0;
-            }
-            barrier_id=0;
+            flag_CP_blocked=1;
         }
+        
             
         check_point_temp1=check_point_head;
         check_point_temp2=NULL;
         while (check_point_head->next!=NULL&&global_clock>=turn_end_time)//检测是否可以抄近路,不在弯道当中时，则立刻尝试抄近路
         {           
             check_point_temp1=check_point_temp1->next;
-            barrier_id=check_barrier(current_pos,check_point_temp1->pos);
+            barrier_id=check_barrier(current_pos,check_point_temp1->pos,0.5f);
             if (barrier_id==0)
             {
                 check_point_temp2=check_point_temp1;
@@ -160,40 +177,42 @@ int auto_drive_longdistance(mission_queue *current_task)
         
         
         check_point_temp1=check_point_head;
-        while(check_point_temp1->next!=NULL)//检测之后的路径点中间是否有障碍,非相邻路径点间如果没有障碍则抄近路，相邻两个路径点间有障碍则重新进行局部路径规划
-        {
-            check_point_temp2=check_point_temp1->next;
-            while (check_point_temp2!=NULL)
-            {
-                barrier_id=check_barrier(current_pos,check_point_temp2->pos);
-                if (barrier_id!=0&&check_point_temp2==check_point_temp1->next)
-                {
-                    if(barrier_id<50)
-                    {
-                        check_point_temp0=static_path_planning(check_point_temp1->pos,check_point_temp2->pos);
-                        check_point_temp1->next = check_point_temp0;
-                        while(check_point_temp0->next!=NULL)
-                        {
-                            check_point_temp0=check_point_temp0->next;
-                        }
-                        check_point_temp0->next=check_point_temp2->next;
-                    }
-                }
-                if (barrier_id==0&&check_point_temp1->next!=check_point_temp2)
-                {
-                    check_point_temp1->next=check_point_temp2;
-                }
-            }
-            check_point_temp1=check_point_temp1->next;
-        }
+//        while(check_point_temp1->next!=NULL)//检测之后的路径点中间是否有障碍,非相邻路径点间如果没有障碍则抄近路，相邻两个路径点间有障碍则重新进行局部路径规划
+//        {
+//            check_point_temp2=check_point_temp1->next;
+//            while (check_point_temp2!=NULL)
+//            {
+//                barrier_id=check_barrier(current_pos,check_point_temp2->pos,0.5f);
+//                if (barrier_id!=0&&check_point_temp2==check_point_temp1->next)
+//                {
+//                    if(barrier_id<50)
+//                    {
+//                        check_point_temp0=static_path_planning(check_point_temp1->pos,check_point_temp2->pos);
+//                        check_point_temp1->next = check_point_temp0;
+//                        while(check_point_temp0->next!=NULL)
+//                        {
+//                            check_point_temp0=check_point_temp0->next;
+//                        }
+//                        check_point_temp0->next=check_point_temp2->next;
+//                    }
+//                }
+//                if (barrier_id==0&&check_point_temp1->next!=check_point_temp2)
+//                {
+//                    check_point_temp1->next=check_point_temp2;
+//                }
+//            }
+//            check_point_temp1=check_point_temp1->next;
+//        }
         #endif
         if(((current_pos.x-check_point_head->pos.x)*(current_pos.x-check_point_head->pos.x)+(current_pos.y-check_point_head->pos.y)*(current_pos.y-check_point_head->pos.y))<=deadzone*deadzone)//检测是否到达路径点附近，到达且不是最后一个则前往下一个路径点
         {
             if (check_point_head->next!=NULL)
             {
                 check_point_head=check_point_head->next;
+                thread_lock=1;
                 pre_plan(check_point_head->pos);
-                global_clock=0;
+                global_clock=3;
+                thread_lock=0;
             }
         }
     }
