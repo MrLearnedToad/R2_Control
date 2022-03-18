@@ -14,8 +14,8 @@ int (*switcherdirectionset)(mission_queue*)=switcher_direction_set;
 int (*catapultactivate)(mission_queue*)=catapult_activate;
 int (*autopickup)(mission_queue *current_task)=auto_pick_up;
 int (*autoplace)(mission_queue *current_task)=auto_place;
-int (*posregulatorset)(mission_queue *current_task)=pos_regulator_set;
-int (*placelastblockaircylinderposset)(mission_queue *current_task)=place_last_block_air_cylinder_pos_set;
+int (*posregulatorposset)(mission_queue *current_task)=pos_regulator_pos_set;
+int (*pickupactivatorposset)(mission_queue *current_task)=pick_up_activator_pos_set;
 int (*autoturn)(mission_queue *current_task)=auto_turn;
 /*全局变量区*/
 Ort target_pos;
@@ -23,6 +23,7 @@ int current_target_ID=0;
 float short_drive_deadzone=0.2f;
 extern uint8_t get_block_flag;
 uint8_t thread_lock=0;
+uint8_t final_point_lock;
 /*********************************************************************************
   *@  name      : auto_drive_shortdistance
   *@  function  : 机器人短距离移动函数
@@ -44,7 +45,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
     if(flag_running==0)
     {
         pre_plan(current_task->info);
-        global_clock=0;
+        global_clock=3;
         flag_running=1;
         flags[auto_drive_status]=moving;
     }
@@ -84,146 +85,114 @@ int auto_turn(mission_queue *current_task)
   *@  output    : NULL 
   *@  note      : NULL
 *********************************************************************************/
+uint8_t msg;
+TaskHandle_t task_handle_temp;
 int auto_drive_longdistance(mission_queue *current_task)
 {
     
-    static int flag_running=0;
-    static int barrier_id=0;
-    check_point *check_point_temp0,*check_point_temp1,*check_point_temp2,*check_point_temp3;
-    int flag_CP_blocked=0;
+    static int flag_running=0,flag_start_signal_send=0,error_sum=0;
+    static Ort current_point;
+    uint8_t set_flags[20];
+    Ort info;
+    for(int i=0;i<20;i++)
+    {
+        set_flags[i]=either;
+    }
+    barrier *barr=find_barrier(1);
+    
+    if(final_point.x==0||final_point.y==0)
+    {
+        msg=7;
+        current_task->flag_finish=1;
+        final_point_lock=0;
+        flags[auto_drive_status]=current_task->info.z;
+        flag_running=0;
+        flags[drivemode]=manualmode;
+        flag_start_signal_send=0;
+        xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
+        error_sum=0;
+        send_log(8,0,0,0,0,&huart3);
+        return 0;
+    }
     
     if(flag_running==0)//开始起步部分
     {
         flag_running=1;
-        check_point_head=static_path_planning(current_pos,current_task->info);
-        if(check_point_head==NULL)
-        {
-            flags[auto_drive_status]=stop;
-            current_task->flag_finish=1;
-            flag_running=0;
-            flags[drivemode]=manualmode;
-            return 0;
-        }
-        pre_plan(check_point_head->pos);   
+        current_point=planned_path[0];
+        dZ=-atan2f(current_point.x-current_pos.x,current_point.y-current_pos.y)*180.0f/3.1415926f;
+        pre_plan(current_point);   
         flags[auto_drive_status]=moving;
-        global_clock=0;
+        global_clock=3;
+        return 0;
     }
-    
-    if(check_point_head!=NULL)//检测路径点队列是否为空
+    dZ=-atan2f(barr->location.x-current_pos.x,barr->location.y-current_pos.y)*180.0f/3.1415926f;
+    if(flag_start_signal_send==0&&fabs(current_pos.z+dZ)<20)
     {
-        #if 0
-//        barrier_id=check_barrier(current_pos,check_point_head->pos,0.5f);//检测当前路径上受否有障碍，返回第一个检测到的障碍的编号
-//        if (barrier_id!=0&&global_clock>=turn_end_time+10)//若检测到了障碍，且不在弯道当中，进行一次局部路径规划避障
-//        {
-//            if(barrier_id>50)//如果路径点被障碍物遮挡,向后搜索直到找到一个未被遮挡的路径点
-//            {
-//                check_point_temp1=check_point_head;
-//                while(check_point_temp1->next!=NULL&&check_barrier(check_point_temp1->pos,check_point_temp1->next->pos,0.5f)>50)
-//                {
-//                    check_point_temp1=check_point_temp1->next;
-//                }
-//                if(check_point_temp1->next!=NULL)
-//                    check_point_temp0=static_path_planning(current_pos,check_point_temp1->next->pos);
-//                else
-//                    check_point_temp0=check_point_head;
-//                check_point_head=check_point_temp0;
-//                while(check_point_temp0->next!=NULL)
-//                {
-//                    check_point_temp0=check_point_temp0->next;
-//                }
-//                check_point_temp0->next=check_point_temp1->next->next;
-//                pre_plan(check_point_head->pos);
-//                global_clock=0;
-//            }
-//            else//如果是中间出现障碍物
-//            {
-//                check_point_temp0=static_path_planning(current_pos,check_point_head->next->pos);
-//                check_point_temp1=check_point_head->next;
-//                check_point_head=check_point_temp0;
-//                while(check_point_temp0->next!=NULL)
-//                {
-//                    check_point_temp0=check_point_temp0->next;
-//                }
-//                check_point_temp0->next=check_point_temp1->next;
-//                pre_plan(check_point_head->pos);
-//                global_clock=0;
-//            }
-//            barrier_id=0;
-//        }
-        barrier_id=check_barrier(current_pos,check_point_head->pos,0.5f);//检测当前路径上受否有障碍
-        if (barrier_id!=0&&global_clock>=turn_end_time+10)//若检测到了障碍，且不在弯道当中，记录
-        {
-            flag_CP_blocked=1;
-        }
-        
-            
-        check_point_temp1=check_point_head;
-        check_point_temp2=NULL;
-        while (check_point_head->next!=NULL&&global_clock>=turn_end_time)//检测是否可以抄近路,不在弯道当中时，则立刻尝试抄近路
-        {           
-            check_point_temp1=check_point_temp1->next;
-            barrier_id=check_barrier(current_pos,check_point_temp1->pos,0.5f);
-            if (barrier_id==0)
-            {
-                check_point_temp2=check_point_temp1;
-            }
-        }
-        if(check_point_temp2!=NULL)
-        {
-            check_point_head=check_point_temp2;
-            pre_plan(check_point_head->pos);
-            global_clock=0;
-        }
-        
-        
-        check_point_temp1=check_point_head;
-//        while(check_point_temp1->next!=NULL)//检测之后的路径点中间是否有障碍,非相邻路径点间如果没有障碍则抄近路，相邻两个路径点间有障碍则重新进行局部路径规划
-//        {
-//            check_point_temp2=check_point_temp1->next;
-//            while (check_point_temp2!=NULL)
-//            {
-//                barrier_id=check_barrier(current_pos,check_point_temp2->pos,0.5f);
-//                if (barrier_id!=0&&check_point_temp2==check_point_temp1->next)
-//                {
-//                    if(barrier_id<50)
-//                    {
-//                        check_point_temp0=static_path_planning(check_point_temp1->pos,check_point_temp2->pos);
-//                        check_point_temp1->next = check_point_temp0;
-//                        while(check_point_temp0->next!=NULL)
-//                        {
-//                            check_point_temp0=check_point_temp0->next;
-//                        }
-//                        check_point_temp0->next=check_point_temp2->next;
-//                    }
-//                }
-//                if (barrier_id==0&&check_point_temp1->next!=check_point_temp2)
-//                {
-//                    check_point_temp1->next=check_point_temp2;
-//                }
-//            }
-//            check_point_temp1=check_point_temp1->next;
-//        }
-        #endif
-        if(((current_pos.x-check_point_head->pos.x)*(current_pos.x-check_point_head->pos.x)+(current_pos.y-check_point_head->pos.y)*(current_pos.y-check_point_head->pos.y))<=deadzone*deadzone)//检测是否到达路径点附近，到达且不是最后一个则前往下一个路径点
-        {
-            if (check_point_head->next!=NULL)
-            {
-                check_point_head=check_point_head->next;
-                thread_lock=1;
-                pre_plan(check_point_head->pos);
-                global_clock=3;
-                thread_lock=0;
-            }
-        }
+        msg=6;     
+        xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
+        flag_start_signal_send=1;
     }
     
-    if(((current_task->info.x-current_pos.x)*(current_task->info.x-current_pos.x)+(current_task->info.y-current_pos.y)*(current_task->info.y-current_pos.y))<0.010f||
+    if(current_point.x!=final_point.x||current_point.y!=final_point.y)
+    {
+        if(((current_pos.x-current_point.x)*(current_pos.x-current_point.x)+(current_pos.y-current_point.y)*(current_pos.y-current_point.y))<=deadzone*deadzone)//检测是否到达路径点附近，到达且不是最后一个则前往下一个路径点
+        {
+            for(int i=0;i<5;i++)
+            {
+                if(pow(current_pos.x-planned_path[i].x,2)+pow(current_pos.y-planned_path[i].y,2)>0.04f&&planned_path[i].x>0)
+                {
+                    current_point=planned_path[i];
+                    planned_path[i].x=-1;
+                    break;
+                }
+                if(i==4)
+                {
+                    error_sum++;
+                    if(error_sum<=5)
+                        break;
+                    msg=7;
+                    current_task->flag_finish=1;
+                    final_point_lock=0;
+                    flags[auto_drive_status]=current_task->info.z;
+                    flag_running=0;
+                    flags[drivemode]=manualmode;
+                    flag_start_signal_send=0;
+                    xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
+                    error_sum=0;
+                    send_log(9,0,0,0,0,&huart3);
+                    return 0;
+                }
+            }
+                
+            
+            if(((final_point.x-current_point.x)*(final_point.x-current_point.x)+(final_point.y-current_point.y)*(final_point.y-current_point.y))<0.00010f)
+            {
+                dZ=-atan2f(barr->location.x-current_point.x,barr->location.y-current_point.y)*180.0f/3.1415926f;
+                final_point_lock=1;
+            }
+            thread_lock=1;
+            pre_plan(current_point);
+            //send_log(0x05,current_point.x,current_point.y,0,0,&huart3);
+            global_clock=3;
+            thread_lock=0;
+        }
+    }
+    if(((final_point.x-current_pos.x)*(final_point.x-current_pos.x)+(final_point.y-current_pos.y)*(final_point.y-current_pos.y))<0.09f||
         (Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)//到达目的地附近
     {
+        msg=7;
+        error_sum=0;
         current_task->flag_finish=1;
+        final_point_lock=0;
         flags[auto_drive_status]=current_task->info.z;
         flag_running=0;
         flags[drivemode]=manualmode;
+        flag_start_signal_send=0;
+        send_log(10,final_point.x,final_point.y,(float)dX,(float)dY,&huart3);
+        if(((final_point.x-current_pos.x)*(final_point.x-current_pos.x)+(final_point.y-current_pos.y)*(final_point.y-current_pos.y))<0.10f)
+            add_mission(AUTOPLACE,set_flags,0,&info);
+        xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
+        return 0;
     }
     return 0;
 }
@@ -345,53 +314,90 @@ int catapult_activate(mission_queue *current_task)
 }
 
 /*********************************************************************************
-  *@  name      : pos_regulator_set
+  *@  name      : pos_regulator_pos_set
   *@  function  : NULL
   *@  input     : current_task
   *@  output    : NULL
   *@  note      : NULL
 *********************************************************************************/
-int pos_regulator_set(mission_queue *current_task)
+int pos_regulator_pos_set(mission_queue *current_task)
 {
     uint8_t can_msg[8]={0};
     if(flags[regulator_status]==stop)
     {
         flags[regulator_status]=moving;
-        flags[regulator_pos]=current_task->info.x;
-        can_msg[4]=current_task->info.x+1;
+        if(current_task->info.x!=-1)
+            flags[regulator_vertical_pos]=current_task->info.x;
+        if(current_task->info.y!=-1)
+            flags[regulator_horizontal_pos]=current_task->info.y;
+        if(current_task->info.z!=-1)
+            flags[regulator_catapult_pos]=current_task->info.z;
+        if(current_task->info.z!=-1)
+        {
+            can_msg[5]=current_task->info.z+1;
+        }
+        else
+        {
+            if(current_task->info.x==down)
+            {
+                if(current_task->info.y==backward)
+                {
+                    can_msg[4]=1;
+                }
+                else
+                {
+                    can_msg[4]=2;
+                }
+            }
+            else
+            {
+                if(current_task->info.y==backward)
+                {
+                    can_msg[4]=3;
+                }
+                else
+                {
+                    can_msg[4]=4;
+                }
+            }
+        }
+        
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
-    if(cmd_feedback[4]==1)
+    if(cmd_feedback[4]==1||cmd_feedback[5]==1)
     {
         current_task->flag_finish=1;
         flags[regulator_status]=stop;
-        cmd_feedback[4]=0;
+        if(cmd_feedback[4]==1)
+            cmd_feedback[4]=0;
+        else
+            cmd_feedback[5]=0;
     }
     return 0;
 }
 
 /*********************************************************************************
-  *@  name      : place_last_block_air_cylinder_pos_set
+  *@  name      : pick_up_activator_pos_set
   *@  function  : NULL
   *@  input     : current_task
   *@  output    : NULL
   *@  note      : NULL
 *********************************************************************************/
-int place_last_block_air_cylinder_pos_set(mission_queue *current_task)
+int pick_up_activator_pos_set(mission_queue *current_task)
 {
     uint8_t can_msg[8]={0};
-    if(flags[place_last_block_air_cylinder_status]==stop)
+    if(flags[activator_status]==stop)
     {
-        flags[place_last_block_air_cylinder_status]=moving;
-        flags[place_last_block_air_cylinder_pos]=current_task->info.x;
-        can_msg[5]=current_task->info.x+1;
+        flags[activator_status]=moving;
+        flags[activator_pos]=7-current_task->info.x;
+        can_msg[6]=current_task->info.x+1;
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
-    if(cmd_feedback[5]==1)
+    if(cmd_feedback[6]==1)
     {
         current_task->flag_finish=1;
-        flags[place_last_block_air_cylinder_status]=stop;
-        cmd_feedback[5]=0;
+        flags[activator_status]=stop;
+        cmd_feedback[6]=0;
     }
     return 0;
 }
@@ -625,6 +631,7 @@ int auto_place(mission_queue *current_task)
     stop_pos=evaluate_place_pos(1,0.8);
     if(flags[auto_drive_status]==stop&&flag_running==1)
     { 
+        flags[auto_drive_status]=moving;
         short_drive_deadzone=0.12f;
         dZ=stop_pos.z;
         flag_running=2;
@@ -635,7 +642,7 @@ int auto_place(mission_queue *current_task)
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
         release_pos.z=moving_complete2;
-        //flags[auto_drive_status]=moving;
+        flags[auto_drive_status]=moving;
         place_block(block_num);
         set_flags[grab_status]=stop;
         set_flags[auto_drive_status]=moving_partially_complete1;

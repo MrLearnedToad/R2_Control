@@ -17,7 +17,7 @@ Library Manager: ArmAr.exe V5.06 update 7 (build 960)
 Hex Converter:   FromElf.exe V5.06 update 7 (build 960)
 CPU DLL:         SARMCM3.DLL V5.36.0.0
 Dialog DLL:      DCM.DLL V1.17.3.0
-Target DLL:      CMSIS_AGDI.dll V1.33.0.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.9.0
 Dialog DLL:      TCM.DLL V1.53.0.0
  
 <h2>Project:</h2>
@@ -28,29 +28,15 @@ Project File Date:  03/06/2022
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'TRrebuild743'
 Note: source file '../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c' - object file renamed from 'TRrebuild743\heap_4.o' to 'TRrebuild743\heap_4_1.o'.
-compiling move.c...
-compiling user_task.c...
-..\User\user_task.c(91): warning:  #177-D: variable "barrier_id"  was declared but never referenced
-      static int barrier_id=0;
-..\User\user_task.c(92): warning:  #177-D: variable "check_point_temp0"  was declared but never referenced
-      check_point *check_point_temp0,*check_point_temp1,*check_point_temp2,*check_point_temp3;
-..\User\user_task.c(92): warning:  #177-D: variable "check_point_temp1"  was declared but never referenced
-      check_point *check_point_temp0,*check_point_temp1,*check_point_temp2,*check_point_temp3;
-..\User\user_task.c(92): warning:  #177-D: variable "check_point_temp2"  was declared but never referenced
-      check_point *check_point_temp0,*check_point_temp1,*check_point_temp2,*check_point_temp3;
-..\User\user_task.c(92): warning:  #177-D: variable "check_point_temp3"  was declared but never referenced
-      check_point *check_point_temp0,*check_point_temp1,*check_point_temp2,*check_point_temp3;
-..\User\user_task.c(93): warning:  #177-D: variable "flag_CP_blocked"  was declared but never referenced
-      int flag_CP_blocked=0;
-..\User\user_task.c(523): warning:  #550-D: variable "direction"  was set but never used
-      static uint8_t direction;
-..\User\user_task.c: 7 warnings, 0 errors
 compiling freertos.c...
-compiling main.c...
+compiling user_task.c...
+..\User\user_task.c(529): warning:  #550-D: variable "direction"  was set but never used
+      static uint8_t direction;
+..\User\user_task.c: 1 warning, 0 errors
 linking...
-Program Size: Code=73848 RO-data=3112 RW-data=680 ZI-data=517072  
+Program Size: Code=74912 RO-data=3260 RW-data=688 ZI-data=517112  
 FromELF: creating hex file...
-"TRrebuild743\TRrebuild743.axf" - 0 Error(s), 7 Warning(s).
+"TRrebuild743\TRrebuild743.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -74,7 +60,7 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.5.0
       Include file:  CMSIS\Core\Include\tz_context.h
-Build Time Elapsed:  00:00:09
+Build Time Elapsed:  00:00:05
 </pre>
 </body>
 </html>

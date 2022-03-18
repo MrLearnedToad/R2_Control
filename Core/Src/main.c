@@ -436,18 +436,18 @@ void update_target_info(uint8_t *data)
         id=data[11];
         temp1.x=(float)(temp[0])/1000.0f;
         temp1.y=(float)(temp[1])/1000.0f;
-        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+        if(fabs(temp1.x)>14||fabs(temp1.y)>14||temp1.x<0.5f||temp1.y<0.5f)
             return;
         update_check_point(temp1,id);
     }
-    else if(cmd==8)
+    else if(cmd==8&&final_point_lock==0)
     {
         base=find_barrier(1);
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp1.x=(float)(temp[0])/1000.0f;
         temp1.y=(float)(temp[1])/1000.0f;
-        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+        if(fabs(temp1.x)>14||fabs(temp1.y)>14||temp1.x<0.5f||temp1.y<0.5f)
             return;
         final_point=temp1;
         final_point.z=-atan2f(base->location.x-temp1.x,base->location.y-temp1.y)*180.0f/3.1415926f;
@@ -591,8 +591,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(flags[auto_drive_status]==moving)
         {
             executive_auto_move();
-            if(global_clock%8==0)
-                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+            
+//            if(global_clock%8==0)
+//                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;
         }
         if(flags[auto_drive_status]!=moving&&flags[auto_drive_status]!=stop&&flag_sendlog==0)

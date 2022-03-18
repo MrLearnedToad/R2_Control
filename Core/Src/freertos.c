@@ -242,11 +242,8 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
       {
-          info.x=6;info.y=8;
-          if(info.x>0)
-          {
-              add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
-          }
+          info.z=moving_complete1;
+          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
           last_key_status[1]=1;
       }
       else if(Read_Button(2)==1&&last_key_status[2]==0)
@@ -265,12 +262,18 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(4)==1&&last_key_status[4]==0)
       {
-          
+          info.x=up;
+          info.y=forward;
+          info.z=-1;
+          add_mission(POSREGULATORPOSSET,set_flags,0,&info);
           last_key_status[4]=1;
       }
       else if(Read_Button(5)==1&&last_key_status[5]==0)
       {
-          pick_up(down,manualmode);
+          info.x=-1;
+          info.y=-1;
+          info.z=grasp;
+          add_mission(POSREGULATORPOSSET,set_flags,0,&info);
           last_key_status[5]=1;
       }
       else if(Read_Button(6)==1&&last_key_status[6]==0)
@@ -486,11 +489,11 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
             break;
         }
         case 9:{
-            temp->taskname=posregulatorset;
+            temp->taskname=posregulatorposset;
             break;
         }
         case 10:{
-            temp->taskname=placelastblockaircylinderposset;
+            temp->taskname=pickupactivatorposset;
         }
     }   
     temp->flag_necessary=flag_nessary;//决定是否为关键任务（不可跳过）
@@ -586,6 +589,23 @@ void task_handler(void *task_info)//条件满足的时候这里会开始执行任务，任务具体函
         }
         osDelay(10);
     }
+}
+
+void send_msg_synchronal(void *id)
+{
+    uint8_t ID=*(uint8_t*)id;
+    uint8_t msg_buffer[16];
+    msg_buffer[0]='?';
+    msg_buffer[1]='!';
+    msg_buffer[2]=ID;
+    msg_buffer[15]='!';
+    for(int i=0;i<10;i++)
+    {
+        HAL_UART_Transmit(&huart8,msg_buffer,16,200);
+        osDelay(5);
+    }
+    vTaskDelete(xTaskGetCurrentTaskHandle());
+    return;
 }
 /* USER CODE END Application */
 

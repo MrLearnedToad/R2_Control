@@ -16,7 +16,7 @@ Ort output;
 int flag_center_access=1;
 float speed_st[1500]={0};
 
-Ort planned_path[3];
+Ort planned_path[5];
 Ort final_point;
 
 /*********************************************************************************
@@ -1167,7 +1167,7 @@ Ort evaluate_approach_pos(int target_ID,float dist)
 
 void update_check_point(Ort point,uint8_t id)
 {
-    planned_path[id-1]=point;
+    planned_path[id]=point;
     return;
 }
 
