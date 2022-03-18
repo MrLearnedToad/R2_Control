@@ -148,7 +148,7 @@ int main(void)
 nrf_mode = true;
 Handle_Init(&hspi1,01);
 HAL_Delay(20);
-FDCAN2_Init(&hfdcan1);
+FDCAN1_Init(&hfdcan1);
 HAL_Delay(200);
 Elmo_Init(&hfdcan2,&htim7);
 HAL_Delay(200);

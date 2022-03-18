@@ -1,6 +1,7 @@
 --cpu Cortex-M7.fp.dp
 "trrebuild743\startup_stm32h743xx.o"
 "..\Drivers\CMSIS\DSP\Lib\ARM\arm_cortexM7lfdp_math.lib"
+"trrebuild743\tinn.o"
 "trrebuild743\main.o"
 "trrebuild743\gpio.o"
 "trrebuild743\freertos.o"
@@ -12,7 +13,6 @@
 "trrebuild743\stm32h7xx_it.o"
 "trrebuild743\stm32h7xx_hal_msp.o"
 "trrebuild743\stm32h7xx_hal_timebase_tim.o"
-"trrebuild743\tinn.o"
 "trrebuild743\system_stm32h7xx.o"
 "trrebuild743\stm32h7xx_hal_cortex.o"
 "trrebuild743\stm32h7xx_hal_rcc.o"
