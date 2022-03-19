@@ -61,3 +61,5 @@ trrebuild743\fdcan_bsp.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_
 trrebuild743\fdcan_bsp.o: ..\User\Resolve.h
 trrebuild743\fdcan_bsp.o: ..\User\user_task.h
 trrebuild743\fdcan_bsp.o: ..\User\Remote_Control.h
+trrebuild743\fdcan_bsp.o: ..\User\GM6020.h
+trrebuild743\fdcan_bsp.o: ..\User\VESC_CAN.h

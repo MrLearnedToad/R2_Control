@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32H743xx,ARM_MATH_CM7,__CC_ARM,ARM_MATH_MATRIX_</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;      ..\User;      ../Drivers/STM32H7xx_HAL_Driver/Inc;      ../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy;      ../Middlewares/Third_Party/FreeRTOS/Source/include;      ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;      ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F;      ../Drivers/CMSIS/Device/ST/STM32H7xx/Include;      ../Drivers/CMSIS/Include;      ..\Drivers\CMSIS\DSP;      ..\Drivers\CMSIS\DSP\Include</IncludePath>
+              <IncludePath>../Core/Inc;       ..\User;       ../Drivers/STM32H7xx_HAL_Driver/Inc;       ../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy;       ../Middlewares/Third_Party/FreeRTOS/Source/include;       ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;       ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F;       ../Drivers/CMSIS/Device/ST/STM32H7xx/Include;       ../Drivers/CMSIS/Include;       ..\Drivers\CMSIS\DSP;       ..\Drivers\CMSIS\DSP\Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -2513,6 +2513,21 @@
               <FileName>HMI.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\HMI.c</FilePath>
+            </File>
+            <File>
+              <FileName>rgb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\rgb.c</FilePath>
+            </File>
+            <File>
+              <FileName>GM6020.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\GM6020.c</FilePath>
+            </File>
+            <File>
+              <FileName>VESC_CAN.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\VESC_CAN.c</FilePath>
             </File>
           </Files>
         </Group>

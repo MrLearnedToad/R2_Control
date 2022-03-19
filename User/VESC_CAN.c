@@ -1,5 +1,5 @@
 #include "VESC_CAN.h"
-
+#include "fdcan_bsp.h"
 /*电机的返回参数*/
 Motor_INFO VESC_Feedback[VESC_MAX_ID+1];
 uint8_t TXDATA[4];
@@ -20,7 +20,7 @@ static VESC_PID VESC_POS_PID[VESC_MAX_ID+1] = {
 	{.Kp = 1, .Ki = 0, .Kd = 0, .Max = 10, .Min = -10},//ID=4
 };
 
-void VESC_CAN_SENDDATA(CAN_HandleTypeDef *hcan,uint32_t Ext,uint8_t pData[]);
+void VESC_CAN_SENDDATA(FDCAN_HandleTypeDef *hfdcan,uint32_t Ext,uint8_t pData[]);
 void VESC_ENCODE_VALUE(uint8_t pData[],int set_value);
 
 /*********************************************************************************
@@ -29,7 +29,7 @@ void VESC_ENCODE_VALUE(uint8_t pData[],int set_value);
   *@  input     : ID， 目标位置
   *@  output    : 无
 *********************************************************************************/
-void VESC_SET_POS(uint8_t ID, int Goal_pos)
+void VESC_SET_POS(uint8_t ID, int Goal_pos,FDCAN_HandleTypeDef *hfdcan)
 {
 	VESC_POS_PID[ID].Err_1 = VESC_POS_PID[ID].Err;
 	VESC_POS_PID[ID].Err = Goal_pos - VESC_Feedback[ID].cur_pos;
@@ -42,7 +42,7 @@ void VESC_SET_POS(uint8_t ID, int Goal_pos)
 	VESC_POS_PID[ID].PID_Out = VESC_POS_PID[ID].P_Out + VESC_POS_PID[ID].I_Out + VESC_POS_PID[ID].D_Out;
 	VESC_POS_PID[ID].PID_Out = CLAMP(VESC_POS_PID[ID].PID_Out,  VESC_POS_PID[ID].Min,  VESC_POS_PID[ID].Max);
 	
-	VESC_SET_SPEED(ID, VESC_POS_PID[ID].PID_Out);
+	VESC_SET_SPEED(ID, VESC_POS_PID[ID].PID_Out,hfdcan);
 }
 
 /*********************************************************************************
@@ -51,7 +51,7 @@ void VESC_SET_POS(uint8_t ID, int Goal_pos)
   *@  input     : ID， 目标转速
   *@  output    : 无
 *********************************************************************************/
-void VESC_SET_SPEED(uint8_t ID,int Goal_rpm)
+void VESC_SET_SPEED(uint8_t ID,int Goal_rpm,FDCAN_HandleTypeDef *hfdcan)
 {
 	VESC_SPEED_PID[ID].Err_1 = VESC_SPEED_PID[ID].Err;
 	VESC_SPEED_PID[ID].Err = Goal_rpm - VESC_GET_SPEED(ID);
@@ -66,7 +66,7 @@ void VESC_SET_SPEED(uint8_t ID,int Goal_rpm)
 	VESC_SPEED_PID[ID].PID_Out = VESC_SPEED_PID[ID].P_Out + VESC_SPEED_PID[ID].I_Out + VESC_SPEED_PID[ID].D_Out;
 	VESC_SPEED_PID[ID].PID_Out = CLAMP(VESC_SPEED_PID[ID].PID_Out,VESC_SPEED_PID[ID].Min,VESC_SPEED_PID[ID].Max);
 	
-	VESC_COMMAND_SEND(&hcan1, VESC_SET_CURRENT, ID, VESC_SPEED_PID[ID].PID_Out); 
+	VESC_COMMAND_SEND(hfdcan, VESC_SET_CURRENT, ID, VESC_SPEED_PID[ID].PID_Out); 
 }
 
 
@@ -77,7 +77,7 @@ void VESC_SET_SPEED(uint8_t ID,int Goal_rpm)
   *@  input     : CAN线、命令、VESC的id值、目标值
   *@  output    : 无
 *********************************************************************************/
-void VESC_COMMAND_SEND(CAN_HandleTypeDef *hcan,uint32_t cmd,uint8_t id,float set_value)
+void VESC_COMMAND_SEND(FDCAN_HandleTypeDef *hfdcan,uint32_t cmd,uint8_t id,float set_value)
 {
 	/*定义发送数组*/
 	uint8_t pData[4]={0};
@@ -103,7 +103,7 @@ void VESC_COMMAND_SEND(CAN_HandleTypeDef *hcan,uint32_t cmd,uint8_t id,float set
 	uint32_t IDE = (cmd<<8) | ((uint32_t)id);
 	memcpy(TXDATA,pData,4);
 	/*发送指令*/
-	VESC_CAN_SENDDATA(hcan,IDE,pData);
+	VESC_CAN_SENDDATA(hfdcan,IDE,pData);
 }
 
 
@@ -126,18 +126,9 @@ void VESC_ENCODE_VALUE(uint8_t pData[],int set_value)
 	*@  input     : CAN线、扩展帧、需要发送的数组指针
   *@  output    : 无
 *********************************************************************************/
-void VESC_CAN_SENDDATA(CAN_HandleTypeDef *hcan,uint32_t Ext,uint8_t pData[])
+void VESC_CAN_SENDDATA(FDCAN_HandleTypeDef *hfdcan,uint32_t Ext,uint8_t pData[])
 {
-	CAN_TxHeaderTypeDef TxMessage;
-	
-	TxMessage.ExtId = Ext;
-	TxMessage.DLC = 4;
-	TxMessage.IDE = CAN_ID_EXT;
-	TxMessage.RTR = CAN_RTR_DATA;
-	
-	while (!HAL_CAN_GetTxMailboxesFreeLevel(hcan)); //等待空邮箱
-	HAL_CAN_AddTxMessage(hcan, &TxMessage, pData, (uint32_t *)CAN_TX_MAILBOX1);
-	
+	FDCAN_SendData_Ext(hfdcan,pData,Ext,FDCAN_DLC_BYTES_4,FDCAN_REMOTE_FRAME);
 }
 
 
@@ -252,9 +243,9 @@ int VESC_GET_SPEED(uint8_t ID)
 	*								Current 按导电滑环电流看，不要超过20A
   *@  output    : null
 *********************************************************************************/
-void VESC_SET_CurrentBrake(uint8_t ID, int Current)
+void VESC_SET_CurrentBrake(uint8_t ID, int Current,FDCAN_HandleTypeDef *hfdcan)
 {
-	VESC_COMMAND_SEND(&hcan1, 2, ID, Current * 1000);
+	VESC_COMMAND_SEND(hfdcan, 2, ID, Current * 1000);
 }
 
 

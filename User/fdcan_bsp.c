@@ -1,6 +1,7 @@
 #include "fdcan_bsp.h"
 #include "Remote_Control.h"
-
+#include "GM6020.h"
+#include "VESC_CAN.h"
 /**
  * @brief FDCAN1 初始化，关联FIFO0
  * @param hfdcan hfdcan1
@@ -91,6 +92,25 @@ uint8_t FDCAN_SendData(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t St
     return 0;
 }
 
+uint8_t FDCAN_SendData_Ext(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t ExtId, uint32_t Length, uint32_t Data_type)
+{
+
+    FDCAN_TxHeaderTypeDef TxHeader = {0};
+    TxHeader.Identifier = ExtId;             /*32位 ID*/
+    TxHeader.IdType = FDCAN_EXTENDED_ID;     /*拓展ID*/
+    TxHeader.TxFrameType = Data_type; /*帧类型*/
+    TxHeader.DataLength = Length;      /*数据长度有专门的格式*/
+    TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+    TxHeader.BitRateSwitch = FDCAN_BRS_OFF;           /*关闭速率切换*/
+    TxHeader.FDFormat = FDCAN_CLASSIC_CAN;            /*传统的CAN模式*/
+    TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS; /*无发送事件*/
+    TxHeader.MessageMarker = 0;
+
+    if (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &TxHeader, TxData) != HAL_OK)
+        return 1; //发送
+    return 0;
+}
+
 /**
  * @brief FDCAN接收信息处理
  * @param hfdcan
@@ -116,25 +136,7 @@ __weak void FDCAN_Message_Decode(FDCAN_HandleTypeDef *hfdcan, uint32_t StdId, ui
     }
     else if (hfdcan->Instance == FDCAN2)
     {
-        Elmo_Get_Init_Flag(StdId);
-	
-        /**********************************获取ELMO编码器数据*************************************/
-        if((StdId > COBID_TPDO2) && (StdId < (COBID_TPDO2 + 17)))
-        {
-            Elmo_Get_Encoder(StdId, RxData);
-    
-        }
-        
-        if(StdId==0x233)
-        {
-            for(int i=0;i<8;i++)
-            {
-                if(RxData[i]==1)
-                {
-                    cmd_feedback[i]=1;
-                }
-            }
-        }
+        GM6020_Get_Feedback(StdId,RxData);
     }
 }
 
@@ -149,13 +151,17 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     FDCAN_Message_Decode(hfdcan, RxHeader.Identifier, RxData);
 }
 
-/*FIFO 0接收回调*/
+/*FIFO 1接收回调*/
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
-    uint8_t RxData[8] = {0};
+    uint8_t RxData[64] = {0};
     FDCAN_RxHeaderTypeDef RxHeader;
 
     HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &RxHeader, RxData);
-
-    FDCAN_Message_Decode(hfdcan, RxHeader.Identifier, RxData);
+    if(RxHeader.IdType==FDCAN_STANDARD_ID)
+        FDCAN_Message_Decode(hfdcan, RxHeader.Identifier, RxData);
+    else
+    {
+        VESC_CAN_DECODE(RxHeader.Identifier,RxData);
+    }
 }

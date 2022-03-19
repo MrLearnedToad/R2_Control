@@ -41,6 +41,9 @@
 #include "arm_math.h"
 #include "HMI.h"
 #include "Tinn.h"
+#include "rgb.h"
+#include "GM6020.h"
+#include "VESC_CAN.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -150,15 +153,28 @@ Handle_Init(&hspi1,01);
 HAL_Delay(20);
 FDCAN1_Init(&hfdcan1);
 HAL_Delay(200);
-Elmo_Init(&hfdcan2,&htim7);
+HAL_TIM_Base_Start_IT(&htim7);
 HAL_Delay(200);
-Elmo_Pre_PVM(0);
+FDCAN2_Init(&hfdcan2);
 HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
 for(int i=0;i<10;i++)
 {
-    send_init_msg(&huart8,0x02);
+    if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
+    {
+        extern uint16_t RGB_DEFAULT[2];
+        RGB_DEFAULT[0]=0;
+        RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+        send_init_msg(&huart8,0x02);
+    }
+    else
+    {
+        extern uint16_t RGB_DEFAULT[2];
+        RGB_DEFAULT[0]=200;
+        RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+        send_init_msg(&huart8,0x03);
+    }
     HAL_Delay(10);
 }
 HAL_TIM_Base_Start_IT(&htim6);
@@ -168,21 +184,12 @@ extern uint8_t block_num;
 //tnn_buffer1_2[2]={-0.257041,0.419105},
 //tnn_buffer2_1[12]={0.13623,-0.440966,0.308962,0.0377088,0.434576,0.490001,0.0025015,0.445981,-0.0441973,0.395057,0.0753355,0.442013},
 //tnn_buffer2_2[2]={0.326608,-0.0178685};
-
 block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
 
-//base.x=6;
-//base.y=5;
-//update_barrier(2,base,0.325f);
-//base.x=7;
-//base.y=5;
-//update_barrier(3,base,0.375f);
-//velocity_nn_x=xtload(2,4,1,tnn_buffer2_1,tnn_buffer2_2);
-//velocity_nn_y=xtload(2,4,1,tnn_buffer2_1,tnn_buffer2_2);
-//velocity_nn_x=xtbuild(2,5,1);
-//velocity_nn_y=xtbuild(2,5,1);
+RGB_Init(&htim8,TIM_CHANNEL_3);
+
 hmi_init(&huart3);
 
   /* USER CODE END 2 */
@@ -568,22 +575,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim->Instance == TIM6)	/**/
 	{
 		static uint8_t ID=2,flag_sendlog=0;
-//        float *temp;
-//        float nninput[2];
+        
         if(flags[auto_drive_status]!=moving)
             acceration_limit();
-        
-        //训练X，Y轴速度控制神经网络
-//        if(Read_Button(25)==1)
-//        {
-//            temp=Fifo_update(dX,dY,current_speed.x,current_speed.y,6);
-//            nninput[0]=temp[0];
-//            nninput[1]=temp[2];
-//            xttrain(velocity_nn_x,nninput,&current_speed.x,nninput,0.03);
-//            nninput[0]=temp[1];
-//            nninput[1]=temp[3];
-//            xttrain(velocity_nn_y,nninput,&current_speed.y,nninput,0.03);
-//        }
+
         
         check_dead_barrier();
         if(global_clock<1499&&thread_lock==0)
@@ -601,9 +596,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-        Set_Pos();
-        Elmo_Run();
-        //send_log(0x01,current_speed.x,(vx[0]-vx[1])/0.004,current_speed.y,(vy[0]-vy[1])/0.004,&huart3);
+//        Set_Pos();
+//        Elmo_Run();
+        
+        GM6020_Set_V((int)debug.x,4);
+        //VESC_COMMAND_SEND(&hfdcan2,3,4,1000);  
         if(drivemode==manualmode)
         {
             dX=0;
@@ -619,7 +616,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	else if(htim->Instance == TIM7)
 	{
-		Elmo_SendCmd(&hfdcan2);
+		
         speed_clock++;
         if(speed_clock==30)
             DMA_recieve();

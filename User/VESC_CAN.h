@@ -8,7 +8,7 @@
 #ifndef __VESC_CAN__
 #define __VESC_CAN__
 
-#include "can.h"
+#include "fdcan.h"
 #include "stdint.h"
 #include "string.h"
 /*所连接的VESC最大id值
@@ -50,15 +50,15 @@ typedef struct
 /*初始化所需要的PID参数,写在主程序开始时*/
 void VESC_PID_INIT(void);
 /*设置位置*/
-void VESC_SET_POS(uint8_t ID, int Goal_pos);
+void VESC_SET_POS(uint8_t ID, int Goal_pos,FDCAN_HandleTypeDef *hfdcan);
 /*外部调用设置速度的函数*/
-void VESC_SET_SPEED(uint8_t ID,int Goal_rpm);
+void VESC_SET_SPEED(uint8_t ID,int Goal_rpm,FDCAN_HandleTypeDef *hfdcan);
 /*获取当前速度*/
 int VESC_GET_SPEED(uint8_t ID);
 /* 刹车 */
-void VESC_SET_CurrentBrake(uint8_t ID, int Current);
+void VESC_SET_CurrentBrake(uint8_t ID, int Current,FDCAN_HandleTypeDef *hfdcan);
 /*发送的底层函数*/
-void VESC_COMMAND_SEND(CAN_HandleTypeDef *hcan,uint32_t cmd,uint8_t id,float set_value);
+void VESC_COMMAND_SEND(FDCAN_HandleTypeDef *hfdcan,uint32_t cmd,uint8_t id,float set_value);
 /*CAN接收函数,应将其写入回调函数内*/
 void VESC_CAN_DECODE(uint32_t ExtID,uint8_t pData[]);
 
