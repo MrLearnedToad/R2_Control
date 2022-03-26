@@ -14,7 +14,7 @@
 /*所连接的VESC最大id值
 id在VESC TOOL里设置
 建议设置的小一点*/
-#define VESC_MAX_ID 4 
+#define VESC_MAX_ID 8 
 
 #define VESC_SET_DUTY 					0
 #define VESC_SET_CURRENT 				1

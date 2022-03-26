@@ -61,5 +61,6 @@ trrebuild743\move.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 trrebuild743\move.o: ..\User\fdcan_bsp.h
 trrebuild743\move.o: ..\User\user_task.h
 trrebuild743\move.o: ..\User\Resolve.h
+trrebuild743\move.o: ..\User\Ann.h
 trrebuild743\move.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
 trrebuild743\move.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h

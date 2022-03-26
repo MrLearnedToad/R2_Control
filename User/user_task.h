@@ -203,6 +203,8 @@ extern uint8_t thread_lock;
 extern uint8_t final_point_lock;
 extern void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_HandleTypeDef *uart);
 extern void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID);
+extern uint8_t deg_pid_disable;
+
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);

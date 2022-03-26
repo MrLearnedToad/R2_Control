@@ -59,6 +59,8 @@
 "trrebuild743\rgb.o"
 "trrebuild743\gm6020.o"
 "trrebuild743\vesc_can.o"
+"trrebuild743\steering_wheel.o"
+"trrebuild743\ann.o"
 --strict --scatter "TRrebuild743\TRrebuild743.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

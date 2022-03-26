@@ -389,8 +389,8 @@ int pick_up_activator_pos_set(mission_queue *current_task)
     if(flags[activator_status]==stop)
     {
         flags[activator_status]=moving;
-        flags[activator_pos]=7-current_task->info.x;
-        can_msg[6]=current_task->info.x+1;
+        flags[activator_pos]=current_task->info.x;
+        can_msg[6]=7-current_task->info.x;
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[6]==1)
@@ -658,7 +658,10 @@ int auto_place(mission_queue *current_task)
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete3;
-        add_mission(GRABPOSSET,set_flags,0,&release_pos);
+//        add_mission(HOOKGRASP,set_flags,0,&release_pos);
+        add_mission(GRABPOSSET,set_flags,1,&release_pos);
+//        set_flags[grab_pos]=tower_bottom2;
+//        add_mission(HOOKRELEASE,set_flags,0,&release_pos);
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {

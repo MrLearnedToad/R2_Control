@@ -61,3 +61,4 @@ trrebuild743\elmo_fdcan.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
 trrebuild743\elmo_fdcan.o: ..\User\fdcan_bsp.h
 trrebuild743\elmo_fdcan.o: ..\User\Resolve.h
 trrebuild743\elmo_fdcan.o: ..\User\user_task.h
+trrebuild743\elmo_fdcan.o: ..\User\Ann.h

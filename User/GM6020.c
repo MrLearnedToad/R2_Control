@@ -1,5 +1,6 @@
 #include "GM6020.h"
 #include "fdcan_bsp.h"
+#include "Ann.h"
 //采样时间在5~10ms
 
 const uint8_t GM6020_Reduction_Ratio[8] = {1, 1, 1, 1, 1, 1, 1, 1}; //电机减速比数组
@@ -7,15 +8,15 @@ const uint8_t GM6020_Reduction_Ratio[8] = {1, 1, 1, 1, 1, 1, 1, 1}; //电机减速比
 //用于存储电机反馈的全局变量
 uint8_t GM6020_Feedback_Buf[8][6];		//电机反馈值(全局变量)
 int GM6020_Pos[8];					//每一个元素对应一个ID的电机的信息
-
+ANN_PID_handle GM6020_Speed_ANNPID[8];
 
 //PID参数初始化	(每个电机一套参数)
-static GM6020_PID GM6020_Speed_Pid[8] =
+GM6020_PID GM6020_Speed_Pid[8] =
 {
-    {.Kp = 50, .Ki = 0, .Kd = 0, .Max = 300000, .Min = -300000}, //ID = 1
-    {.Kp = 50, .Ki = 0, .Kd = 0, .Max = 300000, .Min = -300000}, //ID = 2
-    {.Kp = 50, .Ki = 0, .Kd = 0, .Max = 300000, .Min = -300000}, //ID = 3
-    {.Kp = 50, .Ki = 1, .Kd = 5, .Max = 300000, .Min = -300000}, //ID = 4
+    {.Kp = 130, .Ki = 4, .Kd = 17, .Max = 300000, .Min = -300000}, //ID = 1
+    {.Kp = 130, .Ki = 4, .Kd = 17, .Max = 300000, .Min = -300000}, //ID = 2
+    {.Kp = 130, .Ki = 4, .Kd = 17, .Max = 300000, .Min = -300000}, //ID = 3
+    {.Kp = 130, .Ki = 4, .Kd = 17, .Max = 300000, .Min = -300000}, //ID = 4
     {.Kp = 50, .Ki = 1, .Kd = 5, .Max = 300000, .Min = -300000}, //ID = 5
     {.Kp = 50, .Ki = 1, .Kd = 5, .Max = 300000, .Min = -300000}, //ID = 6
     {.Kp = 50, .Ki = 1, .Kd = 5, .Max = 300000, .Min = -300000}, //ID = 7
@@ -23,17 +24,44 @@ static GM6020_PID GM6020_Speed_Pid[8] =
 };
 
 
-static GM6020_PID GM6020_Pos_Pid[8] =
+GM6020_PID GM6020_Pos_Pid[8] =
 {
-    {.Kp = 1.0, .Ki = 0.0, .Kd = 0.05, .Max = 520, .Min = -520},	//ID = 1
-    {.Kp = 1.0, .Ki = 0.0, .Kd = 0.05, .Max = 520, .Min = -520},	//ID = 2
-    {.Kp = 1.0, .Ki = 0.0, .Kd = 0.05, .Max = 520, .Min = -520},	//ID = 3
-    {.Kp = 1.35, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 4
+    {.Kp = 0.45, .Ki = 0.001, .Kd = 0.15, .Max = 320, .Min = -320},	//ID = 1
+    {.Kp = 0.4, .Ki = 0.001, .Kd = 0.1, .Max = 320, .Min = -320},	//ID = 2
+    {.Kp = 0.35, .Ki = 0.001, .Kd = 0.1, .Max = 320, .Min = -320},	//ID = 3
+    {.Kp = 0.6, .Ki = 0.001, .Kd = 0.1, .Max = 320, .Min = -320},	//ID = 4
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 5
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 6
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 7
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 8
 };
+
+void GM6020_ANNPID_Init(void)
+{
+    for(int i=0;i<8;i++)
+        ANN_pid_init(&GM6020_Speed_ANNPID[i]);
+    for(int i=0;i<400;i++)
+    {
+        for(int j=0;j<8;j++)
+            GM6020_Set_Speed(20,j);
+        HAL_Delay(12);
+    }
+    
+    for(int i=0;i<400;i++)
+    {
+        for(int j=0;j<8;j++)
+            GM6020_Set_Speed(-20,j);
+        HAL_Delay(12);
+    }
+    NNlearn=0;
+    for(int i=0;i<8;i++)
+    {
+        GM6020_Speed_ANNPID[i].pid_handle.KP*=0.7f;
+        GM6020_Speed_ANNPID[i].pid_handle.KI*=0.5f;
+        GM6020_Speed_ANNPID[i].pid_handle.KD*=0.7f;
+    }
+    return;
+}
 
 /*********************************************************************************
   *@  name      : GM6020_Set_V
@@ -100,6 +128,7 @@ void GM6020_Set_Speed(int goal_speed, int ID)
 		GM6020_Death_Speed((GM6020_Speed_Pid[id].PID_Out),GM6020_Death_Val);
 	
     GM6020_Set_V(GM6020_Speed_Pid[id].PID_Out, ID);
+//    GM6020_Set_V(ANN_pid_run(&GM6020_Speed_ANNPID[id],goal_speed,GM6020_Get_Speed(ID)), ID);
 }
 
 

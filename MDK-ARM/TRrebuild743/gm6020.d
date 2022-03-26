@@ -61,3 +61,4 @@ trrebuild743\gm6020.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
 trrebuild743\gm6020.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h
 trrebuild743\gm6020.o: ..\User\Resolve.h
 trrebuild743\gm6020.o: ..\User\user_task.h
+trrebuild743\gm6020.o: ..\User\Ann.h

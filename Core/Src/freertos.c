@@ -33,6 +33,7 @@
 #include "fdcan_bsp.h"
 #include "move.h"
 #include "Tinn.h"
+#include "rgb.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -229,21 +230,25 @@ void RobotTask(void *argument)
     uint8_t last_key_status[25]={0};
     Ort info={.x=0,.y=0,.z=0};
     
-//    barrier *target;
+    int activator_flag=0;
+    
+    barrier *target;
   /* Infinite loop */
   for(;;)
   {
 	  instruction_refresh();
       if(Read_Button(0)==1&&last_key_status[0]==0)
       {
-          info.x=1;
-          add_mission(0,set_flags,0,&info);
+//          info.x=1;
+//          add_mission(0,set_flags,0,&info);
+          dZ=0;
           last_key_status[0]=1;
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
       {
-          info.z=moving_complete1;
-          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
+//          info.z=moving_complete1;
+//          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
+          dZ=180;
           last_key_status[1]=1;
       }
       else if(Read_Button(2)==1&&last_key_status[2]==0)
@@ -262,17 +267,35 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(4)==1&&last_key_status[4]==0)
       {
-          info.x=up;
-          info.y=forward;
-          info.z=-1;
+          if(flags[regulator_horizontal_pos]==backward)
+          {
+              info.x=up;
+              info.y=forward;
+              info.z=-1;
+          }
+          else
+          {
+              info.x=down;
+              info.y=backward;
+              info.z=-1;
+          }
           add_mission(POSREGULATORPOSSET,set_flags,0,&info);
           last_key_status[4]=1;
       }
       else if(Read_Button(5)==1&&last_key_status[5]==0)
       {
-          info.x=-1;
-          info.y=-1;
-          info.z=grasp;
+          if(flags[regulator_catapult_pos]==grasp)
+          {
+              info.x=-1;
+              info.y=-1;
+              info.z=release;
+          }
+          else
+          {
+              info.x=-1;
+              info.y=-1;
+              info.z=grasp;
+          }
           add_mission(POSREGULATORPOSSET,set_flags,0,&info);
           last_key_status[5]=1;
       }
@@ -318,7 +341,9 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(16)==1&&last_key_status[16]==0)
       {
-          get_block_flag=0;
+          if(flags[activator_pos]<6)
+             info.x=flags[activator_pos]+1;
+          add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
           last_key_status[16]=1;
       }
       else if(Read_Button(17)==1&&last_key_status[17]==0)
@@ -329,7 +354,9 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(18)==1&&last_key_status[18]==0)
       {
-          load_status();
+          if(flags[activator_pos]>1)
+             info.x=flags[activator_pos]-1;
+          add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
           last_key_status[18]=1;
       }
       else if(Read_Button(19)==1&&last_key_status[19]==0)
@@ -340,8 +367,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(20)==1&&last_key_status[20]==0)
       {
-          xtsave(velocity_nn_x,&huart3);
-          xtsave(velocity_nn_y,&huart3);
+          get_block_flag=0;
           last_key_status[20]=1;
       }
       else if(Read_Button(21)==1)//È«¾ÖÖØÆô
@@ -363,20 +389,46 @@ void RobotTask(void *argument)
       }
       task_reset=Read_Button(14);
             
-//      target=find_barrier(block_num);
-//      debug.x=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5);
-//      debug.y=fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
-//      if(target!=NULL)
-//      {
-//          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
-//          {
-//              if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5));
-//              {
-//                pick_up(target->location.z,manualmode);
-//                get_block_flag=1;
-//              }
-//          }
-//      }
+      
+      target=find_barrier(block_num);
+      if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1))
+      {
+            extern uint16_t RGB_DEFAULT[2];
+            RGB_DEFAULT[0]=30;
+            RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+      }
+      else if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+      {
+            extern uint16_t RGB_DEFAULT[2];
+            RGB_DEFAULT[0]=180;
+            RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+          if(activator_flag==0)
+          {
+            add_mission(HOOKGRASP,set_flags,0,&info);
+              activator_flag=1;
+          }
+      }
+      else
+      {
+          extern uint16_t RGB_DEFAULT[2];
+          RGB_DEFAULT[0]=270;
+          RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+      }
+      if(target!=NULL)
+      {
+          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
+          {
+              if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+              {
+                pick_up(target->location.z,manualmode);
+                get_block_flag=1;
+              }
+          }
+      }
+      
+      if(activator_flag==1&&HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5)==0)
+          activator_flag=0;
+      
     osDelay(10);
   }
   /* USER CODE END RobotTask */
@@ -430,14 +482,15 @@ void manual_move(void *argument)
             rocker[2]=0;
             rocker[3]=0;
         }
-        dX=(0.00002998236f*rocker[0]*rocker[0]*rocker[0]+0.3063492f*rocker[0])/90.0f;
-        dY=(0.00002998236f*rocker[1]*rocker[1]*rocker[1]+0.3063492f*rocker[1])/90.0f;
+        dX=(0.00005876f*rocker[0]*rocker[0]*rocker[0]+0.2471129f*rocker[0])/90.0f;
+        dY=(0.00005876f*rocker[1]*rocker[1]*rocker[1]+0.2471129f*rocker[1])/90.0f;
         if(Read_Button(22)==1)
         {
             dX/=10;
             dY/=10;
         
         }
+
       }
     osDelay(1);
   }

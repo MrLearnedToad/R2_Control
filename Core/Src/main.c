@@ -44,6 +44,7 @@
 #include "rgb.h"
 #include "GM6020.h"
 #include "VESC_CAN.h"
+#include "Ann.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,6 +64,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+extern Kal_Filter kal_velocity_x,kal_velocity_y;
 extern float dX;
 extern float dY;
 extern float dZ;
@@ -159,20 +161,25 @@ FDCAN2_Init(&hfdcan2);
 HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
+
+extern uint16_t RGB_DEFAULT[2];
+RGB_DEFAULT[0]=0;
+RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+RGB_Init(&htim8,TIM_CHANNEL_3);
+
+for(int i=0;i<2000;i++)
+{
+    HAL_Delay(1);
+}
+
 for(int i=0;i<10;i++)
 {
     if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
-    {
-        extern uint16_t RGB_DEFAULT[2];
-        RGB_DEFAULT[0]=0;
-        RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+    {        
         send_init_msg(&huart8,0x02);
     }
     else
     {
-        extern uint16_t RGB_DEFAULT[2];
-        RGB_DEFAULT[0]=200;
-        RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
         send_init_msg(&huart8,0x03);
     }
     HAL_Delay(10);
@@ -188,7 +195,6 @@ block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
 
-RGB_Init(&htim8,TIM_CHANNEL_3);
 
 hmi_init(&huart3);
 
@@ -274,18 +280,30 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+int judge_sign(double num)
+{
+    if(num>0)
+        return 1;
+    if(num<0)
+        return -1;
+    if(num==0)
+        return 0;
+    return 0;
+}
+
 void acceration_limit()
 {
     static float lastdx=0,lastdy=0;
     float current_acceration;
+    
     current_acceration=sqrtf((dX-lastdx)*(dX-lastdx)+(dY-lastdy)*(dY-lastdy));
-    if((lastdx*lastdx+lastdy*lastdy)>0.16f)
+    if((lastdx*lastdx+lastdy*lastdy)>0.0004f||(dX*dX+dY*dY)>0.0004f)
     {
-    if(current_acceration>0.04f)
-    {
-        dX=(dX-lastdx)*0.04f+lastdx;
-        dY=(dY-lastdy)*0.04f+lastdy;
-    }
+        if(current_acceration>0.02f)
+        {
+            dX=judge_sign(dX-lastdx)*0.02f+lastdx;
+            dY=judge_sign(dY-lastdy)*0.02f+lastdy;
+        }
     }
         lastdx=dX;
         lastdy=dY;
@@ -354,6 +372,21 @@ void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_Ha
     return;
 }
 
+void send_log2(float data1,float data2,float data3,float data4,UART_HandleTypeDef *uart)
+{
+    uint8_t abaaba[20];
+    memcpy(abaaba,&data1,4);
+    memcpy(abaaba+4,&data2,4);
+    memcpy(abaaba+8,&data3,4);
+    memcpy(abaaba+12,&data4,4);
+    abaaba[19]=0x7f;
+    abaaba[18]=0x80;
+    abaaba[17]=0x00;
+    abaaba[16]=0x00;
+    HAL_UART_Transmit(uart,abaaba,20,1);
+    return;
+}
+
 void speed_cal(void)
 {
 //    static float lastx[2]={0},lasty[2]={0};
@@ -389,8 +422,10 @@ void speed_cal(void)
     }
     vx[0]=current_pos.x;
     vy[0]=current_pos.y;
-    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.036f;
-    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.036f;
+//    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.036f;
+//    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.036f;
+    current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.004f);
+    current_speed.y=Kalman_Filter(&kal_velocity_x,(vy[0]-vy[1])/0.004f);
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     return;
 }
@@ -566,7 +601,7 @@ float *Fifo_update(float num1,float num2,float num3,float num4,int retnum)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-    
+    static int log_clock=0;
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM14) {
     HAL_IncTick();
@@ -596,18 +631,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-//        Set_Pos();
+        Set_Pos();
 //        Elmo_Run();
         
-        GM6020_Set_V((int)debug.x,4);
-        //VESC_COMMAND_SEND(&hfdcan2,3,4,1000);  
+//        GM6020_Set_Speed(0,1);
+        //VESC_COMMAND_SEND(&hfdcan2,3,1,(int)debug.x);  
         if(drivemode==manualmode)
         {
             dX=0;
             dY=0;
         }
         send_msg();
-        
+        if(log_clock==10)
+        {
+            send_log2(-current_pos.z,dZ,0,0,&huart3);
+            log_clock=0;
+        }
+        log_clock++;
 //        send_debug_msg(&huart8,0,0,0);
 //        if(fabs(dX)>2.0f)
 //            send_log(0x03,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);

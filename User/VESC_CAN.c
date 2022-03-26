@@ -128,7 +128,7 @@ void VESC_ENCODE_VALUE(uint8_t pData[],int set_value)
 *********************************************************************************/
 void VESC_CAN_SENDDATA(FDCAN_HandleTypeDef *hfdcan,uint32_t Ext,uint8_t pData[])
 {
-	FDCAN_SendData_Ext(hfdcan,pData,Ext,FDCAN_DLC_BYTES_4,FDCAN_REMOTE_FRAME);
+	FDCAN_SendData_Ext(hfdcan,pData,Ext,FDCAN_DLC_BYTES_4,FDCAN_DATA_FRAME);
 }
 
 

@@ -61,6 +61,7 @@ trrebuild743\resolve.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
 trrebuild743\resolve.o: ..\User\fdcan_bsp.h
 trrebuild743\resolve.o: ..\User\Resolve.h
 trrebuild743\resolve.o: ..\User\user_task.h
+trrebuild743\resolve.o: ..\User\Ann.h
 trrebuild743\resolve.o: ..\User\joyhandle.h
 trrebuild743\resolve.o: ..\User\nrf.h
 trrebuild743\resolve.o: ../Core/Inc/spi.h
@@ -68,3 +69,6 @@ trrebuild743\resolve.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\resolve.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
 trrebuild743\resolve.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h
 trrebuild743\resolve.o: ..\User\Tinn.h
+trrebuild743\resolve.o: ..\User\steering_wheel.h
+trrebuild743\resolve.o: ..\User\VESC_CAN.h
+trrebuild743\resolve.o: ..\User\GM6020.h

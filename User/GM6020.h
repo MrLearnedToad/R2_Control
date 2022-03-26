@@ -104,6 +104,7 @@ extern int     GM6020_Pos[8];
 uint8_t		GM6020_Set_V(int target_i,uint8_t motor_id);
 void	    GM6020_Set_Speed(int goal_speed,int ID);
 void	    GM6020_Set_Pos(int goal_angle,int ID);
+void        GM6020_ANNPID_Init(void);
 
 void	GM6020_Get_Feedback(uint32_t std_id,uint8_t* data_p);
 int		GM6020_Get_Torque(uint8_t motor_id);

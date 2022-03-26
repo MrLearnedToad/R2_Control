@@ -60,6 +60,7 @@ trrebuild743\user_task.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 trrebuild743\user_task.o: ..\User\fdcan_bsp.h
 trrebuild743\user_task.o: ..\User\user_task.h
 trrebuild743\user_task.o: ..\User\Resolve.h
+trrebuild743\user_task.o: ..\User\Ann.h
 trrebuild743\user_task.o: ..\User\my_robot.h
 trrebuild743\user_task.o: ..\User\nrf.h
 trrebuild743\user_task.o: ../Core/Inc/spi.h
