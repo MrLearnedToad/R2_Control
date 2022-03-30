@@ -50,7 +50,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.004||global_clock>500||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if(distance<0.05||global_clock>500||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
 //        dX=0;
 //        dY=0;
@@ -59,7 +59,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
-    if(distance<short_drive_deadzone&&current_task->info.z>6)
+    if(distance<short_drive_deadzone&&current_task->info.z>6&&current_task->info.z<10)
     {
 //        dX=0;
 //        dY=0;
@@ -68,6 +68,15 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
+    if(current_task->info.z==moving_place_block&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0)
+    {
+        current_task->flag_finish=1;
+        flags[auto_drive_status]=current_task->info.z;
+        flag_running=0;
+        flags[drivemode]=manualmode;
+    }
+    if(current_task->info.z==moving_place_block&&distance<0.2f)
+        deg_pid_disable=1;
     return 0;
 }
 
@@ -340,25 +349,12 @@ int pos_regulator_pos_set(mission_queue *current_task)
         {
             if(current_task->info.x==down)
             {
-                if(current_task->info.y==backward)
-                {
-                    can_msg[4]=1;
-                }
-                else
-                {
-                    can_msg[4]=2;
-                }
+                can_msg[4]=1;
+                
             }
             else
             {
-                if(current_task->info.y==backward)
-                {
-                    can_msg[4]=3;
-                }
-                else
-                {
-                    can_msg[4]=4;
-                }
+                can_msg[4]=2;
             }
         }
         
@@ -478,13 +474,18 @@ void pick_up(uint8_t pos,uint8_t mode)
             set_flags[auto_drive_status]=moving_partially_complete1;
         info.x=block_num;
         add_mission(GRABPOSSET,set_flags,1,&info);
+                
+        info.x=tower_bottom;
+        add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+        info.x=0;
+        
         for(int i=0;i<total_flags;i++)
         {
             set_flags[i]=either;
         }
         info.x=0;
     
-        set_flags[grab_status]=stop;
+        set_flags[grab_status]=stop;        
         set_flags[hook_status]=stop;
         if(pos==down)
         {
@@ -511,6 +512,10 @@ void pick_up(uint8_t pos,uint8_t mode)
         set_flags[hook_status]=stop;
         info.x=block_num;
         add_mission(GRABPOSSET,set_flags,1,&info);
+        
+        info.x=tower_bottom;
+        add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+        info.x=0;
     }
     return;
 }
@@ -569,7 +574,7 @@ int auto_pick_up(mission_queue *current_task)
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.50f;
+        distance_2_move=distance-0.435f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
         grasp_pos.z=moving_partially_complete1;
@@ -634,34 +639,43 @@ int auto_place(mission_queue *current_task)
         flags[auto_drive_status]=moving;
         short_drive_deadzone=0.12f;
         dZ=stop_pos.z;
+//        dZ=-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         flag_running=2;
         stop_pos.z=moving_partially_complete1;
+        short_drive_deadzone=0.1f;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
-        distance_2_move=distance-0.58f;
+        //distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
+        distance_2_move=distance-0.51f;
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
-        release_pos.z=moving_complete2;
+//        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
+//        release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
+        
+        release_pos.z=moving_place_block;
         flags[auto_drive_status]=moving;
-        place_block(block_num);
+        
         set_flags[grab_status]=stop;
+        
         set_flags[auto_drive_status]=moving_partially_complete1;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
+        place_block(block_num);
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
-        set_flags[auto_drive_status]=moving_complete2;
-        release_pos.x=stop_pos. x-(release_pos.x-target_pos.x)*0.2f;
-        release_pos.y=stop_pos.y-(release_pos.y-target_pos.y)*0.2f;
+        set_flags[auto_drive_status]=moving_place_block;
+        release_pos.x=stop_pos.x+(release_pos.x-target_pos.x)*0.8f;
+        release_pos.y=stop_pos.y+(release_pos.y-target_pos.y)*0.8f;
         release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         release_pos.x=tower_bottom2;
-        set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete3;
-//        add_mission(HOOKGRASP,set_flags,0,&release_pos);
+        add_mission(HOOKGRASP,set_flags,0,&release_pos);
+        set_flags[grab_status]=stop;
         add_mission(GRABPOSSET,set_flags,1,&release_pos);
-//        set_flags[grab_pos]=tower_bottom2;
-//        add_mission(HOOKRELEASE,set_flags,0,&release_pos);
+        set_flags[grab_pos]=tower_bottom2;
+        add_mission(HOOKRELEASE,set_flags,0,&release_pos);
+        
     }
     if(__HAL_UART_GET_FLAG(&huart8,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
     {
@@ -676,6 +690,7 @@ int auto_place(mission_queue *current_task)
         block_num++;
         flags[lock_mode_status]=stop;
         flag_running=0;
+        deg_pid_disable=0;
         return 0;
     }
     return 0;
@@ -705,7 +720,7 @@ void place_block(uint8_t tower_num)
     info.x=0;
     
     set_flags[grab_status]=stop;
-    set_flags[auto_drive_status]=moving_complete2;
+    set_flags[auto_drive_status]=moving_place_block;
     add_mission(HOOKRELEASE,set_flags,0,&info);
     for(int i=0;i<total_flags;i++)
     {
@@ -714,4 +729,10 @@ void place_block(uint8_t tower_num)
     info.x=0;
     
     return;
+}
+
+int task_queue_delay(mission_queue *current_task)
+{
+    osDelay(1234);
+    return 0;
 }

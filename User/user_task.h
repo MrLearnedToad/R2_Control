@@ -87,6 +87,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define regulator_status 11
 #define activator_pos 12
 #define activator_status 13
+#define delay_status 14
 //²Ù×÷×´Ì¬ºê¶¨Òå
 #define automode 1
 #define manualmode 0
@@ -99,6 +100,8 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define moving_partially_complete1 7
 #define moving_partially_complete2 8
 #define moving_partially_complete3 9
+#define moving_error 10
+#define moving_place_block 11
 //¼Ð¾ß×´Ì¬
 #define release 0
 #define grasp 1

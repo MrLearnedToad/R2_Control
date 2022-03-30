@@ -11,13 +11,12 @@
 int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
 PID_T pid_speedx={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
 PID_T pid_speedy={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
-PID_T pid_deg={.KP=4,.KI=0.4,.KD=40,.PID_MAX=200,.Dead_Zone=0.5f};
+PID_T pid_deg={.KP=5.5,.KI=0,.KD=15,.PID_MAX=200,.Dead_Zone=0.5f};
 PID_T pid_pos={.KP=3.6,.KI=0,.KD=0,.PID_MAX=4};
-ANN_PID_handle velocity_pid_handle;
 uint8_t deg_pid_disable;
 extern Ort current_pos;
 extern Ort current_speed;
-extern Tinn velocity_nn_x,velocity_nn_y;
+extern ANN_PID_handle velocity_nn_x,velocity_nn_y;
 float dY;
 float dX;
 float dZ;

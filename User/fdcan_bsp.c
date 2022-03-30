@@ -55,6 +55,19 @@ uint8_t FDCAN2_Init(FDCAN_HandleTypeDef *hfdcan)
     {
         return 2;
     }
+    
+    RXFilter.IdType = FDCAN_EXTENDED_ID;             /*标准ID*/
+    RXFilter.FilterIndex = 2;                        /*滤波器索引*/
+    RXFilter.FilterType = FDCAN_FILTER_MASK;         /*过滤器类型，掩码模式*/
+    RXFilter.FilterConfig = FDCAN_FILTER_TO_RXFIFO1; /*关联过滤器到 RXFIFO0*/
+    RXFilter.FilterID1 = 0x0000;                     /*32位ID*/
+    RXFilter.FilterID2 = 0x0000;                     /*如果FDCAN配置为传统模式的话，这里是32位掩码*/
+    /*滤波器初始化*/
+    if (HAL_FDCAN_ConfigFilter(hfdcan, &RXFilter) != HAL_OK)
+    {
+        return 2;
+    }
+    
     /* 设置FDCAN1滤波器0全局配置  */
     if (HAL_FDCAN_ConfigGlobalFilter(hfdcan, FDCAN_REJECT, FDCAN_REJECT, DISABLE, DISABLE) != HAL_OK)
     {

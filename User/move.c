@@ -1103,29 +1103,78 @@ Ort evaluate_place_pos(int target_ID,float dist)
     if(target_ID==1)
     {
         temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
-        if(temp>=0&&temp<90)
-        {
-            target.x=target.x+dist;
-            target.y=target.y-dist;
-            target.z=45;
-        }
-        else if(temp>=90&&temp<180)
-        {
-            target.x=target.x+dist;
-            target.y=target.y+dist;
-            target.z=135;
-        }
-        else if(temp>=-180&&temp<-90)
+//        if(temp>=-157.5f&&temp<-112.5f)
+//        {
+//            target.x=target.x-dist;
+//            target.y=target.y+dist;
+//            target.z=-135;
+//        }
+//        else if(temp>=-112.5f&&temp<-67.5f)
+//        {
+//            target.x=target.x-dist;
+//            target.y=target.y;
+//            target.z=-90;
+//        }
+//        else if(temp>=-67.5f&&temp<-22.5f)
+//        {
+//            target.x=target.x-dist;
+//            target.y=target.y-dist;
+//            target.z=-45;
+//        }
+//        else if(temp>=-22.5f&&temp<22.5f)
+//        {
+//            target.x=target.x;
+//            target.y=target.y-dist;
+//            target.z=0;
+//        }
+//        else if(temp>=22.5f&&temp<67.5f)
+//        {
+//            target.x=target.x+dist;
+//            target.y=target.y-dist;
+//            target.z=45;
+//        }
+//        else if(temp>=67.5f&&temp<112.5f)
+//        {
+//            target.x=target.x+dist;
+//            target.y=target.y;
+//            target.z=90;
+//        }
+//        else if(temp>=112.5f&&temp<157.5f)
+//        {
+//            target.x=target.x+dist;
+//            target.y=target.y+dist;
+//            target.z=135;
+//        }
+//        else
+//        {
+//            target.x=target.x;
+//            target.y=target.y+dist;
+//            target.z=180;
+//        }
+
+        if(temp>=-135&&temp<-45)
         {
             target.x=target.x-dist;
-            target.y=target.y+dist;
-            target.z=-135;
+            target.y=target.y;
+            target.z=-90;
         }
-        else if(temp>=-90&&temp<0)
+        else if(temp>=-45&&temp<45)
         {
-            target.x=target.x-dist;
+            target.x=target.x;
             target.y=target.y-dist;
-            target.z=-45;
+            target.z=0;
+        }
+        else if(temp>=45&&temp<135)
+        {
+            target.x=target.x+dist;
+            target.y=target.y;
+            target.z=90;
+        }
+        else
+        {
+            target.x=target.x;
+            target.y=target.y+dist;
+            target.z=180;
         }
     }
     return target;

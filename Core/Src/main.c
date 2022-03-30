@@ -79,7 +79,7 @@ uint8_t huart3_rxbuffer[16]={0};
 Ort current_acceration;
 Ort current_speed;
 Ort current_pos={.x=6,.y=0.41f};
-Ort correction_value={.x=6,.y=0.41f};
+Ort correction_value={.x=6,.y=0.335f};
 uint8_t cmd_feedback[8];
 Ort pos_buffer[9];
 Ort speed_buffer[6];
@@ -89,7 +89,7 @@ int speed_clock;
 float vx[10],vy[10],ababa;
 Ort pos_log[10];
 uint8_t pos_reset=0;
-Tinn velocity_nn_x,velocity_nn_y;
+ANN_PID_handle velocity_nn_x,velocity_nn_y;
 
 /* USER CODE END PV */
 
@@ -167,10 +167,10 @@ RGB_DEFAULT[0]=0;
 RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
 RGB_Init(&htim8,TIM_CHANNEL_3);
 
-for(int i=0;i<2000;i++)
-{
-    HAL_Delay(1);
-}
+//for(int i=0;i<500;i++)
+//{
+//    HAL_Delay(1);
+//}
 
 for(int i=0;i<10;i++)
 {
@@ -195,6 +195,8 @@ block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
 
+//ANN_pid_init(&velocity_nn_x);
+//ANN_pid_init(&velocity_nn_y);
 
 hmi_init(&huart3);
 
@@ -299,10 +301,10 @@ void acceration_limit()
     current_acceration=sqrtf((dX-lastdx)*(dX-lastdx)+(dY-lastdy)*(dY-lastdy));
     if((lastdx*lastdx+lastdy*lastdy)>0.0004f||(dX*dX+dY*dY)>0.0004f)
     {
-        if(current_acceration>0.02f)
+        if(current_acceration>0.03f)
         {
-            dX=judge_sign(dX-lastdx)*0.02f+lastdx;
-            dY=judge_sign(dY-lastdy)*0.02f+lastdy;
+            dX=judge_sign(dX-lastdx)*0.03f+lastdx;
+            dY=judge_sign(dY-lastdy)*0.03f+lastdy;
         }
     }
         lastdx=dX;
@@ -354,8 +356,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.6f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.6f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.1f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.1f*speed_plan[global_clock].y;
     return;
 }
 
@@ -422,10 +424,10 @@ void speed_cal(void)
     }
     vx[0]=current_pos.x;
     vy[0]=current_pos.y;
-//    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.036f;
-//    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.036f;
-    current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.004f);
-    current_speed.y=Kalman_Filter(&kal_velocity_x,(vy[0]-vy[1])/0.004f);
+    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.045f;
+    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.045f;
+//    current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.005f);
+//    current_speed.y=Kalman_Filter(&kal_velocity_x,(vy[0]-vy[1])/0.005f);
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     return;
 }
@@ -449,7 +451,7 @@ void update_target_info(uint8_t *data)
         }
         cmd=7-cmd;
         temp1.x=(float)temp[0]/1000.0f;
-        temp1.y=(float)(temp[1]+200)/1000.0f;
+        temp1.y=(float)(temp[1]+345.31f)/1000.0f;
         temp1.z=temp2;
         temp1=coordinate_transform(temp1,current_pos);
         if(cmd>=block_num)
@@ -525,8 +527,8 @@ void update_target_info(uint8_t *data)
         if(pos_reset==1)
         {
             pos_reset=0;
-            correction_value.x=temp1.x-pos_log[5].x+6.0f;
-            correction_value.y=temp1.y-pos_log[5].y+0.41f;
+            correction_value.x=temp1.x-current_pos.x+6.0f;
+            correction_value.y=temp1.y-current_pos.y+0.335f;
             //correction_value.z=temp1.z-current_pos.z;
         }
     }
@@ -633,7 +635,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         Set_Pos();
 //        Elmo_Run();
-        
+        if(log_clock==5)
+        {
+//            send_log2(current_speed.x,(vx[0]-vx[1])/0.005f,current_speed.y,(vx[0]-vx[1])/0.005f,&huart3);
+//            send_log2(current_pos.z,-dZ,0,0,&huart3);
+            log_clock=0;
+        }
+        log_clock++;
 //        GM6020_Set_Speed(0,1);
         //VESC_COMMAND_SEND(&hfdcan2,3,1,(int)debug.x);  
         if(drivemode==manualmode)
@@ -642,12 +650,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dY=0;
         }
         send_msg();
-        if(log_clock==10)
-        {
-            send_log2(-current_pos.z,dZ,0,0,&huart3);
-            log_clock=0;
-        }
-        log_clock++;
+
+        
 //        send_debug_msg(&huart8,0,0,0);
 //        if(fabs(dX)>2.0f)
 //            send_log(0x03,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);
@@ -660,7 +664,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         speed_clock++;
         if(speed_clock==30)
             DMA_recieve();
-        if(speed_clock==40)
+        if(speed_clock==50)
         {
             speed_cal();
             speed_clock=0;

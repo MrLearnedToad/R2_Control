@@ -246,9 +246,9 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
       {
-//          info.z=moving_complete1;
-//          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
-          dZ=180;
+          info.z=moving_complete1;
+          add_mission(AUTODRIVELONGDISTANCE,set_flags,1,&info);
+//          dZ=180;
           last_key_status[1]=1;
       }
       else if(Read_Button(2)==1&&last_key_status[2]==0)
@@ -391,7 +391,7 @@ void RobotTask(void *argument)
             
       
       target=find_barrier(block_num);
-      if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1))
+      if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0)
       {
             extern uint16_t RGB_DEFAULT[2];
             RGB_DEFAULT[0]=30;
@@ -402,11 +402,11 @@ void RobotTask(void *argument)
             extern uint16_t RGB_DEFAULT[2];
             RGB_DEFAULT[0]=180;
             RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
-          if(activator_flag==0)
-          {
-            add_mission(HOOKGRASP,set_flags,0,&info);
-              activator_flag=1;
-          }
+//          if(activator_flag==0)
+//          {
+//            add_mission(HOOKGRASP,set_flags,0,&info);
+//              activator_flag=1;
+//          }
       }
       else
       {
