@@ -118,6 +118,9 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define tower_block_5 6
 #define tower_bottom 1 
 #define tower_bottom2 7
+
+#define delaying 1
+#define delay_complete 2
 //任务添加序号
 #define GRABPOSSET 0
 #define AUTODRIVESHORTDISTANCE 1
@@ -131,6 +134,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define POSREGULATORPOSSET 9
 #define PICKUPACTIVATORPOSSET 10
 #define AUTOTURN 11
+#define TASKQUEUEDELAY 12
 
 #define either 114
 #define total_flags 14 //定义标志位总数量
@@ -182,6 +186,7 @@ extern int (*autopickup)(mission_queue *current_task);
 extern int (*autoplace)(mission_queue *current_task);
 extern int (*posregulatorposset)(mission_queue *current_task);
 extern int (*pickupactivatorposset)(mission_queue *current_task);
+extern int (*taskqueuedelay)(mission_queue *current_task);
 
 extern uint8_t flags[20];
 extern float dX;
@@ -207,7 +212,9 @@ extern uint8_t final_point_lock;
 extern void send_log(uint8_t ID,float data1,float data2,float data3,float data4,UART_HandleTypeDef *uart);
 extern void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID);
 extern uint8_t deg_pid_disable;
-
+extern Ort raw_correction_value;
+extern Ort correction_value;
+extern void speed_cal(void);
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);
@@ -222,6 +229,7 @@ int auto_place(mission_queue *current_task);
 int pos_regulator_pos_set(mission_queue *current_task);
 int pick_up_activator_pos_set(mission_queue *current_task);
 int auto_turn(mission_queue *current_task);
+int task_queue_delay(mission_queue *current_task);
 /*Advanced Private Function Prototypes*/
 void pick_up(uint8_t pos,uint8_t mode);
 void place_block(uint8_t tower_num);

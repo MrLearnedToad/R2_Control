@@ -90,7 +90,7 @@ float vx[10],vy[10],ababa;
 Ort pos_log[10];
 uint8_t pos_reset=0;
 ANN_PID_handle velocity_nn_x,velocity_nn_y;
-
+Ort raw_correction_value;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -524,6 +524,9 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)temp[1]/1000.0f;
         memcpy(&temp1.z,data+11,4);
+        if(fabs(temp1.x)>11||fabs(temp1.y)>9||temp1.x<5||temp1.y<3)
+            return;
+        raw_correction_value=temp1;
         if(pos_reset==1)
         {
             pos_reset=0;

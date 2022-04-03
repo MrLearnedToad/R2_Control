@@ -68,3 +68,5 @@ trrebuild743\freertos.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\freertos.o: ..\User\move.h
 trrebuild743\freertos.o: ..\User\Tinn.h
 trrebuild743\freertos.o: ..\User\rgb.h
+trrebuild743\freertos.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
+trrebuild743\freertos.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h

@@ -99,10 +99,10 @@ typedef struct heap_node
 //宏定义区
 #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
 #define deadzone 0.45//路径点死区大小
-#define acceleration_limit_increase 1.7
-#define acceleration_limit_decrease 1.7
-#define acceleration_limit_turn 1.9
-#define speed_limit 1.0
+#define acceleration_limit_increase 2.4
+#define acceleration_limit_decrease 2.2
+#define acceleration_limit_turn 2.6
+#define speed_limit 2.3
 #define control_period 0.01
 
 //全局变量区

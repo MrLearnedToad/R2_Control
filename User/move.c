@@ -407,6 +407,7 @@ void check_dead_barrier(void)
         tmp->last_update_time++;
         tmp=tmp->next;
     }
+    return;
 }
 
 /*********************************************************************************

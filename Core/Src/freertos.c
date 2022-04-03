@@ -34,6 +34,7 @@
 #include "move.h"
 #include "Tinn.h"
 #include "rgb.h"
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -229,10 +230,10 @@ void RobotTask(void *argument)
     uint8_t set_flags[20]={either};
     uint8_t last_key_status[25]={0};
     Ort info={.x=0,.y=0,.z=0};
-    
+    int count=0;
     int activator_flag=0;
     
-    barrier *target;
+    barrier *target,target_temp;
   /* Infinite loop */
   for(;;)
   {
@@ -367,8 +368,17 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(20)==1&&last_key_status[20]==0)
       {
-          get_block_flag=0;
-          last_key_status[20]=1;
+          if(target!=NULL)
+          {
+             if(count>20)
+             {
+                 target_temp=*target;
+                 count=0;
+             } 
+             dZ=-atan2f(target_temp.location.x-current_pos.x,target_temp.location.y-current_pos.y)*180.0f/3.1415926f;
+             count++;
+          }
+          //last_key_status[20]=1;
       }
       else if(Read_Button(21)==1)//全局重启
       {
@@ -420,6 +430,7 @@ void RobotTask(void *argument)
           {
               if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
               {
+                
                 pick_up(target->location.z,manualmode);
                 get_block_flag=1;
               }
@@ -484,13 +495,13 @@ void manual_move(void *argument)
         }
         dX=(0.00005876f*rocker[0]*rocker[0]*rocker[0]+0.2471129f*rocker[0])/90.0f;
         dY=(0.00005876f*rocker[1]*rocker[1]*rocker[1]+0.2471129f*rocker[1])/90.0f;
+        dX+=-rocker[3]/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+        dY+=-rocker[3]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
         if(Read_Button(22)==1)
         {
             dX/=10;
             dY/=10;
-        
         }
-
       }
     osDelay(1);
   }
@@ -547,6 +558,11 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
         }
         case 10:{
             temp->taskname=pickupactivatorposset;
+            break;
+        }
+        case 12:{
+            temp->taskname=taskqueuedelay;
+            break;
         }
     }   
     temp->flag_necessary=flag_nessary;//决定是否为关键任务（不可跳过）
