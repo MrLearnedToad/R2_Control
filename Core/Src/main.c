@@ -91,6 +91,7 @@ Ort pos_log[10];
 uint8_t pos_reset=0;
 ANN_PID_handle velocity_nn_x,velocity_nn_y;
 Ort raw_correction_value;
+uint8_t block_color=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -171,11 +172,12 @@ RGB_Init(&htim8,TIM_CHANNEL_3);
 //{
 //    HAL_Delay(1);
 //}
+//__disable_fault_irq();//¾¿¼«½ûÊõ
 
 for(int i=0;i<10;i++)
 {
     if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
-    {        
+    {
         send_init_msg(&huart8,0x02);
     }
     else
@@ -464,8 +466,8 @@ void update_target_info(uint8_t *data)
         temp2=data[11];
         temp1.x=(float)(temp[0])/1000.0f;
         temp1.y=(float)(temp[1])/1000.0f;
-        temp1.x-=pos_log[0].x-pos_log[5].x;
-        temp1.y-=pos_log[0].y-pos_log[5].y;
+//        temp1.x-=pos_log[0].x-pos_log[5].x;
+//        temp1.y-=pos_log[0].y-pos_log[5].y;
         temp1.z=temp2;
         if(fabs(temp1.x)>14||fabs(temp1.y)>14)
             return;
@@ -495,6 +497,10 @@ void update_target_info(uint8_t *data)
             return;
         final_point=temp1;
         final_point.z=-atan2f(base->location.x-temp1.x,base->location.y-temp1.y)*180.0f/3.1415926f;
+    }
+    else if(cmd==9)
+    {
+        block_color=data[3];
     }
 //    else if(cmd>=7&&cmd<50)
 //    {
@@ -530,8 +536,8 @@ void update_target_info(uint8_t *data)
         if(pos_reset==1)
         {
             pos_reset=0;
-            correction_value.x=temp1.x-current_pos.x+6.0f;
-            correction_value.y=temp1.y-current_pos.y+0.335f;
+            correction_value.x=temp1.x-(float)gyro.x/1000.0f;
+            correction_value.y=temp1.y-(float)gyro.y/1000.0f;
             //correction_value.z=temp1.z-current_pos.z;
         }
     }
@@ -550,28 +556,45 @@ void DMA_recieve(void)
     pos_log[0].y=current_pos.y;
     pos_log[0].z=current_pos.z;
     
-    int i,j;
-    for(i=0;i<15;i++)
+    int i;
+    for(i=0;i<29;i++)
     {
         if(dma_buffer[i]=='?'&&dma_buffer[i+1]=='!')
         {
             break;
         }
     }
-    if(i==15)
-        return;
-    for(int j=i;j<30;j++)
+    if(i<=14)
     {
-        if(dma_buffer[i+1]=='!'&&j-i+1==16)
+        if(dma_buffer[i+15]!='!')
         {
-            break;
+            return;
+        }
+        else
+        {
+            for(int k=0;k<16;k++)
+            {
+                Rx_buffer[k]=dma_buffer[i+k];
+            }
         }
     }
-    if(j==30)
-        return;
-    for(int k=0;k<16;k++)
+    else
     {
-        Rx_buffer[k]=dma_buffer[i+k];
+        if(dma_buffer[i-15]!='!')
+        {
+            return;
+        }
+        else
+        {
+            for(int k=0;k<16;k++)
+            {
+                if(i+k<30)
+                    Rx_buffer[k]=dma_buffer[i+k];
+                else
+                    Rx_buffer[k]=dma_buffer[k-(30-i)];
+            }
+            __ASM("nop");
+        }
     }
     update_target_info(Rx_buffer);
     return;
@@ -641,8 +664,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(log_clock==5)
         {
 //            send_log2(current_speed.x,(vx[0]-vx[1])/0.005f,current_speed.y,(vx[0]-vx[1])/0.005f,&huart3);
-//            send_log2(current_pos.z,-dZ,0,0,&huart3);
-            log_clock=0;
+//            
+//            log_clock=0;
         }
         log_clock++;
 //        GM6020_Set_Speed(0,1);
@@ -665,7 +688,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		
         speed_clock++;
-        if(speed_clock==30)
+        if(speed_clock==10)
             DMA_recieve();
         if(speed_clock==50)
         {

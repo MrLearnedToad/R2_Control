@@ -73,6 +73,9 @@ uint8_t FDCAN2_Init(FDCAN_HandleTypeDef *hfdcan)
     {
         return 2;
     }
+    
+    *(uint32_t*)(0x4000A400+0x0080)=0x00000024;
+    
     HAL_FDCAN_Start(hfdcan);                                                  /*开启FDCAN*/
     HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0); /*打开FIFO中断接收*/
     return 0;

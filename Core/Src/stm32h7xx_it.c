@@ -69,7 +69,6 @@ extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim14;
 
 /* USER CODE BEGIN EV */
-
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -96,6 +95,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
+
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {

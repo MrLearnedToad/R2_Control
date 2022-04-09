@@ -101,7 +101,7 @@ typedef struct heap_node
 #define deadzone 0.45//路径点死区大小
 #define acceleration_limit_increase 2.4
 #define acceleration_limit_decrease 2.2
-#define acceleration_limit_turn 2.6
+#define acceleration_limit_turn 2.8
 #define speed_limit 2.3
 #define control_period 0.01
 

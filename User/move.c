@@ -299,11 +299,13 @@ void update_barrier(int barrier_ID,Ort pos,double range)
             
         if(tmp->barrier_ID==barrier_ID)
         {
-       
+        
             tmp->location.x=pos.x;
             tmp->location.y=pos.y;
             tmp->location.z=pos.z;
             tmp->range=range;
+            extern Ort debug;
+            debug.z=tmp->last_update_time;
             tmp->last_update_time=0;
             find_flag=1;
         }

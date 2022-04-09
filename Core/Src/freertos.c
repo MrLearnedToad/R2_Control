@@ -64,6 +64,7 @@ uint8_t backup_block_num=0;//备份计数器
 mission_queue *running_task;
 extern Ort debug;
 uint8_t get_block_flag=0;
+uint8_t focus_mode=0;
 extern Tinn velocity_nn_x,velocity_nn_y;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -230,8 +231,8 @@ void RobotTask(void *argument)
     uint8_t set_flags[20]={either};
     uint8_t last_key_status[25]={0};
     Ort info={.x=0,.y=0,.z=0};
-    int count=0;
-    int activator_flag=0;
+    int count=0,last_target_id=0;
+    
     
     barrier *target,target_temp;
   /* Infinite loop */
@@ -333,11 +334,13 @@ void RobotTask(void *argument)
           info.x=block_num;
           get_block_flag=1;
           add_mission(AUTOPICKUP,set_flags,0,&info);
+          focus_mode=0;
           last_key_status[12]=1;
       }
       else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop)
       {
           add_mission(AUTOPLACE,set_flags,0,&info);
+          focus_mode=0;
           last_key_status[15]=1;
       }
       else if(Read_Button(16)==1&&last_key_status[16]==0)
@@ -368,17 +371,11 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(20)==1&&last_key_status[20]==0)
       {
-          if(target!=NULL)
-          {
-             if(count>20)
-             {
-                 target_temp=*target;
-                 count=0;
-             } 
-             dZ=-atan2f(target_temp.location.x-current_pos.x,target_temp.location.y-current_pos.y)*180.0f/3.1415926f;
-             count++;
-          }
-          //last_key_status[20]=1;
+          if(focus_mode==1)
+              focus_mode=0;
+          else
+              focus_mode=1;
+          last_key_status[20]=1;
       }
       else if(Read_Button(21)==1)//全局重启
       {
@@ -390,7 +387,7 @@ void RobotTask(void *argument)
       {
           set_flags[i]=either;
       }
-      for(int i=0;i<20;i++)
+      for(int i=0;i<=20;i++)
       {
           if(Read_Button(i)==0&&last_key_status[i]==1)
           {
@@ -426,19 +423,35 @@ void RobotTask(void *argument)
       }
       if(target!=NULL)
       {
-          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.56f)<0.20f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
+//          debug.x=fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
+//          debug.y=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.595f);
+          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
           {
-              if(fabs(current_pos.z+atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=5.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+              if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=10.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
               {
-                
+                focus_mode=0;
                 pick_up(target->location.z,manualmode);
                 get_block_flag=1;
               }
           }
       }
       
-      if(activator_flag==1&&HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5)==0)
-          activator_flag=0;
+      if(target!=NULL&&focus_mode==1)
+      {
+         if(last_target_id!=target->barrier_ID)
+         {
+             count=41;
+             last_target_id=target->barrier_ID;
+         }
+         if(count>40)
+         {
+             target_temp=*target;
+             count=0;
+         } 
+         if(pow(target_temp.location.x-current_pos.x,2)+pow(target_temp.location.y-current_pos.y,2)>0.09f)
+            dZ=-atan2f(target_temp.location.x-current_pos.x,target_temp.location.y-current_pos.y)*180.0f/3.1415926f;
+         count++;
+      }
       
     osDelay(10);
   }

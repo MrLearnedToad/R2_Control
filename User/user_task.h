@@ -215,6 +215,8 @@ extern uint8_t deg_pid_disable;
 extern Ort raw_correction_value;
 extern Ort correction_value;
 extern void speed_cal(void);
+extern uint8_t block_color;
+extern uint8_t focus_mode;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);
