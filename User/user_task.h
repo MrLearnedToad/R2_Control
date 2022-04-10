@@ -135,6 +135,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define PICKUPACTIVATORPOSSET 10
 #define AUTOTURN 11
 #define TASKQUEUEDELAY 12
+#define MOVEFORWARD 13
 
 #define either 114
 #define total_flags 14 //定义标志位总数量
@@ -187,6 +188,7 @@ extern int (*autoplace)(mission_queue *current_task);
 extern int (*posregulatorposset)(mission_queue *current_task);
 extern int (*pickupactivatorposset)(mission_queue *current_task);
 extern int (*taskqueuedelay)(mission_queue *current_task);
+extern int (*moveforward)(mission_queue *current_task);
 
 extern uint8_t flags[20];
 extern float dX;
@@ -217,6 +219,8 @@ extern Ort correction_value;
 extern void speed_cal(void);
 extern uint8_t block_color;
 extern uint8_t focus_mode;
+extern Ort open_loop_velocity;
+extern uint8_t communciation_error_counter;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);
@@ -232,6 +236,7 @@ int pos_regulator_pos_set(mission_queue *current_task);
 int pick_up_activator_pos_set(mission_queue *current_task);
 int auto_turn(mission_queue *current_task);
 int task_queue_delay(mission_queue *current_task);
+int move_forward(mission_queue *current_task);
 /*Advanced Private Function Prototypes*/
 void pick_up(uint8_t pos,uint8_t mode);
 void place_block(uint8_t tower_num);

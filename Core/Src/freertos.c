@@ -35,6 +35,7 @@
 #include "Tinn.h"
 #include "rgb.h"
 #include "arm_math.h"
+#include "VESC_CAN.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -88,6 +89,13 @@ const osThreadAttr_t manualmove_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for error_detector */
+osThreadId_t error_detectorHandle;
+const osThreadAttr_t error_detector_attributes = {
+  .name = "error_detector",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -100,6 +108,7 @@ void load_status(void);
 void StartDefaultTask(void *argument);
 void RobotTask(void *argument);
 void manual_move(void *argument);
+void errordetector(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -138,6 +147,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of manualmove */
   manualmoveHandle = osThreadNew(manual_move, NULL, &manualmove_attributes);
+
+  /* creation of error_detector */
+  error_detectorHandle = osThreadNew(errordetector, NULL, &error_detector_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -395,11 +407,11 @@ void RobotTask(void *argument)
           }
       }
       task_reset=Read_Button(14);
-            
-      
+                  
       target=find_barrier(block_num);
-      if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0)
+      if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0))
       {
+            
             extern uint16_t RGB_DEFAULT[2];
             RGB_DEFAULT[0]=30;
             RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
@@ -421,13 +433,16 @@ void RobotTask(void *argument)
           RGB_DEFAULT[0]=270;
           RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
       }
+      
+
       if(target!=NULL)
       {
 //          debug.x=fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
 //          debug.y=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.595f);
-          if(((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
+          //((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||
+          if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
           {
-              if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<=10.0f||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+              if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
               {
                 focus_mode=0;
                 pick_up(target->location.z,manualmode);
@@ -521,6 +536,68 @@ void manual_move(void *argument)
   /* USER CODE END manual_move */
 }
 
+/* USER CODE BEGIN Header_errordetector */
+/**
+* @brief Function implementing the error_detector thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_errordetector */
+void errordetector(void *argument)
+{
+  /* USER CODE BEGIN errordetector */
+    uint8_t system_status[10];
+    uint8_t transmit_buffer[7]={0};
+    uint8_t temp=0;
+  /* Infinite loop */
+  for(;;)
+  {
+      if(block_color==up)
+        system_status[0]=1;//1bit
+      else
+        system_status[0]=0;
+      if(communciation_error_counter==255)
+        system_status[1]=0;
+      else
+          system_status[1]=1;
+      system_status[2]=flags[grab_status];
+      system_status[3]=flags[switcher_status];
+      system_status[4]=flags[regulator_status];
+      system_status[5]=flags[activator_status];
+      system_status[6]=lock_mode_status;
+      system_status[7]=deg_pid_disable;
+      for(int i=0;i<8;i++)
+      {
+          temp=temp|(system_status[i]<<i);
+      }
+      transmit_buffer[0]=temp;
+      system_status[0]=7-block_num;//3bit
+      for(int i=1;i<=4;i++)
+      {
+          if(VESC_Feedback[i].error_flag==1)
+          {
+              system_status[1]=1;//1bit
+              break;
+          }
+          else
+              system_status[1]=0;
+      }
+      system_status[2]=flags[auto_drive_status];//4bit
+      temp=0;
+      temp=temp|(system_status[0]<<5);
+      temp=temp|(system_status[1]<<4);
+      temp=temp|(system_status[2]);
+      transmit_buffer[1]=temp;
+      transmit_buffer[2]=current_pos.x*16.0f;
+      transmit_buffer[3]=current_pos.y*16.0f;
+      transmit_buffer[4]=(current_pos.z+180)/2;
+      transmit_buffer[5]=fabs(current_speed.x)*32.0f;
+      transmit_buffer[6]=fabs(current_speed.y)*32.0f;
+      osDelay(10);
+  }
+  /* USER CODE END errordetector */
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info)//然后这里会添加任务
@@ -575,6 +652,10 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
         }
         case 12:{
             temp->taskname=taskqueuedelay;
+            break;
+        }
+        case 13:{
+            temp->taskname=moveforward;
             break;
         }
     }   

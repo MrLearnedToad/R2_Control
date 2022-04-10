@@ -20,6 +20,7 @@ int (*posregulatorposset)(mission_queue *current_task)=pos_regulator_pos_set;
 int (*pickupactivatorposset)(mission_queue *current_task)=pick_up_activator_pos_set;
 int (*autoturn)(mission_queue *current_task)=auto_turn;
 int (*taskqueuedelay)(mission_queue *current_task)=task_queue_delay;
+int (*moveforward)(mission_queue *current_task)=move_forward;
 /*全局变量区*/
 Ort target_pos;
 int current_target_ID=0;
@@ -47,7 +48,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
 //    dY=velocity_vector.y;
     if(flag_running==0)
     {
-        send_log(2,current_pos.x,current_pos.y,current_task->info.x,current_task->info.y,&huart3);
+        //send_log(2,current_pos.x,current_pos.y,current_task->info.x,current_task->info.y,&huart3);
         pre_plan(current_task->info);
         global_clock=3;
         flag_running=1;
@@ -72,7 +73,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
-    if(current_task->info.z==moving_place_block&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0)
+    if(current_task->info.z==moving_place_block&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1))
     {
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
@@ -701,7 +702,7 @@ int auto_place(mission_queue *current_task)
 //        dZ=-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         flag_running=2;
         stop_pos.z=moving_partially_complete1;
-        add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&stop_pos);
+        add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
         //distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
         distance_2_move=distance-0.515f;
@@ -709,14 +710,20 @@ int auto_place(mission_queue *current_task)
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
 //        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
 //        release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
-        
-        release_pos.z=moving_place_block;
+
+        short_drive_deadzone=0.05f;
+        release_pos.z=moving_partially_complete2;
         flags[auto_drive_status]=moving;
         
         set_flags[grab_status]=stop;
         
         set_flags[auto_drive_status]=moving_partially_complete1;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
+        
+        release_pos.z=moving_place_block;
+        set_flags[auto_drive_status]=moving_partially_complete2;
+        add_mission(MOVEFORWARD,set_flags,1,&release_pos);
+        
         place_block(block_num);
         set_flags[grab_status]=stop;
         set_flags[hook_status]=stop;
@@ -826,23 +833,39 @@ int task_queue_delay(mission_queue *current_task)
 
 int move_forward(mission_queue *current_task)
 {
-    if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==1)
+    static uint8_t PA0_triggered_time=4,PA1_triggered_time=4;
+    
+    if(PA0_triggered_time<4)
+        PA0_triggered_time++;
+    if(PA1_triggered_time<4)
+        PA1_triggered_time++;
+    
+    if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==1)
+        PA1_triggered_time=0;
+    if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)==1)
+        PA0_triggered_time=0;
+    
+    if(PA0_triggered_time==4&&PA1_triggered_time!=4)
     {
-        dX=0.3f/90.0f*arm_sin_f32((current_pos.z+30)*3.1415926f/180.0f);
-        dY=0.3f/90.0f*arm_cos_f32((current_pos.z+30)*3.1415926f/180.0f);
+        open_loop_velocity.y=0.2;
+        open_loop_velocity.z=15;
     }
-    else if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==1&&HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0)
+    else if(PA0_triggered_time!=4&&PA1_triggered_time==4)
     {
-        dX=0.3f/90.0f*arm_sin_f32((current_pos.z-30)*3.1415926f/180.0f);
-        dY=0.3f/90.0f*arm_cos_f32((current_pos.z-30)*3.1415926f/180.0f);
+        open_loop_velocity.y=0.2;
+        open_loop_velocity.z=-15;
     }
     else
     {
-        dX=0.3f/90.0f*arm_sin_f32((current_pos.z)*3.1415926f/180.0f);
-        dY=0.3f/90.0f*arm_cos_f32((current_pos.z)*3.1415926f/180.0f);
+        open_loop_velocity.y=0.2;
+        open_loop_velocity.z=0;
     }
-    if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)==0||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if((PA0_triggered_time!=4&&PA1_triggered_time!=4)||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
     {
+        PA0_triggered_time=4;
+        PA1_triggered_time=4;
+        open_loop_velocity.y=0;
+        open_loop_velocity.z=0;
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
     }

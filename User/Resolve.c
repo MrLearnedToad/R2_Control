@@ -14,6 +14,7 @@ PID_T pid_speedy={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
 PID_T pid_deg={.KP=5.5,.KI=0,.KD=15,.PID_MAX=200,.Dead_Zone=0.5f};
 PID_T pid_pos={.KP=3.6,.KI=0,.KD=0,.PID_MAX=4};
 uint8_t deg_pid_disable;
+Ort open_loop_velocity;
 extern Ort current_pos;
 extern Ort current_speed;
 extern ANN_PID_handle velocity_nn_x,velocity_nn_y;
@@ -125,7 +126,10 @@ void Set_Pos(void)
 //        Wheel_Speed[3]=Wheel_Speed[3];
 
 	/*解算到车轮的速度*/
-    Openloop_CarCoordinate(dx,dy,pid_velocityz);
+    if(open_loop_velocity.x==0&&open_loop_velocity.y==0&&open_loop_velocity.z==0)
+        Openloop_CarCoordinate(dx,dy,pid_velocityz);
+    else
+        Openloop_CarCoordinate(open_loop_velocity.x,open_loop_velocity.y,open_loop_velocity.z);
 	/*限制输出*/
 	//Wheel_Limit();
 }

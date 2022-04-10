@@ -31,6 +31,8 @@ typedef struct{
 	float cur_current; //电流
 	int cur_rpm; //转速
 	int cur_pos; //位置
+    uint8_t error_flag;
+    uint8_t last_call_time;
 }Motor_INFO;
 extern Motor_INFO VESC_Feedback[VESC_MAX_ID+1];
 
@@ -64,7 +66,7 @@ void VESC_CAN_DECODE(uint32_t ExtID,uint8_t pData[]);
 
 
 /*内部调用函数*/
-
+extern Motor_INFO VESC_Feedback[];
 uint32_t VESC_DECODE_RPM(uint8_t pData[]);
 float VESC_DECODE_CURRENT(uint8_t pData[]);
 int VESC_DECODE_POS(uint8_t pData[]);

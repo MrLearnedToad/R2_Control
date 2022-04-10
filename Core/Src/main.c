@@ -92,6 +92,7 @@ uint8_t pos_reset=0;
 ANN_PID_handle velocity_nn_x,velocity_nn_y;
 Ort raw_correction_value;
 uint8_t block_color=0;
+uint8_t communciation_error_counter=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,7 +121,7 @@ void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+    
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -305,8 +306,8 @@ void acceration_limit()
     {
         if(current_acceration>0.03f)
         {
-            dX=judge_sign(dX-lastdx)*0.03f+lastdx;
-            dY=judge_sign(dY-lastdy)*0.03f+lastdy;
+            dX=judge_sign(dX-lastdx)*0.03f*fabs(dX-lastdx)/current_acceration+lastdx;
+            dY=judge_sign(dY-lastdy)*0.03f*fabs(dY-lastdy)/current_acceration+lastdy;
         }
     }
         lastdx=dX;
@@ -469,7 +470,7 @@ void update_target_info(uint8_t *data)
 //        temp1.x-=pos_log[0].x-pos_log[5].x;
 //        temp1.y-=pos_log[0].y-pos_log[5].y;
         temp1.z=temp2;
-        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
+        if(temp1.x>11||temp1.y>9||temp1.x<5||temp1.y<3)
             return;
         //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
         //temp1=coordinate_transform(temp1,pos_log[5]);        
@@ -530,7 +531,7 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)temp[1]/1000.0f;
         memcpy(&temp1.z,data+11,4);
-        if(fabs(temp1.x)>11||fabs(temp1.y)>9||temp1.x<5||temp1.y<3)
+        if(temp1.x>11||temp1.y>9||temp1.x<5||temp1.y<3)
             return;
         raw_correction_value=temp1;
         if(pos_reset==1)
@@ -595,6 +596,13 @@ void DMA_recieve(void)
             }
             __ASM("nop");
         }
+    }
+    if(((*(uint32_t*)(0x40007C00+0x1C))&0x00000020)!=0)
+        communciation_error_counter=0;
+    else
+    {
+        if(communciation_error_counter<254)
+            communciation_error_counter++;
     }
     update_target_info(Rx_buffer);
     return;

@@ -95,7 +95,11 @@ void VESC_COMMAND_SEND(FDCAN_HandleTypeDef *hfdcan,uint32_t cmd,uint8_t id,float
 		case VESC_SET_POSITION:
 			set_value*=1000000;break;
 	}
-	
+	if(VESC_Feedback[id].last_call_time<254)
+        VESC_Feedback[id].last_call_time++;
+    else
+        VESC_Feedback[id].error_flag=1;
+    
 	/*将值解码至数据帧*/
 	VESC_ENCODE_VALUE(pData,set_value);
 	
@@ -154,6 +158,8 @@ void VESC_CAN_DECODE(uint32_t ExtID,uint8_t pData[])
 		VESC_Feedback[id].cur_rpm = VESC_DECODE_RPM(pData);
 		VESC_Feedback[id].cur_current = VESC_DECODE_CURRENT(pData);
 		VESC_Feedback[id].cur_pos = VESC_DECODE_POS(pData);
+        VESC_Feedback[id].last_call_time=0;
+        VESC_Feedback[id].error_flag=0;
 	}
 }
 
