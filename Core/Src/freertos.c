@@ -451,7 +451,7 @@ void RobotTask(void *argument)
           }
       }
       
-      if(target!=NULL&&focus_mode==1)
+      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<45.0f)
       {
          if(last_target_id!=target->barrier_ID)
          {
