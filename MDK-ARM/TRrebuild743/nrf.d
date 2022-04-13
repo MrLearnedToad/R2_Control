@@ -1,5 +1,5 @@
 trrebuild743\nrf.o: ..\User\nrf.c
-trrebuild743\nrf.o: ..\User\nrf.h
+trrebuild743\nrf.o: ../Core/Inc/main.h
 trrebuild743\nrf.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h
 trrebuild743\nrf.o: ../Core/Inc/stm32h7xx_hal_conf.h
 trrebuild743\nrf.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_rcc.h
@@ -39,5 +39,7 @@ trrebuild743\nrf.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_tim.h
 trrebuild743\nrf.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_tim_ex.h
 trrebuild743\nrf.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart.h
 trrebuild743\nrf.o: ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h
+trrebuild743\nrf.o: ..\User\nrf.h
+trrebuild743\nrf.o: ../Core/Inc/gpio.h
+trrebuild743\nrf.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 trrebuild743\nrf.o: ../Core/Inc/spi.h
-trrebuild743\nrf.o: ../Core/Inc/main.h

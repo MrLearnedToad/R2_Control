@@ -63,7 +63,7 @@ trrebuild743\user_task.o: ..\User\Resolve.h
 trrebuild743\user_task.o: ..\User\Ann.h
 trrebuild743\user_task.o: ..\User\my_robot.h
 trrebuild743\user_task.o: ..\User\nrf.h
-trrebuild743\user_task.o: ../Core/Inc/spi.h
+trrebuild743\user_task.o: ../Core/Inc/gpio.h
 trrebuild743\user_task.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\user_task.o: ..\User\move.h
 trrebuild743\user_task.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h

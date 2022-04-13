@@ -25,6 +25,7 @@ extern int32_t Wheel_Speed[4];//分解到三个轮胎上的速度
 extern PID_T pid_pos;
 /*内部调用的函数*/
 
+static void send_velocity(float x,float y,float z);
 
 
 

@@ -55,5 +55,6 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 			//gyro.sum_y += (gyro.y - gyro.last_y)*cos(gyro.z-gyro.last_z);
             gyro.y=gyro.y;
 		}
+        gyro.error_counter=0;
 	}
 }

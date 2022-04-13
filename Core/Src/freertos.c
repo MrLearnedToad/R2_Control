@@ -36,6 +36,7 @@
 #include "rgb.h"
 #include "arm_math.h"
 #include "VESC_CAN.h"
+#include "Remote_Control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -451,7 +452,7 @@ void RobotTask(void *argument)
           }
       }
       
-      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<45.0f)
+      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f)
       {
          if(last_target_id!=target->barrier_ID)
          {
@@ -504,8 +505,8 @@ void manual_move(void *argument)
         }
         if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&abs(Read_Rocker(2))<=190&&abs(Read_Rocker(3))<=190)
         {
-            rocker[2]=Read_Rocker(2);
-            rocker[3]=Read_Rocker(3);
+            rocker[2]=-Read_Rocker(2);
+            rocker[3]=-Read_Rocker(3);
             dZ+=rocker[2]/2000.0f;
             if(dZ>=180)
             {
@@ -557,15 +558,19 @@ void errordetector(void *argument)
       else
         system_status[0]=0;
       if(communciation_error_counter==255)
-        system_status[1]=0;
+        system_status[1]=1;
       else
-          system_status[1]=1;
+          system_status[1]=0;
       system_status[2]=flags[grab_status];
-      system_status[3]=flags[switcher_status];
+      if(gyro.error_counter==1000)
+          system_status[3]=1;
+      else
+          system_status[3]=0;
       system_status[4]=flags[regulator_status];
       system_status[5]=flags[activator_status];
-      system_status[6]=lock_mode_status;
+      system_status[6]=focus_mode;
       system_status[7]=deg_pid_disable;
+      temp=0;
       for(int i=0;i<8;i++)
       {
           temp=temp|(system_status[i]<<i);
@@ -593,6 +598,9 @@ void errordetector(void *argument)
       transmit_buffer[4]=(current_pos.z+180)/2;
       transmit_buffer[5]=fabs(current_speed.x)*32.0f;
       transmit_buffer[6]=fabs(current_speed.y)*32.0f;
+      for(int i=0;i<8;i++)
+        nRF24L01_ack_pay.Ack_Buf[i]=transmit_buffer[i];
+      Ack_load(7);
       osDelay(10);
   }
   /* USER CODE END errordetector */

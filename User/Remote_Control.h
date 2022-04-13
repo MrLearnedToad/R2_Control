@@ -15,6 +15,8 @@ typedef struct
 	int sum_x;
 	int sum_y;
 	float sum_z;
+    
+    int error_counter;
 }GYRO;
 
 extern GYRO gyro;

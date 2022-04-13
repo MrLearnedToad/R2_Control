@@ -64,7 +64,7 @@ trrebuild743\resolve.o: ..\User\user_task.h
 trrebuild743\resolve.o: ..\User\Ann.h
 trrebuild743\resolve.o: ..\User\joyhandle.h
 trrebuild743\resolve.o: ..\User\nrf.h
-trrebuild743\resolve.o: ../Core/Inc/spi.h
+trrebuild743\resolve.o: ../Core/Inc/gpio.h
 trrebuild743\resolve.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trrebuild743\resolve.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
 trrebuild743\resolve.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h

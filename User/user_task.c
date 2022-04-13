@@ -449,7 +449,9 @@ void pick_up(uint8_t pos,uint8_t mode)
     else if(mode==automode)
     {
         info.x=forward;
+        set_flags[hook_status]=either;
         add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
+        set_flags[hook_status]=stop;
     }
         
     info.x=0;
@@ -732,6 +734,12 @@ int auto_place(mission_queue *current_task)
         release_pos.y=stop_pos.y+(release_pos.y-target_pos.y)*0.2f;
         release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
+        if(block_num!=tower_block_5)
+            release_pos.x=block_num+1;
+        else
+            release_pos.x=block_num;
+        add_mission(GRABPOSSET,set_flags,1,&release_pos);
+        
         release_pos.x=tower_bottom2;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete3;
@@ -746,6 +754,11 @@ int auto_place(mission_queue *current_task)
     {
         __HAL_UART_CLEAR_OREFLAG(&huart8);
     }
+//    if(flags[auto_drive_status]==moving_place_block&&flags[hook_pos]==release&&deg_pid_disable==1)
+//    {
+//        dZ=-current_pos.z;
+//        deg_pid_disable=0;
+//    }
     if(flags[auto_drive_status]==moving_complete3)
     {
         get_block_flag=0;

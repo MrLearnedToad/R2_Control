@@ -7,6 +7,7 @@
 #include "Tinn.h"
 #include "steering_wheel.h"
 #include "Ann.h"
+#include "fdcan_bsp.h"
 
 int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
 PID_T pid_speedx={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
@@ -124,12 +125,18 @@ void Set_Pos(void)
 //        Wheel_Speed[1]=Wheel_Speed[1]/19*28.5f;
 //        Wheel_Speed[2]=Wheel_Speed[2]/19*28.5f;
 //        Wheel_Speed[3]=Wheel_Speed[3];
-
+    
 	/*解算到车轮的速度*/
     if(open_loop_velocity.x==0&&open_loop_velocity.y==0&&open_loop_velocity.z==0)
+    {
         Openloop_CarCoordinate(dx,dy,pid_velocityz);
+        send_velocity(dx,dy,pid_velocityz);
+    }
     else
+    {
         Openloop_CarCoordinate(open_loop_velocity.x,open_loop_velocity.y,open_loop_velocity.z);
+        send_velocity(open_loop_velocity.x,open_loop_velocity.y,open_loop_velocity.z);
+    }
 	/*限制输出*/
 	//Wheel_Limit();
 }
@@ -189,4 +196,13 @@ float Kalman_Filter(Kal_Filter* K_Flt, float Input)
     K_Flt->C_last = K_Flt->C + K_Flt->Q;
 
     return K_Flt->X;
+}
+
+void send_velocity(float x,float y,float z)
+{
+    uint8_t transmit_buffer[8]={0};
+    *(short*)(transmit_buffer+0)=x*2048.0f;
+    *(short*)(transmit_buffer+2)=y*2048.0f;
+    *(short*)(transmit_buffer+4)=z*128.0f;
+    FDCAN_SendData(&hfdcan1,transmit_buffer,0x234,8);
 }

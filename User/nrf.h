@@ -1,81 +1,132 @@
-#ifndef _HANDLE_H_
-#define _HANDLE_H_
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __nRF24L01_H
+#define __nRF24L01_H
 
-#include "stm32h7xx_hal.h"
-#include "stdint.h"
-#include "spi.h"
+//Í¨¹ı¶¨Òåºê NRF24SPI_Send_Byte ¿ÉÒÔÊ¹ÓÃÓ²¼şSPI£¬·ñÔòÊ¹ÓÃÄ£ÄâSPI
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+#include "gpio.h"
+//#define nRF24_SPI_Send_Byte
+/* Exported types ------------------------------------------------------------*/
+typedef struct
+{
+	uint8_t		Ack_Buf[32];
+	uint8_t		Ack_Len;
+	uint8_t		Ack_Channel;
+	uint8_t		Ack_Status;
+}ACK_PAYLOAD;
+/* Exported constants --------------------------------------------------------*/
+/* Exported macro ------------------------------------------------------------*/
+/* Exported define -----------------------------------------------------------*/
+	// 1.GND	2.VCC
+	// 3.CE		4.nCS		//RX/TXÄ£Ê½Ñ¡Ôñ¶Ë		//SPIÆ¬Ñ¡¶ËSS
+	// 5.SCK	6.MOSI		//SPIÊ±ÖÓ¶Ë				//SPIÖ÷»úÊä³ö´Ó»úÊäÈë¶Ë
+	// 7.MISO	8.IRQ		//SPIÖ÷»úÊä³ö´Ó»úÊä³ö¶Ë	//¿ÉÆÁ±ÎÖĞ¶Ï¶Ë
+//==============================
+//¿ØÖÆ¹Ü½Å
 
 
-/*å®šä¹‰IOæ¥å£æ“ä½œ*/
-#define Handle_CE_H() HAL_GPIO_WritePin(NRF_CE_GPIO_Port, NRF_CE_Pin, GPIO_PIN_SET)
-#define Handle_CE_L() HAL_GPIO_WritePin(NRF_CE_GPIO_Port, NRF_CE_Pin, GPIO_PIN_RESET)
-#define Handle_CS_H() HAL_GPIO_WritePin(NRF_CS_GPIO_Port, NRF_CS_Pin, GPIO_PIN_SET)
-#define Handle_CS_L() HAL_GPIO_WritePin(NRF_CS_GPIO_Port, NRF_CS_Pin, GPIO_PIN_RESET)
+	#define debug_out(x)		//printf x
+	#define CE_H()		( HAL_GPIO_WritePin(NRF_CE_GPIO_Port, NRF_CE_Pin, GPIO_PIN_SET) )
+	#define CE_L()		( HAL_GPIO_WritePin(NRF_CE_GPIO_Port, NRF_CE_Pin, GPIO_PIN_RESET) )		//GPIO_PORT_nRF->BRR  = GPIO_Pin_nRF_CE
+	#define CSN_H()		( HAL_GPIO_WritePin(NRF_CS_GPIO_Port, NRF_CS_Pin, GPIO_PIN_SET) )		//GPIO_PORT_nRF_SPI->BSRR = GPIO_Pin_nRF_nCS
+	#define CSN_L()		( HAL_GPIO_WritePin(NRF_CS_GPIO_Port, NRF_CS_Pin, GPIO_PIN_RESET) )		//GPIO_PORT_nRF_SPI->BRR  = GPIO_Pin_nRF_nCS
 
+	#define nRF_IRQ()			HAL_GPIO_ReadPin(NRF_IRQ_GPIO_Port,NRF_IRQ_Pin)//GPIO_ReadInputDataBit(GPIO_PORT_nRF_IRQ, GPIO_Pin_nRF_IRQ)
+//==============================
+//nRF24L01¼Ä´æÆ÷²Ù×÷ÃüÁî
+	#define nRF_READ_REG        0x00	//¶ÁÅäÖÃ¼Ä´æÆ÷,µÍ5Î»Îª¼Ä´æÆ÷µØÖ·
+	#define nRF_WRITE_REG       0x20	//Ğ´ÅäÖÃ¼Ä´æÆ÷,µÍ5Î»Îª¼Ä´æÆ÷µØÖ·
+	
+	#define nRF_R_RX_PLOAD		0x61	//¶Á½ÓÊÕÊı¾İ,1~32×Ö½Ú
+	#define nRF_W_TX_PLOAD		0xA0	//Ğ´·¢ËÍÊı¾İ,1~32×Ö½Ú
+	
+	#define nRF_FLUSH_RX        0xE2	//Çå³ıRX FIFO¼Ä´æÆ÷.½ÓÊÕÄ£Ê½ÏÂÓÃ,ÔÚ´«ÊäÓ¦´ğĞÅºÅ¹ı³ÌÖĞ²»Ó¦Ö´ĞĞ´ËÖ¸Áî
+	#define nRF_FLUSH_TX        0xE1	//Çå³ıTX FIFO¼Ä´æÆ÷.·¢ÉäÄ£Ê½ÏÂÓÃ
+	
+	#define nRF_REUSE_TX_PL     0xE3	//Êı¾İÖØ·¢,ÖØĞÂÊ¹ÓÃÉÏÒ»°üÊı¾İ,CEÎª¸ß,Êı¾İ°ü±»²»¶Ï·¢ËÍ.
+	
+	#define nRF_R_RX_PL_WID		0x60	//¶ÁRX FIFO¶¥²ãR_RX_PLOADÔØºÉ³¤¶È,Èô³¬³ö32×Ö½ÚÔòÇå³ıRX FIFO
+	#define nRF_W_ACK_PAYLOAD	0xA8//+ppp	//RXÄ£Ê½ÏÂ,½«PIPEppp(pppµÄ·¶Î§Îª000~101)ÖĞµÄAcK°üÓëÔØºÉÒ»ÆğĞ´Èë,×î¶à¿ÉÒÔÓĞ3¸ö¹ÒÆğµÄACK°ü.
+	#define nRF_W_TX_PAYLOAD_NOACK	0xB0//·¢ËÍÊı¾İ,µ«½ûÖ¹×Ô¶¯Ó¦´ğ,·¢ÉäÄ£Ê½ÓÃ
+	
+	#define nRF_NOP				0xFF	//¿Õ²Ù×÷,¿ÉÒÔÓÃÀ´¶Á×´Ì¬¼Ä´æÆ÷
+//=======²¹³ä²ÎÊı
+	#define Activate			0x50
+	#define Code_Activate		0x73
+//==============================
+//SPI(nRF24L01)¼Ä´æÆ÷µØÖ·
+	#define CONFIG				0x00//  ÅäÖÃÊÕ·¢×´Ì¬£¬CRCĞ£ÑéÄ£Ê½ÒÔ¼°ÊÕ·¢×´Ì¬ÏìÓ¦·½Ê½
+	#define EN_AA				0x01//  ×Ô¶¯Ó¦´ğ¹¦ÄÜÉèÖÃ
+	#define EN_RXADDR			0x02//  ¿ÉÓÃĞÅµÀÉèÖÃ
+	#define SETUP_AW			0x03// ÊÕ·¢µØÖ·¿í¶ÈÉèÖÃ
+	#define SETUP_RETR			0x04// ×Ô¶¯ÖØ·¢¹¦ÄÜÉèÖÃ
+	#define RF_CH				0x05// ¹¤×÷ÆµÂÊÉèÖÃ
+	#define RF_SETUP			0x06// ·¢ÉäËÙÂÊ¡¢¹¦ºÄ¹¦ÄÜÉèÖÃ0b0010 0111
+	#define STATUS				0x07  // ×´Ì¬¼Ä´æÆ÷£¨Ğ´1Çå³ı¶ÔÓ¦µÄÖĞ¶Ï£©
+	#define OBSERVE_TX			0x08  // ·¢ËÍ¼à²â¹¦ÄÜ
+	#define CD					0x09  // µØÖ·¼ì²â
+	#define RX_ADDR_P0			0x0A  // ÆµµÀ0½ÓÊÕÊı¾İµØÖ·£¨Í¨µÀ0µÄµØÖ· ×¢£º Î»39µ½Î»0¿ÉÒÔËæÒâ¸Ä £©
+	#define RX_ADDR_P1			0x0B  // ÆµµÀ1½ÓÊÕÊı¾İµØÖ·£¨Í¨µÀ1µÄµØÖ·£¬×¢£ºÎ»39µ½Î»0¿ÉÒÔËæÒâ¸Ä£©
+	#define RX_ADDR_P2			0x0C  // ÆµµÀ2½ÓÊÕÊı¾İµØÖ·£¨Í¨µÀ2µÄµØÖ·£¬×¢£ºÎ»39µ½Î»8Í¬Í¨µÀ1,Î»7µ½Î»0¿ÉÒÔËæÒâ¸Ä£©
+	#define RX_ADDR_P3			0x0D  // ÆµµÀ3½ÓÊÕÊı¾İµØÖ·£¨Í¨µÀ3µÄµØÖ·£¬×¢£ºÎ»39µ½Î»8Í¬Í¨µÀ1,Î»7µ½Î»0¿ÉÒÔËæÒâ¸Ä£©
+	#define RX_ADDR_P4			0x0E  // ÆµµÀ4½ÓÊÕÊı¾İµØÖ·£¨Í¨µÀ4µÄµØÖ·£¬×¢£ºÎ»39µ½Î»8Í¬Í¨µÀ1,Î»7µ½Î»0¿ÉÒÔËæÒâ¸Ä£©
+	#define RX_ADDR_P5			0x0F  // ÆµµÀ5½ÓÊÕÊı¾İµØÖ·£¨Í¨µÀ5µÄµØÖ·£¬×¢£ºÎ»39µ½Î»8Í¬Í¨µÀ1,Î»7µ½Î»0¿ÉÒÔËæÒâ¸Ä£©
+	#define TX_ADDR				0x10  // ·¢ËÍµØÖ·¼Ä´æÆ÷£¨·¢ÉäµØÖ·£¬×¢£º Î»39µ½Î»0¿ÉÒÔËæÒâ¸Ä£©
+	#define RX_PW_P0			0x11  // ½ÓÊÕÆµµÀ0½ÓÊÕÊı¾İ³¤¶È
+	#define RX_PW_P1			0x12  // ½ÓÊÕÆµµÀ1½ÓÊÕÊı¾İ³¤¶È
+	#define RX_PW_P2			0x13  // ½ÓÊÕÆµµÀ2½ÓÊÕÊı¾İ³¤¶È
+	#define RX_PW_P3			0x14  // ½ÓÊÕÆµµÀ3½ÓÊÕÊı¾İ³¤¶È
+	#define RX_PW_P4			0x15  // ½ÓÊÕÆµµÀ4½ÓÊÕÊı¾İ³¤¶È
+	#define RX_PW_P5			0x16  // ½ÓÊÕÆµµÀ5½ÓÊÕÊı¾İ³¤¶È
+	#define FIFO_STATUS			0x17  // FIFOÕ»ÈëÕ»³ö×´Ì¬¼Ä´æÆ÷ÉèÖÃ£¨Ö»¶Á£©
+//=======²¹³ä²ÎÊı
+	#define DYNPD				0x1C  // nRF24L01 Dynamic payload setup
+	#define FEATURE				0x1D  // nRF24L01 Exclusive feature setup
+//==============================
+	#define MAX_RT				0x10	//´ïµ½×î´ó·¢ËÍ´ÎÊıÖĞ¶Ï
+	#define TX_DS   			0x20	//TX·¢ËÍÍê³ÉÖĞ¶Ï
+	#define RX_DR   			0x40	//½ÓÊÕµ½Êı¾İÖĞ¶Ï
 
-#define Handle_IRQ_Read() HAL_GPIO_ReadPin(NRF_IRQ_GPIO_Port, NRF_IRQ_Pin)
+	#define nRF_Mode_TX			0
+	#define nRF_Mode_RX			1
+//==============================
+//24L01·¢ËÍ½ÓÊÕÊı¾İ¿í¶È¶¨Òå
+	#define TX_ADR_WIDTH    	5		//5×Ö½ÚµÄµØÖ·¿í¶È
+	#define RX_ADR_WIDTH    	5		//5×Ö½ÚµÄµØÖ·¿í¶È
+	#define RX_PLOAD_WIDTH  	32		//Ö¸¶¨µÄÓÃ»§Êı¾İ¿í¶È
+	#define ACK_PLOAD_WIDTH  	5		//Ö¸¶¨µÄÓÃ»§Êı¾İ¿í¶È
+	
+	//½ÓÊÕ»ú,ACK Ó¦´ğÍ¨µÀN,½ÓÊÕÍ¨µÀ0~5,(¼ä¸ô250*4=1ms,2´Î,)ËÙÂÊ250K,0db,Ğ£Ñé9Î»,½ÓÊÕÄ£Ê½
+	#define nRF_RX_CONFIG		0x0,  0x0,  0x26, 40, 0x26, 0x0f			//²»Òª¿´ÕâÀï£¬Ã»ÓĞÓÃµ½
+	//·¢Éä»ú,ACK Ó¦´ğÍ¨µÀ0,½ÓÊÕÍ¨µÀ0,¼ä¸ô250*4=1ms,2´Î,ËÙÂÊ250K,0db,Ğ£Ñé9Î»,·¢ËÍÄ£Ê½
+	#define nRF_TX_CONFIG		0x01, 0x01, 0x1a, 40, 0x26, 0x0e			//²»Òª¿´ÕâÀï£¬Ã»ÓĞÓÃµ½
+//==============================
+	#define DYNAMIC_PAYLOAD		1//Ê¹ÓÃ¶¯Ì¬¼ÓÔØÊı¾İ³¤¶È[³¤¶ÈÏà·ûÊ±,½ÓÊÕ»ú¿ÉÒÔ¾²Ì¬½ÓÊÕ·¢Éä»úµÄ¶¯Ì¬Êı¾İ]
+	#if		DYNAMIC_PAYLOAD
+	#define DYNAMIC_PAYLOAD_ACK	1//Ê¹ÓÃ¶¯Ì¬Êı¾İ³¤¶ÈÊ±ACK¹¦ÄÜ
+	#if		DYNAMIC_PAYLOAD_ACK
+	#define DYNPD_ACK_DATA		1//Ê¹ÓÃ¶¯Ì¬Êı¾İ³¤¶ÈÊ±´øÊı¾İACK¹¦ÄÜ
+	#endif
+	#endif
+	#define nRF_TX_Channel		0//·¢ËÍÍ¨µÀºÅ(Ïà¶ÔÓÚ½ÓÊÕ»úµÄ½ÓÊÕÍ¨µÀºÅ)
+	
+	#define nRF_PTX				0//·¢Éä»ú±êÖ¾
+/* Exported functions ------------------------------------------------------- */
+	void MY_GPIO_Init(void);
+	void nRF24L01_Configuration(void);
+	void nRF24L01_Set_Config(void);
+	uint8_t nRF24L01_Check(void);
+	void nRF24L01_Set_Mode(uint8_t rx_mode);
+//==============================
+	uint8_t nRF24L01_RxPacket(uint8_t * rx_buf);
+	uint8_t nRF24L01_TxPacket(uint8_t tx_channel, uint8_t * tx_buf, uint8_t len);
+	uint8_t nRF24L01_Tx_Ack(ACK_PAYLOAD *ack_pay);
+	void nRF24L01_Rx_AckPayload(ACK_PAYLOAD ack_pay);
+/* External variables --------------------------------------------------------*/
+	extern uint8_t nRF24L01_TxBuf[32];
+	extern uint8_t nRF24L01_RxBuf[32];
 
-
-//NRF24L01å¯„å­˜å™¨æ“ä½œå‘½ä»¤
-#define NRF_READ_REG 0x00  //è¯»é…ç½®å¯„å­˜å™¨,ä½5ä½ä¸ºå¯„å­˜å™¨åœ°å€
-#define NRF_WRITE_REG 0x20 //å†™é…ç½®å¯„å­˜å™¨,ä½5ä½ä¸ºå¯„å­˜å™¨åœ°å€
-#define RD_RX_PLOAD 0x61   //è¯»RXæœ‰æ•ˆæ•°æ®,1~32å­—èŠ‚
-#define WR_TX_PLOAD 0xA0   //å†™TXæœ‰æ•ˆæ•°æ®,1~32å­—èŠ‚
-#define FLUSH_TX 0xE1	   //æ¸…é™¤TX FIFOå¯„å­˜å™¨.å‘å°„æ¨¡å¼ä¸‹ç”¨
-#define FLUSH_RX 0xE2	   //æ¸…é™¤RX FIFOå¯„å­˜å™¨.æ¥æ”¶æ¨¡å¼ä¸‹ç”¨
-#define REUSE_TX_PL 0xE3   //é‡æ–°ä½¿ç”¨ä¸Šä¸€åŒ…æ•°æ®,CEä¸ºé«˜,æ•°æ®åŒ…è¢«ä¸æ–­å‘é€.
-#define NOP 0xFF		   //ç©ºæ“ä½œ,å¯ä»¥ç”¨æ¥è¯»çŠ¶æ€å¯„å­˜å™¨
-//SPI(NRF24L01)å¯„å­˜å™¨åœ°å€
-#define CONFIG 0x00		//é…ç½®å¯„å­˜å™¨åœ°å€;bit0:1æ¥æ”¶æ¨¡å¼,0å‘å°„æ¨¡å¼;bit1:ç”µé€‰æ‹©;bit2:CRCæ¨¡å¼;bit3:CRCä½¿èƒ½; \
-						//bit4:ä¸­æ–­MAX_RT(è¾¾åˆ°æœ€å¤§é‡å‘æ¬¡æ•°ä¸­æ–­)ä½¿èƒ½;bit5:ä¸­æ–­TX_DSä½¿èƒ½;bit6:ä¸­æ–­RX_DRä½¿èƒ½
-#define EN_AA 0x01		//ä½¿èƒ½è‡ªåŠ¨åº”ç­”åŠŸèƒ½  bit0~5,å¯¹åº”é€šé“0~5
-#define EN_RXADDR 0x02	//æ¥æ”¶åœ°å€å…è®¸,bit0~5,å¯¹åº”é€šé“0~5
-#define SETUP_AW 0x03	//è®¾ç½®åœ°å€å®½åº¦(æ‰€æœ‰æ•°æ®é€šé“):bit1,0:00,3å­—èŠ‚;01,4å­—èŠ‚;02,5å­—èŠ‚;
-#define SETUP_RETR 0x04 //å»ºç«‹è‡ªåŠ¨é‡å‘;bit3:0,è‡ªåŠ¨é‡å‘è®¡æ•°å™¨;bit7:4,è‡ªåŠ¨é‡å‘å»¶æ—¶ 250*x+86us
-#define RF_CH 0x05		//RFé€šé“,bit6:0,å·¥ä½œé€šé“é¢‘ç‡;
-#define RF_SETUP 0x06	//RFå¯„å­˜å™¨;bit3:ä¼ è¾“é€Ÿç‡(0:1Mbps,1:2Mbps);bit2:1,å‘å°„åŠŸç‡;bit0:ä½å™ªå£°æ”¾å¤§å™¨å¢ç›Š
-#define STATUS 0x07		//çŠ¶æ€å¯„å­˜å™¨;bit0:TX FIFOæ»¡æ ‡å¿—;bit3:1,æ¥æ”¶æ•°æ®é€šé“å·(æœ€å¤§:6);bit4,è¾¾åˆ°æœ€å¤šæ¬¡é‡å‘ \
-						//bit5:æ•°æ®å‘é€å®Œæˆä¸­æ–­;bit6:æ¥æ”¶æ•°æ®ä¸­æ–­;
-#define MAX_TX 0x10		//è¾¾åˆ°æœ€å¤§å‘é€æ¬¡æ•°ä¸­æ–­
-#define TX_OK 0x20		//TXå‘é€å®Œæˆä¸­æ–­
-#define RX_OK 0x40		//æ¥æ”¶åˆ°æ•°æ®ä¸­æ–­
-
-#define OBSERVE_TX 0x08		 //å‘é€æ£€æµ‹å¯„å­˜å™¨,bit7:4,æ•°æ®åŒ…ä¸¢å¤±è®¡æ•°å™¨;bit3:0,é‡å‘è®¡æ•°å™¨
-#define CD 0x09				 //è½½æ³¢æ£€æµ‹å¯„å­˜å™¨,bit0,è½½æ³¢æ£€æµ‹;
-#define RX_ADDR_P0 0x0A		 //æ•°æ®é€šé“0æ¥æ”¶åœ°å€,æœ€å¤§é•¿åº¦5ä¸ªå­—èŠ‚,ä½å­—èŠ‚åœ¨å‰
-#define RX_ADDR_P1 0x0B		 //æ•°æ®é€šé“1æ¥æ”¶åœ°å€,æœ€å¤§é•¿åº¦5ä¸ªå­—èŠ‚,ä½å­—èŠ‚åœ¨å‰
-#define RX_ADDR_P2 0x0C		 //æ•°æ®é€šé“2æ¥æ”¶åœ°å€,æœ€ä½å­—èŠ‚å¯è®¾ç½®,é«˜å­—èŠ‚,å¿…é¡»åŒRX_ADDR_P1[39:8]ç›¸ç­‰;
-#define RX_ADDR_P3 0x0D		 //æ•°æ®é€šé“3æ¥æ”¶åœ°å€,æœ€ä½å­—èŠ‚å¯è®¾ç½®,é«˜å­—èŠ‚,å¿…é¡»åŒRX_ADDR_P1[39:8]ç›¸ç­‰;
-#define RX_ADDR_P4 0x0E		 //æ•°æ®é€šé“4æ¥æ”¶åœ°å€,æœ€ä½å­—èŠ‚å¯è®¾ç½®,é«˜å­—èŠ‚,å¿…é¡»åŒRX_ADDR_P1[39:8]ç›¸ç­‰;
-#define RX_ADDR_P5 0x0F		 //æ•°æ®é€šé“5æ¥æ”¶åœ°å€,æœ€ä½å­—èŠ‚å¯è®¾ç½®,é«˜å­—èŠ‚,å¿…é¡»åŒRX_ADDR_P1[39:8]ç›¸ç­‰;
-#define TX_ADDR 0x10		 //å‘é€åœ°å€(ä½å­—èŠ‚åœ¨å‰),ShockBurstTMæ¨¡å¼ä¸‹,RX_ADDR_P0ä¸æ­¤åœ°å€ç›¸ç­‰
-#define RX_PW_P0 0x11		 //æ¥æ”¶æ•°æ®é€šé“0æœ‰æ•ˆæ•°æ®å®½åº¦(1~32å­—èŠ‚),è®¾ç½®ä¸º0åˆ™éæ³•
-#define RX_PW_P1 0x12		 //æ¥æ”¶æ•°æ®é€šé“1æœ‰æ•ˆæ•°æ®å®½åº¦(1~32å­—èŠ‚),è®¾ç½®ä¸º0åˆ™éæ³•
-#define RX_PW_P2 0x13		 //æ¥æ”¶æ•°æ®é€šé“2æœ‰æ•ˆæ•°æ®å®½åº¦(1~32å­—èŠ‚),è®¾ç½®ä¸º0åˆ™éæ³•
-#define RX_PW_P3 0x14		 //æ¥æ”¶æ•°æ®é€šé“3æœ‰æ•ˆæ•°æ®å®½åº¦(1~32å­—èŠ‚),è®¾ç½®ä¸º0åˆ™éæ³•
-#define RX_PW_P4 0x15		 //æ¥æ”¶æ•°æ®é€šé“4æœ‰æ•ˆæ•°æ®å®½åº¦(1~32å­—èŠ‚),è®¾ç½®ä¸º0åˆ™éæ³•
-#define RX_PW_P5 0x16		 //æ¥æ”¶æ•°æ®é€šé“5æœ‰æ•ˆæ•°æ®å®½åº¦(1~32å­—èŠ‚),è®¾ç½®ä¸º0åˆ™éæ³•
-#define NRF_FIFO_STATUS 0x17 //FIFOçŠ¶æ€å¯„å­˜å™¨;bit0,RX FIFOå¯„å­˜å™¨ç©ºæ ‡å¿—;bit1,RX FIFOæ»¡æ ‡å¿—;bit2,3,ä¿ç•™ \
-							 //bit4,TX FIFOç©ºæ ‡å¿—;bit5,TX FIFOæ»¡æ ‡å¿—;bit6,1,å¾ªç¯å‘é€ä¸Šä¸€æ•°æ®åŒ….0,ä¸å¾ªç¯;
-/**************************************************************************************************************/
-
-//24L01å‘é€æ¥æ”¶æ•°æ®å®½åº¦å®šä¹‰
-#define TX_ADR_WIDTH 5	  //5å­—èŠ‚çš„åœ°å€å®½åº¦
-#define RX_ADR_WIDTH 5	  //5å­—èŠ‚çš„åœ°å€å®½åº¦
-#define TX_PLOAD_WIDTH 32 //32å­—èŠ‚çš„ç”¨æˆ·æ•°æ®å®½åº¦
-#define RX_PLOAD_WIDTH 32 //32å­—èŠ‚çš„ç”¨æˆ·æ•°æ®å®½åº¦
-
-void Handle_Init(SPI_HandleTypeDef *hspi,uint8_t Channel);
-void SPI_SetSpeed(SPI_HandleTypeDef *spiHandle, uint32_t SPI_BaudRatePrescaler); //è®¾ç½®æ³¢ç‰¹ç‡
-uint8_t SPI_ReadWriteByte(SPI_HandleTypeDef *hspi, uint8_t TxData);				//SPIæ”¶å‘
-
-void NRF24L01_RX_Mode(SPI_HandleTypeDef *hspi,uint8_t Channel);												  //é…ç½®ä¸ºæ¥æ”¶æ¨¡å¼
-void NRF24L01_TX_Mode(SPI_HandleTypeDef *hspi);												  //é…ç½®ä¸ºå‘é€æ¨¡å¼
-uint8_t NRF24L01_Write_Buf(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t *pBuf, uint8_t len); //å†™æ•°æ®åŒº
-uint8_t NRF24L01_Read_Buf(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t *pBuf, uint8_t len);  //è¯»æ•°æ®åŒº
-uint8_t NRF24L01_Read_Reg(SPI_HandleTypeDef *hspi, uint8_t reg);							  //è¯»å¯„å­˜å™¨
-uint8_t NRF24L01_Write_Reg(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t value);			  //å†™å¯„å­˜å™¨
-uint8_t NRF24L01_Check(SPI_HandleTypeDef *hspi);											  //æ£€æŸ¥24L01æ˜¯å¦å­˜åœ¨
-uint8_t NRF24L01_TxPacket(SPI_HandleTypeDef *hspi, uint8_t *txbuf);							  //å‘é€ä¸€ä¸ªåŒ…çš„æ•°æ®
-uint8_t NRF24L01_RxPacket(SPI_HandleTypeDef *hspi, uint8_t *rxbuf);							  //æ¥æ”¶ä¸€ä¸ªåŒ…çš„æ•°æ®
+	extern ACK_PAYLOAD nRF24L01_ack_pay;
 #endif
+//==============================

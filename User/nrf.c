@@ -1,257 +1,367 @@
+//2013-10-28²âÊÔ¶à·¢Ò»ÊÕÕı³£,°üÀ¨:
+//¹Ì¶¨³¤¶ÈÊÕ·¢,Ê¹ÓÃACK¼°²»Ê¹ÓÃACK
+//¿É±ä³¤¶ÈÊÕ·¢,Ê¹ÓÃACK¼°²»Ê¹ÓÃACK,ÒÔ¼°Ê¹ÓÃ´ø»Ø´«Êı¾İµÄACK
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
 #include "nrf.h"
+#include "stdio.h"
+#include "spi.h"
+/* Private typedef -----------------------------------------------------------*/
+/* Private define ------------------------------------------------------------*/
+#define car_num 1
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Extern variables ----------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+static void delay_us(uint32_t n);
+/* Private functions ---------------------------------------------------------*/
+ACK_PAYLOAD nRF24L01_ack_pay;
 
-void Handle_Init(SPI_HandleTypeDef *hspi,uint8_t Channel)
+uint8_t nRF24L01_TxBuf[32]={0};
+uint8_t nRF24L01_RxBuf[32]={0};
+
+//½ÓÊÕ»ú
+uint8_t RX_ADDRESS0[RX_ADR_WIDTH] = {0x20,0x22,0x2c,0x01,0x01};	// ĞÅµÀ0 = TXDEV0_TX_ADDR = DEV1_RX_ADDRESS0{0x30, 0x37, 0x33, 0x34, 0x30}
+uint8_t RX_ADDRESS1[RX_ADR_WIDTH] = {0x20,0x22,0x2c,0x01,0x22};	// ĞÅµÀ1 = TXDEV1_TX_ADDR = DEV1_RX_ADDRESS0{0x31, 0x37, 0x33, 0x34, 0x30}
+uint8_t RX_ADDRESS2[1]= {0x32};										// ĞÅµÀ2 = TXDEV2_TX_ADDR = DEV1_RX_ADDRESS0{0x32, 0x37, 0x33, 0x34, 0x30}
+uint8_t RX_ADDRESS3[1]= {0x33};										// ĞÅµÀ3 = TXDEV3_TX_ADDR = DEV1_RX_ADDRESS0{0x33, 0x37, 0x33, 0x34, 0x30}
+uint8_t RX_ADDRESS4[1]= {0x34};										// ĞÅµÀ4 = TXDEV4_TX_ADDR = DEV1_RX_ADDRESS0{0x34, 0x37, 0x33, 0x34, 0x30}
+uint8_t RX_ADDRESS5[1]= {0x35};										// ĞÅµÀ5 = TXDEV5_TX_ADDR = DEV1_RX_ADDRESS0{0x35, 0x37, 0x33, 0x34, 0x30}
+
+uint8_t tx_channel_addr[RX_ADR_WIDTH] = {0x20,0x22,0x2c,0x01,0x01};
+uint8_t nRF24_SPI_Send_Byte(uint8_t data)
 {
-    Handle_CE_L();
-    Handle_CS_H();
-
-    HAL_Delay(200);
-
-    while (NRF24L01_Check(hspi)) //æ£€æµ‹æ¨¡å—
-    {
-        HAL_Delay(200);
-    }
-    NRF24L01_RX_Mode(hspi,Channel); //æ¥æ”¶æ¨¡å¼
+	uint8_t	ret;
+	HAL_SPI_TransmitReceive(&hspi1,&data,&ret,1,100);
+	return ret;	
 }
 
-/*****************NRF24L01æ¨¡å—éƒ¨åˆ†*************************************************************/
 
-const uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {222, 111, 001, 100, 151}; //å‘é€åœ°å€
-const uint8_t RX_ADDRESS[RX_ADR_WIDTH] = {222, 111, 001, 100, 151}; //å‘é€åœ°å€
-
-/*******************************************************************************
- * function : SPI_SetSpeed(SPI_HandleTypeDef* hspi,uint8_t SPI_BaudRatePrescaler)
- * brief : hspi
-                     SPIé€Ÿåº¦ = fAPB1 / åˆ†é¢‘ç³»æ•°
-                     fAPB1æ—¶é’Ÿä¸º45Mhz
- * param : SPI_BaudRate_Prescaler  :  SPI_BAUDRATEPRESCALER_2  ~ SPI_BAUDRATEPRESCALER_2 256
- * return : æ— 
-*******************************************************************************/
-
-void SPI_SetSpeed(SPI_HandleTypeDef *hspi, uint32_t SPI_BaudRatePrescaler)
+/**********************************************************************	
+*@	function: ¾Ídelay				
+*@	input		: none							
+*@	output	: none															
+***********************************************************************/ 
+void delay_us(uint32_t n)
 {
-    assert_param(IS_SPI_BAUDRATE_PRESCALER(SPI_BaudRatePrescaler)); //åˆ¤æ–­æœ‰æ•ˆæ€§
-    __HAL_SPI_DISABLE(hspi);                                        //å…³é—­SPI
-    hspi->Instance->CR1 &= 0XFFC7;                                  //ä½3-5æ¸…é›¶ï¼Œç”¨æ¥è®¾ç½®æ³¢ç‰¹ç‡
-    hspi->Instance->CR1 |= SPI_BaudRatePrescaler;                   //è®¾ç½®SPIé€Ÿåº¦
-    __HAL_SPI_ENABLE(hspi);                                         //ä½¿èƒ½SPI
+	uint8_t i;
+
+	while(n--)
+	{
+		i = 8;
+		while(i--);
+	}
 }
 
-/*******************************************************************************
- * function : SPI_ReadWriteByte(SPI_HandleTypeDef* hspi,uint8_t TxData)
- * brief :
- * param : TxData : å†™å…¥çš„å­—èŠ‚
- * return : Rxdata : è¯»åˆ°çš„å­—èŠ‚
- *******************************************************************************/
 
-uint8_t SPI_ReadWriteByte(SPI_HandleTypeDef *hspi, uint8_t TxData)
+/*===============================¼Ä´æÆ÷¶ÁĞ´==========================================*/
+uint8_t nRF24L01_Read_Reg(uint8_t reg)
 {
-    uint8_t Rxdata;
-    HAL_SPI_TransmitReceive(hspi, &TxData, &Rxdata, 1, 1000);
-    return Rxdata; //è¿”å›æ”¶åˆ°çš„æ•°æ®
+	uint8_t reg_val;
+
+	CSN_L();						// CSN low, initialize SPI communication...
+	nRF24_SPI_Send_Byte(reg);		// Select register to read from..
+	reg_val = nRF24_SPI_Send_Byte(0xff);// ..then read registervalue
+	CSN_H();						// CSN high, terminate SPI communication
+
+	return(reg_val);				// return register value
 }
 
-/*******************************************************************************
- * function : NRF24L01_Check(SPI_HandleTypeDef* hspi)
- * brief : æ£€æµ‹24l01æ˜¯å¦å­˜åœ¨
- * param : hspi
- * return : 0  æˆåŠŸ
-            1	 å¤±è´¥
-*******************************************************************************/
-
-uint8_t NRF24L01_Check(SPI_HandleTypeDef *hspi)
+uint8_t nRF24L01_Write_Reg(uint8_t reg, uint8_t value)
 {
-    uint8_t buf[5] = {0XA5, 0XA5, 0XA5, 0XA5, 0XA5};
-    uint8_t i;
-    SPI_SetSpeed(hspi, SPI_BAUDRATEPRESCALER_8);               // spié€Ÿåº¦ä¸º11.25Mhzï¼ˆ24L01çš„æœ€å¤§SPIæ—¶é’Ÿä¸º10Mhz,è¿™é‡Œå¤§ä¸€ç‚¹æ²¡å…³ç³»ï¼‰
-    NRF24L01_Write_Buf(hspi, NRF_WRITE_REG + TX_ADDR, buf, 5); //å†™å…¥5ä¸ªå­—èŠ‚çš„åœ°å€.
-    NRF24L01_Read_Buf(hspi, TX_ADDR, buf, 5);                  //è¯»å‡ºå†™å…¥çš„åœ°å€
-    for (i = 0; i < 5; i++)
-    {
-        if (buf[i] != 0XA5)
-            break;
-    }
-    if (i != 5)
-    {
-        return 1; //æ£€æµ‹24L01é”™è¯¯
-    }
-    return 0; //æ£€æµ‹åˆ°24L01
+	uint8_t status;
+
+	CSN_L();						// CSN low, init SPI transaction
+	status = nRF24_SPI_Send_Byte(reg);// select register
+	nRF24_SPI_Send_Byte(value);		// ..and write value to it..
+	CSN_H();						// CSN high again
+
+	return(status);					// return nRF24L01 status uint8_t
 }
 
-/*******************************************************************************
- * function : NRF24L01_Write_Reg(SPI_HandleTypeDef* hspi,uint8_t reg, uint8_t value)
- * brief : SPI ç»™ NRFæ¨¡å— å†™å¯„å­˜å™¨
- * param : hspi
-                     reg    å¯„å­˜å™¨åœ°å€
-                     value  å†™å…¥çš„å€¼
- * return : status çŠ¶æ€å€¼
-*******************************************************************************/
-
-uint8_t NRF24L01_Write_Reg(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t value)
+uint8_t nRF24L01_Read_Buf(uint8_t reg, uint8_t *pBuf, uint8_t Len)
 {
-    uint8_t status;
-    Handle_CS_L();                         //ä½¿èƒ½SPIä¼ è¾“
-    status = SPI_ReadWriteByte(hspi, reg); //å‘é€å¯„å­˜å™¨å·
-    SPI_ReadWriteByte(hspi, value);        //å†™å…¥å¯„å­˜å™¨çš„å€¼
-    Handle_CS_H();                         //ç¦æ­¢SPIä¼ è¾“
-    return (status);                       //è¿”å›çŠ¶æ€å€¼
+	uint8_t status, i;
+
+	CSN_L();							// Set CSN low, init SPI tranaction
+	status = nRF24_SPI_Send_Byte(reg);	// Select register to write to and read status uint8_t
+
+	for(i = 0; i < Len; i++)
+	{
+		pBuf[i] = nRF24_SPI_Send_Byte(0xff);
+	}
+
+	CSN_H();                           
+
+	return(status);						// return nRF24L01 status uint8_t
 }
 
-/*******************************************************************************
- * function : NRF24L01_Read_Reg(SPI_HandleTypeDef* hspi,uint8_t reg)
- * brief : SPI è¯»å– NRFæ¨¡å— å¯„å­˜å™¨
- * param :  hspi
-                        reg    å¯„å­˜å™¨åœ°å€
- * return : reg_val çŠ¶æ€å€¼
-*******************************************************************************/
-
-uint8_t NRF24L01_Read_Reg(SPI_HandleTypeDef *hspi, uint8_t reg)
+uint8_t nRF24L01_Write_Buf(uint8_t reg, uint8_t *pBuf, uint8_t Len)
 {
-    uint8_t reg_val;
-    Handle_CS_L();                           //ä½¿èƒ½SPIä¼ è¾“
-    SPI_ReadWriteByte(hspi, reg);            //å‘é€å¯„å­˜å™¨å·
-    reg_val = SPI_ReadWriteByte(hspi, 0XFF); //è¯»å–å¯„å­˜å™¨å†…å®¹
-    Handle_CS_H();                           //ç¦æ­¢SPIä¼ è¾“
-    return (reg_val);                        //è¿”å›çŠ¶æ€å€¼
+	uint8_t status, i;
+
+	CSN_L();				//SPIÊ¹ÄÜ       
+	status = nRF24_SPI_Send_Byte(reg);   
+	for(i = 0; i < Len; i++)//
+	{
+		nRF24_SPI_Send_Byte(pBuf[i]);
+	}
+	CSN_H();				//¹Ø±ÕSPI
+	return(status);			// 
 }
 
-/*******************************************************************************
- * function : NRF24L01_Read_Buf(SPI_HandleTypeDef* hspi,uint8_t reg, uint8_t *pBuf, uint8_t len)
- * brief : SPI è¯»å–æŒ‡å®šé•¿åº¦æ•°æ®
- * param : hspi
-                     reg    å¯„å­˜å™¨åœ°å€
-                     *pBuf  æ•°æ®æŒ‡é’ˆ
-                     len    æ•°æ®é•¿åº¦
- * return : status çŠ¶æ€å€¼
-*******************************************************************************/
+/*===============================end==========================================*/
 
-uint8_t NRF24L01_Read_Buf(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t *pBuf, uint8_t len)
-{
-    uint8_t status, u8_ctr;
-    Handle_CS_L();                         //ä½¿èƒ½SPIä¼ è¾“
-    status = SPI_ReadWriteByte(hspi, reg); //å‘é€å¯„å­˜å™¨å€¼(ä½ç½®),å¹¶è¯»å–çŠ¶æ€å€¼
-    for (u8_ctr = 0; u8_ctr < len; u8_ctr++)
-        pBuf[u8_ctr] = SPI_ReadWriteByte(hspi, 0XFF); //è¯»å‡ºæ•°æ®
-    Handle_CS_H();                                    //å…³é—­SPIä¼ è¾“
-    return status;                                    //è¿”å›è¯»åˆ°çš„çŠ¶æ€å€¼
+
+
+
+/**********************************************************************	
+*@	function: ¼Ä´æÆ÷³õÊ¼»¯			
+*@	input		: none							
+*@	output	: none															
+***********************************************************************/ 
+void nRF24L01_Set_Config(void)
+{	
+	CE_L();
+
+		nRF24L01_Write_Reg(nRF_WRITE_REG | SETUP_AW,    0x03);											// 0x03¶ÔÓ¦¿í¶È5
+		nRF24L01_Write_Buf(nRF_WRITE_REG | RX_ADDR_P0, RX_ADDRESS1, RX_ADR_WIDTH);	// Ğ´½ÓÊÕ¶ËµØÖ·
+//		nRF24L01_Write_Buf(nRF_WRITE_REG | RX_ADDR_P1, RX_ADDRESS1, RX_ADR_WIDTH);	// Ğ´½ÓÊÕ¶ËµØÖ·
+	//nRF24L01_Write_Buf(nRF_WRITE_REG | TX_ADDR,    RX_ADDRESS0, RX_ADR_WIDTH);	//2-5Í¨µÀÊ¹ÓÃ1×Ö½Ú
+		nRF24L01_Write_Reg(nRF_WRITE_REG | EN_AA,       0x01);											// ÆµµÀ0×Ô¶¯	ACKÓ¦´ğÔÊĞí	
+		nRF24L01_Write_Reg(nRF_WRITE_REG | EN_RXADDR,   0x01);											//Í¨µÀ0ÔÊĞí½ÓÊÕÊı¾İ
+		nRF24L01_Write_Reg(nRF_WRITE_REG | SETUP_RETR,  0x1a);											//×Ô¶¯ÖØ·¢ÑÓÊ±£º500+86us£¬10´Î
+		nRF24L01_Write_Reg(nRF_WRITE_REG | RF_CH,       1);												//¹¤×÷Í¨µÀÆµÂÊ£¬ÊÕ·¢Ò»Ñù¼´¿É
+		nRF24L01_Write_Reg(nRF_WRITE_REG | RF_SETUP,    0x0f);											//Êı¾İ´«ÊäÂÊ£º2Mbps£¬·¢Éä¹¦ÂÊ£º0DB£¬
+		nRF24L01_Write_Reg(nRF_WRITE_REG | CONFIG,      0x0f);											//16Î»CRCÊ¹ÄÜ£¬½ÓÊÕÄ£Ê½£¬¿ªÆôÈ«²¿ÖĞ¶Ï
+		nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_TX, 0xff);											//Çå³ıTX FIFO¼Ä´æÆ÷.·¢ÉäÄ£Ê½ÏÂÓÃ
+		nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_RX, 0xff);											//Çå³ıRX FIFO¼Ä´æÆ÷.½ÓÊÕÄ£Ê½ÏÂÓÃ,ÔÚ´«ÊäÓ¦´ğĞÅºÅ¹ı³ÌÖĞ²»Ó¦Ö´ĞĞ´ËÖ¸Áî
+		nRF24L01_Write_Reg(nRF_WRITE_REG | DYNPD, 0x01);														//Ê¹ÄÜÍ¨µÀ0µÄ¶¯Ì¬ÔØºÉ³¤¶È
+		nRF24L01_Write_Reg(nRF_WRITE_REG | FEATURE,  0x06);													//Ê¹ÄÜACK´øÔØ,Ê¹ÄÜACKµÄ¶¯Ì¬ÔØºÉ³¤¶È
+
+	
+
+	CE_H();	// Set CE pin high to enable RX device
+	delay_us(130);
+//	CE_L();
 }
 
-/*******************************************************************************
- * function : NRF24L01_Write_Buf(SPI_HandleTypeDef* hspi,uint8_t reg, uint8_t *pBuf, uint8_t len)
- * brief : SPI  å‘é€æŒ‡å®šé•¿åº¦æ•°æ®
- * param : hspi
-                     reg    å¯„å­˜å™¨åœ°å€
-                     *pBuf  æ•°æ®æŒ‡é’ˆ
-                     len    æ•°æ®é•¿åº¦
- * return : status çŠ¶æ€å€¼
-*******************************************************************************/
-
-uint8_t NRF24L01_Write_Buf(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t *pBuf, uint8_t len)
+/**********************************************************************	
+*@	function:¼ì²â24L01ÊÇ·ñ´æÔÚ		
+*@	input		: none							
+*@	output	: ·µ»ØÖµ:³É¹¦ 0 £» Ê§°Ü	1													
+***********************************************************************/ 
+uint8_t nRF24L01_Check(void)		
 {
-    uint8_t status, u8_ctr;
-    Handle_CS_L();                         //ä½¿èƒ½SPIä¼ è¾“
-    status = SPI_ReadWriteByte(hspi, reg); //å‘é€å¯„å­˜å™¨å€¼(ä½ç½®),å¹¶è¯»å–çŠ¶æ€å€¼
-    for (u8_ctr = 0; u8_ctr < len; u8_ctr++)
-        SPI_ReadWriteByte(hspi, *pBuf++); //å†™å…¥æ•°æ®
-    Handle_CS_H();                        //å…³é—­SPIä¼ è¾“
-    return status;                        //è¿”å›è¯»åˆ°çš„çŠ¶æ€å€¼
+	uint8_t buf[5] = {0xA5, 0xA5, 0xA5, 0xA5, 0xA5};
+	uint8_t i;
+	
+	nRF24L01_Write_Buf(nRF_WRITE_REG | TX_ADDR, buf, 5);	//Ğ´Èë5¸ö×Ö½ÚµÄµØÖ·.
+	nRF24L01_Read_Buf(nRF_READ_REG + TX_ADDR, buf, 5);		//¶Á³öĞ´ÈëµÄµØÖ·
+	for(i = 0; i < 5; i++)
+	{
+		if(buf[i] != 0xA5)
+		{
+			break;
+		}
+	}
+	if(i != 5)
+	{
+		debug_out(("nRF24L01 TEST FAUSE\r\n"));
+		return 1;											//¼ì²â24L01´íÎó
+	}
+	else 
+	{
+		debug_out(("nRF24L01 TEST OK\r\n"));
+		return 0;											//¼ì²âµ½24L01
+	}
 }
 
-/*******************************************************************************
- * function : NRF24L01_TxPacket(SPI_HandleTypeDef* hspi,uint8_t *txbuf)
- * brief : SPI ç»™NRF å‘é€ä¸€æ¬¡æ•°æ® ,éœ€è¦IRQå¼•è„šï¼Œé»˜è®¤ä¸å¼€å¯
- * param : hspi
-                     *txbuf    æ•°æ®æŒ‡é’ˆ
- * return : TX_OK    å‘é€æˆåŠŸ
-            0xff     å‘é€å¤±è´¥
-*******************************************************************************/
-
-uint8_t NRF24L01_TxPacket(SPI_HandleTypeDef *hspi, uint8_t *txbuf)
+/**********************************************************************	
+*@	function:ÇĞ»»Ä£Ê½£¨Ã»É¶ÓÃ£©	
+*@	input		: none							
+*@	output	: none												
+***********************************************************************/ 
+void nRF24L01_Set_Mode(uint8_t rx_mode)	//ĞŞ¸ÄÎª½ÓÊÕ/·¢ÉäÄ£Ê½
 {
-    uint8_t sta;
-    SPI_SetSpeed(hspi, SPI_BAUDRATEPRESCALER_8); // spié€Ÿåº¦ä¸º6.75Mhzï¼ˆ24L01çš„æœ€å¤§SPIæ—¶é’Ÿä¸º10Mhzï¼‰
-    Handle_CE_L();
-    NRF24L01_Write_Buf(hspi, WR_TX_PLOAD, txbuf, TX_PLOAD_WIDTH); //å†™æ•°æ®åˆ°TX BUF  32ä¸ªå­—èŠ‚
-    Handle_CE_H();                                                //å¯åŠ¨å‘é€
-    while (Handle_IRQ_Read() != 0)
-        ;                                                  //ç­‰å¾…å‘é€å®Œæˆ
-    sta = NRF24L01_Read_Reg(hspi, STATUS);                 //è¯»å–çŠ¶æ€å¯„å­˜å™¨çš„å€¼
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + STATUS, sta); //æ¸…é™¤TX_DSæˆ–MAX_RTä¸­æ–­æ ‡å¿—
-    if (sta & MAX_TX)                                      //è¾¾åˆ°æœ€å¤§é‡å‘æ¬¡æ•°
-    {
-        NRF24L01_Write_Reg(hspi, FLUSH_TX, 0xff); //æ¸…é™¤TX FIFOå¯„å­˜å™¨
-        return MAX_TX;
-    }
-    if (sta & TX_OK) //å‘é€å®Œæˆ
-    {
-        return TX_OK;
-    }
-    return 0xff; //å…¶ä»–åŸå› å‘é€å¤±è´¥
+	uint8_t mode = nRF24L01_Read_Reg(CONFIG);
+	//debug_out(("mode=0x%02x\r\n",mode));
+	if(rx_mode)	//1½ÓÊÕÄ£Ê½
+	{
+	 	nRF24L01_Write_Reg(nRF_WRITE_REG | CONFIG, mode | 0x01);	
+	}
+	else		//0·¢ËÍÄ£Ê½
+	{
+	 	nRF24L01_Write_Reg(nRF_WRITE_REG | CONFIG, mode & 0xfe);	
+	}
 }
 
-/*******************************************************************************
- * function : NRF24L01_RxPacket(SPI_HandleTypeDef* hspi,uint8_t *rxbuf)
- * brief : SPI è¯» NRF ä¸€æ¬¡æ•°æ®
- * param : hspi
-                     *rxbuf    æ•°æ®æŒ‡é’ˆ
- * return : 0        æ¥æ”¶æˆåŠŸ
-            1        æ¥æ”¶å¤±è´¥
-*******************************************************************************/
-
-uint8_t NRF24L01_RxPacket(SPI_HandleTypeDef *hspi, uint8_t *rxbuf)
+//==============================½ÓÊÕ¡¢·¢ËÍÊı¾İ°ü===========================================
+uint8_t nRF24L01_RxPacket(uint8_t * rx_buf)
 {
-    uint8_t sta;
-    SPI_SetSpeed(hspi, SPI_BAUDRATEPRESCALER_8);           // spié€Ÿåº¦ä¸º6.75Mhzï¼ˆ24L01çš„æœ€å¤§SPIæ—¶é’Ÿä¸º10Mhzï¼‰
-    sta = NRF24L01_Read_Reg(hspi, STATUS);                 //è¯»å–çŠ¶æ€å¯„å­˜å™¨çš„å€¼
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + STATUS, sta); //æ¸…é™¤TX_DSæˆ–MAX_RTä¸­æ–­æ ‡å¿—
-    if (sta & RX_OK)                                       //æ¥æ”¶åˆ°æ•°æ®
-    {
-        NRF24L01_Read_Buf(hspi, RD_RX_PLOAD, rxbuf, RX_PLOAD_WIDTH); //è¯»å–æ•°æ®
-        NRF24L01_Write_Reg(hspi, FLUSH_RX, 0xff);                    //æ¸…é™¤RX FIFOå¯„å­˜å™¨
-        return 0;
-    }
-    return 1; //æ²¡æ”¶åˆ°ä»»ä½•æ•°æ®
+	uint8_t len = 0;
+	uint8_t status;
+	
+//	CE_L();
+	status = nRF24L01_Read_Reg(STATUS);							// ¶ÁÈ¡×´Ì¬¼Ä´æÆäÀ´ÅĞ¶ÏÊı¾İ½ÓÊÕ×´¿ö
+//	nRF24L01_Write_Reg(nRF_WRITE_REG | STATUS, status & RX_DR);			//½ÓÊÕµ½Êı¾İºóRX_DR,TX_DS,MAX_RT¶¼ÖÃ¸ßÎª1£¬Í¨¹ıĞ´1À´Çå³şÖĞ¶Ï±êÖ¾
+	nRF24L01_Write_Reg(nRF_WRITE_REG | STATUS, status);			//½ÓÊÕµ½Êı¾İºóRX_DR,TX_DS,MAX_RT¶¼ÖÃ¸ßÎª1£¬Í¨¹ıĞ´1À´Çå³şÖĞ¶Ï±êÖ¾
+	
+#if (DYNPD_ACK_DATA)
+	if(status & TX_DS)//
+	{
+		//debug_out(("PRX TX_DS\r\n"));
+	}
+#endif
+	if(status & RX_DR)											// ÅĞ¶ÏÊÇ·ñ½ÓÊÕµ½Êı¾İ
+	{
+		len = nRF24L01_Read_Reg(nRF_R_RX_PL_WID);
+		if(len < 33)
+		{
+			nRF24L01_Read_Buf(nRF_R_RX_PLOAD, rx_buf, len);	// read receive payload from RX_FIFO buffer
+		}
+		else 
+		{
+			len = 0;
+		}
+		nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_RX,0xff);	//Çå¿Õ»º³åÇø
+		
+		nRF24L01_ack_pay.Ack_Channel = (status & 0x0e) >> 1;
+	}
+	
+//	CE_H();	//ÖÃ¸ßCE£¬¼¤·¢Êı¾İ·¢ËÍ
+	return len;
+}
+uint8_t nRF24L01_TxPacket(uint8_t tx_channel, uint8_t * tx_buf, uint8_t len)
+{
+	CE_L();
+	
+	if((tx_channel == 0))
+	{
+		nRF24L01_Write_Buf(nRF_WRITE_REG | TX_ADDR,    RX_ADDRESS0, RX_ADR_WIDTH);//2-5Í¨µÀÊ¹ÓÃ1×Ö½Ú
+		nRF24L01_Write_Buf(nRF_WRITE_REG | RX_ADDR_P0, RX_ADDRESS0, RX_ADR_WIDTH);// Ğ´½ÓÊÕ¶ËµØÖ·
+	}
+	else
+	{
+		tx_channel_addr[0] = 0x30 + tx_channel;
+		nRF24L01_Write_Buf(nRF_WRITE_REG | TX_ADDR,    tx_channel_addr, RX_ADR_WIDTH);//2-5Í¨µÀÊ¹ÓÃ1×Ö½Ú
+		nRF24L01_Write_Buf(nRF_WRITE_REG | RX_ADDR_P0, tx_channel_addr, RX_ADR_WIDTH);// Ğ´½ÓÊÕ¶ËµØÖ·
+	}
+#if DYNAMIC_PAYLOAD_ACK
+	nRF24L01_Write_Buf(nRF_WRITE_REG | nRF_W_TX_PLOAD, tx_buf, len);	// ×°ÔØÊı¾İ	
+#else
+	//nRF24L01_Write_Buf(nRF_WRITE_REG | nRF_W_TX_PLOAD, tx_buf, len);	// ×°ÔØÊı¾İ	
+	nRF24L01_Write_Buf(nRF_WRITE_REG | nRF_W_TX_PAYLOAD_NOACK, tx_buf, len);	// ×°ÔØÊı¾İ
+#endif
+	
+	CE_H();	//ÖÃ¸ßCE£¬¼¤·¢Êı¾İ·¢ËÍ
+	delay_us(20);
+	
+	while(nRF_IRQ());										//µÈ´ı·¢ËÍÍê³É
+	
+	return (nRF24L01_Tx_Ack(&nRF24L01_ack_pay));
+}
+uint8_t nRF24L01_Tx_Ack(ACK_PAYLOAD *ack_pay)
+{
+ 	uint8_t tmp = 200;
+	uint8_t status;
+	while(1)
+	{
+		status = nRF24L01_Read_Reg(STATUS);					//¶ÁÈ¡×´Ì¬¼Ä´æÆ÷µÄÖµ
+		
+		nRF24L01_Write_Reg(nRF_WRITE_REG | STATUS, status);	// Çå³ıTX_DS»òMAX_RTÖĞ¶Ï±êÖ¾
+		
+#if (DYNPD_ACK_DATA)
+		if(status & RX_DR)		// ÅĞ¶ÏÊÇ·ñ½ÓÊÕµ½Êı¾İ
+		{
+			ack_pay->Ack_Len = nRF24L01_Read_Reg(nRF_R_RX_PL_WID);
+			if(ack_pay->Ack_Len < 33)
+			{
+				nRF24L01_Read_Buf(nRF_R_RX_PLOAD, ack_pay->Ack_Buf, ack_pay->Ack_Len);	// read receive payload from RX_FIFO buffer
+				ack_pay->Ack_Status = 1;
+			}
+			else 
+			{
+				ack_pay->Ack_Len = 0;
+			}
+			nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_RX,0xff);	//Çå¿Õ»º³åÇø
+			
+			ack_pay->Ack_Channel = (status & 0x0e) >> 1;
+			debug_out(("PTX RX_DR\r\n"));
+		}
+#endif
+		if(status & MAX_RT)		//´ïµ½×î´óÖØ·¢´ÎÊı
+		{
+			nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_TX, 0xff);//Çå³ıTX FIFO¼Ä´æÆ÷ 
+			debug_out(("PTX MAX_RT\r\n"));
+			return MAX_RT;
+		}
+		else if(status & TX_DS)	//·¢ËÍÍê³É
+		{
+			debug_out(("PTX TX_DS\r\n"));
+			return TX_DS;
+		}
+		else					//µÈ´ı
+		{
+			delay_us(10);
+			tmp--;
+			if(tmp == 0)
+			{
+				nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_TX, 0xff);//Çå³ıTX FIFO¼Ä´æÆ÷ 
+				debug_out(("PTX time_out\r\n"));
+				return 0xff;//ÆäËûÔ­Òò·¢ËÍÊ§°Ü
+			}
+		}
+	}
 }
 
-/*******************************************************************************
- * function : NRF24L01_RX_Mode(SPI_HandleTypeDef* hspi)
- * brief : 		åˆå§‹åŒ–NRFä¸ºRXæ¨¡å¼
-                            è®¾ç½®RXåœ°å€   å†™RXæ•°æ®å®½åº¦   é€‰æ‹©RFé¢‘é“
- * param : hspi
- * return : æ— 
-*******************************************************************************/
-
-void NRF24L01_RX_Mode(SPI_HandleTypeDef *hspi,uint8_t Channel)
+/*****************************************
+*@ function : ×°ÔØ»Ø´«Êı¾İ°ü
+*@
+*****************************************/
+#if (DYNPD_ACK_DATA)//´øÊı¾İµÄACK¹¦ÄÜ
+void nRF24L01_Rx_AckPayload(ACK_PAYLOAD ack_pay)
 {
-    Handle_CE_L();
-    NRF24L01_Write_Buf(hspi, NRF_WRITE_REG + RX_ADDR_P0, (uint8_t *)RX_ADDRESS, RX_ADR_WIDTH); //å†™RXèŠ‚ç‚¹åœ°å€
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + EN_AA, 0x01);                                     //ä½¿èƒ½é€šé“0çš„è‡ªåŠ¨åº”ç­”
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + EN_RXADDR, 0x01);                                 //ä½¿èƒ½é€šé“0çš„æ¥æ”¶åœ°å€
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + RF_CH, Channel);                                       //è®¾ç½®RFé€šä¿¡é¢‘ç‡
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + RX_PW_P0, RX_PLOAD_WIDTH);                        //é€‰æ‹©é€šé“0çš„æœ‰æ•ˆæ•°æ®å®½åº¦
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + RF_SETUP, 0x27);                                  //è®¾ç½®TXå‘å°„å‚æ•°,0dbå¢ç›Š,2Mbps,ä½å™ªå£°å¢ç›Šå¼€å¯
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + CONFIG, 0x0f);                                    //é…ç½®åŸºæœ¬å·¥ä½œæ¨¡å¼çš„å‚æ•°;PWR_UP,EN_CRC,16BIT_CRC,æ¥æ”¶æ¨¡å¼
-    Handle_CE_H();                                                                             // CEä¸ºé«˜,è¿›å…¥æ¥æ”¶æ¨¡å¼
-}
+	CE_L();
+	nRF24L01_Write_Reg(nRF_WRITE_REG | nRF_FLUSH_TX, 0xff);//Çå³ıTX FIFO¼Ä´æÆ÷ 
+//	switch(nRF24L01_ack_pay.Ack_Channel){
+//		case 1:       
+//			nRF24L01_Write_Buf(nRF_WRITE_REG | RX_ADDR_P0, RX_ADDRESS1, RX_ADR_WIDTH);// Ğ´½ÓÊÕ¶ËµØÖ·
+//		break;
+//		
+//	}
+		
 
-/*******************************************************************************
- * function : NRF24L01_TX_Mode(SPI_HandleTypeDef* hspi)
- * brief : 		åˆå§‹åŒ–NRFä¸ºTXæ¨¡å¼
-                            è®¾ç½®TXåœ°å€  å†™TXæ•°æ®å®½åº¦  è®¾ç½®RXè‡ªåŠ¨åº”ç­”çš„åœ°å€   å¡«å……TXå‘é€æ•°æ®  é€‰æ‹©RFé¢‘é“
- * param : hspi
- * return : æ— 
-*******************************************************************************/
-
-void NRF24L01_TX_Mode(SPI_HandleTypeDef *hspi)
-{
-    Handle_CE_L();
-    NRF24L01_Write_Buf(hspi, NRF_WRITE_REG + TX_ADDR, (uint8_t *)TX_ADDRESS, TX_ADR_WIDTH);    //å†™TXèŠ‚ç‚¹åœ°å€
-    NRF24L01_Write_Buf(hspi, NRF_WRITE_REG + RX_ADDR_P0, (uint8_t *)RX_ADDRESS, RX_ADR_WIDTH); //è®¾ç½®TXèŠ‚ç‚¹åœ°å€,ä¸»è¦ä¸ºäº†ä½¿èƒ½ACK
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + EN_AA, 0x01);                                     //ä½¿èƒ½é€šé“0çš„è‡ªåŠ¨åº”ç­”
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + EN_RXADDR, 0x01);                                 //ä½¿èƒ½é€šé“0çš„æ¥æ”¶åœ°å€
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + SETUP_RETR, 0x1a);                                //è®¾ç½®è‡ªåŠ¨é‡å‘é—´éš”æ—¶é—´:500us + 86us;æœ€å¤§è‡ªåŠ¨é‡å‘æ¬¡æ•°:10æ¬¡
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + RF_CH, 76);                                       //è®¾ç½®RFé€šé“ä¸º40
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + RF_SETUP, 0x27);                                  //è®¾ç½®TXå‘å°„å‚æ•°,0dbå¢ç›Š,2Mbps,ä½å™ªå£°å¢ç›Šå¼€å¯
-    NRF24L01_Write_Reg(hspi, NRF_WRITE_REG + CONFIG, 0x0e);                                    //é…ç½®åŸºæœ¬å·¥ä½œæ¨¡å¼çš„å‚æ•°;PWR_UP,EN_CRC,16BIT_CRC,æ¥æ”¶æ¨¡å¼,å¼€å¯æ‰€æœ‰ä¸­æ–­
-    Handle_CE_H();                                                                             // CEä¸ºé«˜,10usåå¯åŠ¨å‘é€
+	nRF24L01_Write_Buf(nRF_WRITE_REG | nRF_W_ACK_PAYLOAD | ack_pay.Ack_Channel, ack_pay.Ack_Buf, ack_pay.Ack_Len);// ×°ÔØÊı¾İ
+	CE_H();
+	//debug_out(("¼ÓÔØ´øÊı¾İACK\r\n"));
 }
+#endif
+//==============================end===========================================
+
+//-------------Ê¹ÓÃËµÃ÷---------------------//
+// 1.1.PTX·¢ËÍÊı¾İµ½PRX
+// #if (DYNAMIC_PAYLOAD) //¶¯Ì¬Êı¾İ³¤¶È
+// 		nRF24L01_TxPacket(channel, tmp_data, tmp_len);
+// #else                 //¹Ì¶¨Êı¾İ³¤¶È
+// 		nRF24L01_TxPacket(channel, tmp_data, RX_PLOAD_WIDTH);
+// #endif
+// 1.2.PTX´ÓPRX½ÓÊÕ·´ÏòACKÊı¾İ
+// #if (DYNPD_ACK_DATA)  //½ÓÊÕ·´ÏòÊı¾İ
+//     if(nRF24L01_ack_pay.Ack_Status)
+//     {
+//         nRF24L01_ack_pay.Ack_Status = 0;
+//         debug_out(("[%d]ACK(%d):%s\r\n",nRF24L01_ack_pay.Ack_Channel,nRF24L01_ack_pay.Ack_Len,nRF24L01_ack_pay.Ack_Buf));
+//     }
+// #endif
+// 2.PRX½ÓÊÕPTX·¢ËÍÀ´µÄÊı¾İ
+// tmp_len = nRF24L01_RxPacket(data, &channel);//½ÓÊÕÊı¾İ
+// if(tmp_len)
+// {
+// #if (DYNPD_ACK_DATA)//»ØËÍ·´ÏòµÄACKÊı¾İ
+//     nRF24L01_Rx_AckPayload(nRF24L01_ack_pay);
+// #endif
+// 		debug_out(("½ÓÊÕµ½[%d]×Ö½Ú @%d:%s\r\n", tmp_len, channel, data));
+// }
+//-----------------------------------------//
+/******************* (C) COPYRIGHT 2009 STMicroelectronics *****END OF FILE****/

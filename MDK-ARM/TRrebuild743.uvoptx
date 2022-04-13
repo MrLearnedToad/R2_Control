@@ -327,6 +327,11 @@
           <WinNumber>2</WinNumber>
           <ItemText>deg_pid_disable</ItemText>
         </Ww>
+        <Ww>
+          <count>11</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>nRF24L01_ack_pay.Ack_Buf</ItemText>
+        </Ww>
       </WatchWindow2>
       <MemoryWindow1>
         <Mm>
@@ -386,6 +391,10 @@
         <Entry>
           <Name>System Viewer\FDCAN2</Name>
           <WinId>35905</WinId>
+        </Entry>
+        <Entry>
+          <Name>System Viewer\SPI1</Name>
+          <WinId>35903</WinId>
         </Entry>
       </SystemViewers>
       <DebugDescription>

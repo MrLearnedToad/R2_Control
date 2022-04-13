@@ -152,8 +152,7 @@ int main(void)
   MX_FDCAN2_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-nrf_mode = true;
-Handle_Init(&hspi1,01);
+nrf_init();
 HAL_Delay(20);
 FDCAN1_Init(&hfdcan1);
 HAL_Delay(200);
@@ -432,6 +431,8 @@ void speed_cal(void)
 //    current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.005f);
 //    current_speed.y=Kalman_Filter(&kal_velocity_x,(vy[0]-vy[1])/0.005f);
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
+    if(gyro.error_counter<1000)
+        gyro.error_counter++;
     return;
 }
 
@@ -547,6 +548,17 @@ void update_target_info(uint8_t *data)
 
 void DMA_recieve(void)
 {
+    static uint8_t abab;
+    if(dma_buffer[1]!=abab)
+    {
+        communciation_error_counter=0;
+        abab=dma_buffer[1];
+    }
+    else
+    {
+        if(communciation_error_counter<255)
+            communciation_error_counter++;
+    }
     for(int i=8;i>=0;i--)
     {
         pos_log[i+1].x=pos_log[i].x;
@@ -597,13 +609,7 @@ void DMA_recieve(void)
             __ASM("nop");
         }
     }
-    if(((*(uint32_t*)(0x40007C00+0x1C))&0x00000020)!=0)
-        communciation_error_counter=0;
-    else
-    {
-        if(communciation_error_counter<254)
-            communciation_error_counter++;
-    }
+
     update_target_info(Rx_buffer);
     return;
 }
