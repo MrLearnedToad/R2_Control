@@ -428,6 +428,12 @@ void RobotTask(void *argument)
 //              activator_flag=1;
 //          }
       }
+      else if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8))
+      {
+          extern uint16_t RGB_DEFAULT[2];
+            RGB_DEFAULT[0]=0;
+            RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,1.0f);
+      }
       else
       {
           extern uint16_t RGB_DEFAULT[2];
@@ -441,13 +447,29 @@ void RobotTask(void *argument)
 //          debug.x=fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
 //          debug.y=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.595f);
           //((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||
-          if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag==0)
+          if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag!=1)
           {
               if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
               {
                 focus_mode=0;
-                pick_up(target->location.z,manualmode);
+                if(get_block_flag==0)
+                    pick_up(target->location.z,manualmode,0);
+                else
+                    pick_up(target->location.z,manualmode,1);
                 get_block_flag=1;
+              }
+          }
+          if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8))&&get_block_flag!=2&&get_block_flag!=1&&flags[regulator_catapult_pos]==release)
+          {
+              if(target->location.z==forward||target->location.z==backward)
+              {
+                  info.x=block_num+5;
+                  add_mission(GRABPOSSET,set_flags,0,&info);
+                  info.x=tower_block_5;
+                  add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+                  info.x=forward;
+                  add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
+                  get_block_flag=2;
               }
           }
       }

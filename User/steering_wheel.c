@@ -5,10 +5,10 @@
 V_SteeringWheels Goal_V=
 {	.Kxy=3932.179,
 	.Kz = 70,
-    .Wheel[0].angle_offset=-23.247,
+    .Wheel[3].angle_offset=-24.082,
     .Wheel[1].angle_offset=-22.983,
     .Wheel[2].angle_offset=-21.972,
-    .Wheel[3].angle_offset=140.844,
+    .Wheel[0].angle_offset=172.573,
 };
 V_SteeringWheels Goal_Vlast;
 
@@ -26,13 +26,13 @@ void Openloop_CarCoordinate(float Vel_x,float Vel_y,float Vel_z)
 {	
 
 	/* 1轮速度解算 */    
-	Goal_V.Wheel[0].Reduction_ratio=1;
-	Goal_V.Wheel[0].v_x = 1* Vel_x * Goal_V.Kxy - 0.56f * Vel_z * Goal_V.Kz;
-	Goal_V.Wheel[0].v_y = 1* Vel_y * Goal_V.Kxy + 0.82845f * Vel_z * Goal_V.Kz;  
+	Goal_V.Wheel[3].Reduction_ratio=1;
+	Goal_V.Wheel[3].v_x = 1* Vel_x * Goal_V.Kxy - 0.56f * Vel_z * Goal_V.Kz;
+	Goal_V.Wheel[3].v_y = 1* Vel_y * Goal_V.Kxy + 0.82845f * Vel_z * Goal_V.Kz;  
 
-	Goal_V.Wheel[0].v_out = sqrt(Goal_V.Wheel[0].v_x*Goal_V.Wheel[0].v_x + Goal_V.Wheel[0].v_y*Goal_V.Wheel[0].v_y);
-	if(Goal_V.Wheel[0].v_x == 0 && Goal_V.Wheel[0].v_y==0) Goal_V.Wheel[0].angle = Goal_Vlast.Wheel[0].angle;
-	else Goal_V.Wheel[0].angle = atan2(Goal_V.Wheel[0].v_x,Goal_V.Wheel[0].v_y)*180/pi+Goal_V.Wheel[0].angle_offset;	
+	Goal_V.Wheel[3].v_out = sqrt(Goal_V.Wheel[3].v_x*Goal_V.Wheel[3].v_x + Goal_V.Wheel[3].v_y*Goal_V.Wheel[3].v_y);
+	if(Goal_V.Wheel[3].v_x == 0 && Goal_V.Wheel[3].v_y==0) Goal_V.Wheel[3].angle = Goal_Vlast.Wheel[3].angle;
+	else Goal_V.Wheel[3].angle = atan2(Goal_V.Wheel[3].v_x,Goal_V.Wheel[3].v_y)*180/pi+Goal_V.Wheel[3].angle_offset;	
 	
 	/*2轮速度解算*/
 	Goal_V.Wheel[1].Reduction_ratio=1;
@@ -53,13 +53,13 @@ void Openloop_CarCoordinate(float Vel_x,float Vel_y,float Vel_z)
 	else Goal_V.Wheel[2].angle = atan2(Goal_V.Wheel[2].v_x,Goal_V.Wheel[2].v_y)*180/pi+Goal_V.Wheel[2].angle_offset;	
 		
 	/*4轮速度解算*/
-	Goal_V.Wheel[3].Reduction_ratio=1;
-	Goal_V.Wheel[3].v_x = 1* Vel_x * Goal_V.Kxy + 0.56f * Vel_z * Goal_V.Kz;
-	Goal_V.Wheel[3].v_y = 1* Vel_y * Goal_V.Kxy + 0.82845f * Vel_z * Goal_V.Kz;  
+	Goal_V.Wheel[0].Reduction_ratio=1;
+	Goal_V.Wheel[0].v_x = 1* Vel_x * Goal_V.Kxy + 0.56f * Vel_z * Goal_V.Kz;
+	Goal_V.Wheel[0].v_y = 1* Vel_y * Goal_V.Kxy + 0.82845f * Vel_z * Goal_V.Kz;  
 
-	Goal_V.Wheel[3].v_out = sqrt(Goal_V.Wheel[3].v_x*Goal_V.Wheel[3].v_x + Goal_V.Wheel[3].v_y*Goal_V.Wheel[3].v_y);
-	if(Goal_V.Wheel[3].v_x == 0 && Goal_V.Wheel[3].v_y==0) Goal_V.Wheel[3].angle = Goal_Vlast.Wheel[3].angle;
-	else Goal_V.Wheel[3].angle = atan2(Goal_V.Wheel[3].v_x,Goal_V.Wheel[3].v_y)*180/pi+Goal_V.Wheel[3].angle_offset;	
+	Goal_V.Wheel[0].v_out = sqrt(Goal_V.Wheel[0].v_x*Goal_V.Wheel[0].v_x + Goal_V.Wheel[0].v_y*Goal_V.Wheel[0].v_y);
+	if(Goal_V.Wheel[0].v_x == 0 && Goal_V.Wheel[0].v_y==0) Goal_V.Wheel[0].angle = Goal_Vlast.Wheel[0].angle;
+	else Goal_V.Wheel[0].angle = atan2(Goal_V.Wheel[0].v_x,Goal_V.Wheel[0].v_y)*180/pi+Goal_V.Wheel[0].angle_offset;	
 	
 
     
@@ -101,10 +101,10 @@ void motor_run(void)
 
 		GM6020_Set_Pos(Goal_V.Wheel[i].angle, i+1);	    
 		
-		if(i == 0) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out; //1、3轮子方向反了
+		if(i == 3) Goal_V.Wheel[i].v_out = Goal_V.Wheel[i].v_out; //1、3轮子方向反了
         if(i == 1) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
         if(i == 2) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
-        if(i == 3) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
+        if(i == 0) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
 		VESC_COMMAND_SEND(&hfdcan2, 3, i+1, Goal_V.Wheel[i].v_out);		
 	}
 	

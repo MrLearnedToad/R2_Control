@@ -102,6 +102,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define moving_partially_complete3 9
 #define moving_error 10
 #define moving_place_block 11
+
 //夹具状态
 #define release 0
 #define grasp 1
@@ -118,6 +119,16 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define tower_block_5 6
 #define tower_bottom 1 
 #define tower_bottom2 7
+#define tower_block_1_vertical 7
+#define tower_block_2_vertical 8
+#define tower_block_3_vertical 9
+#define tower_block_4_vertical 10
+#define tower_block_5_vertical 11
+#define tower_block_1_place 12
+#define tower_block_2_place 13
+#define tower_block_3_place 14
+#define tower_block_4_place 15
+#define tower_block_5_place 16
 
 #define delaying 1
 #define delay_complete 2
@@ -138,7 +149,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define MOVEFORWARD 13
 
 #define either 114
-#define total_flags 14 //定义标志位总数量
+#define total_flags 15 //定义标志位总数量
 /*Private Typedef*/
 typedef struct Ort
 {
@@ -238,7 +249,7 @@ int auto_turn(mission_queue *current_task);
 int task_queue_delay(mission_queue *current_task);
 int move_forward(mission_queue *current_task);
 /*Advanced Private Function Prototypes*/
-void pick_up(uint8_t pos,uint8_t mode);
+void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode);
 void place_block(uint8_t tower_num);
 /*Disposable Private Function Prototypes*/
 void send_msg_synchronal(void *id);

@@ -9,6 +9,7 @@ const uint8_t GM6020_Reduction_Ratio[8] = {1, 1, 1, 1, 1, 1, 1, 1}; //电机减速比
 uint8_t GM6020_Feedback_Buf[8][6];		//电机反馈值(全局变量)
 int GM6020_Pos[8];					//每一个元素对应一个ID的电机的信息
 ANN_PID_handle GM6020_Speed_ANNPID[8];
+uint8_t GM6020_Temp_error_counter[8];
 
 //PID参数初始化	(每个电机一套参数)
 GM6020_PID GM6020_Speed_Pid[8] =
@@ -26,10 +27,10 @@ GM6020_PID GM6020_Speed_Pid[8] =
 
 GM6020_PID GM6020_Pos_Pid[8] =
 {
-    {.Kp = 0.550, .Ki = 0.001, .Kd = 0.15, .Max = 320, .Min = -320},	//ID = 1
+    {.Kp = 0.50, .Ki = 0.001, .Kd = 0.15, .Max = 320, .Min = -320},	//ID = 1
     {.Kp = 0.40, .Ki = 0.001, .Kd = 0.2, .Max = 320, .Min = -320},	//ID = 2
     {.Kp = 0.35, .Ki = 0.001, .Kd = 0.1, .Max = 320, .Min = -320},	//ID = 3
-    {.Kp = 0.45, .Ki = 0.001, .Kd = 0.1, .Max = 320, .Min = -320},	//ID = 4
+    {.Kp = 0.30, .Ki = 0.001, .Kd = 0.1, .Max = 320, .Min = -320},	//ID = 4
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 5
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 6
     {.Kp = 1.3, .Ki = 0, .Kd = 0.05, .Max = 320, .Min = -320},	//ID = 7
@@ -174,6 +175,13 @@ void GM6020_Get_Feedback(uint32_t std_id, uint8_t* data_p)
         {
             memcpy(GM6020_Feedback_Buf[i - 1], data_p, 6);
 			GM6020_Pos_Rec(i);
+            if(data_p[6]>=100)
+            {
+                if(GM6020_Temp_error_counter[i]<255)
+                    GM6020_Temp_error_counter[i]++;
+                else
+                    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_2,GPIO_PIN_SET);
+            }
             return;
         }
     }

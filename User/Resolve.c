@@ -61,6 +61,7 @@ void Set_Pos(void)
 //    input[1]=current_speed.y;
 //    ddy=*xtpredict(velocity_nn_y,input);
     
+    static float last_velocity_z=0;
     
     dx=ddx*arm_cos_f32(current_pos.z*3.1415926f/180.0f)-ddy*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
     dy=ddx*arm_sin_f32(current_pos.z*3.1415926f/180.0f)+ddy*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
@@ -125,6 +126,13 @@ void Set_Pos(void)
 //        Wheel_Speed[1]=Wheel_Speed[1]/19*28.5f;
 //        Wheel_Speed[2]=Wheel_Speed[2]/19*28.5f;
 //        Wheel_Speed[3]=Wheel_Speed[3];
+    extern int judge_sign(double num);
+    if(fabs(last_velocity_z-pid_velocityz)>10)
+    {
+        pid_velocityz=last_velocity_z+judge_sign(pid_velocityz-last_velocity_z)*10;
+    }
+
+    last_velocity_z=pid_velocityz;
     
 	/*解算到车轮的速度*/
     if(open_loop_velocity.x==0&&open_loop_velocity.y==0&&open_loop_velocity.z==0)
