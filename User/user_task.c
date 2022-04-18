@@ -516,7 +516,7 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         
         if(mode==automode)
             set_flags[auto_drive_status]=moving_partially_complete1;
-        else
+        else if(pos==forward||pos==backward)
             set_flags[delay_status]=delay_complete;
         add_mission(HOOKGRASP,set_flags,1,&info);
         
@@ -606,7 +606,7 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
     }
     else
     {
-        info.x=1000;//光电门触发后夹块延迟
+        info.x=400;//光电门触发后夹块延迟
         flags[delay_status]=stop;
         add_mission(TASKQUEUEDELAY,set_flags,1,&info);
         info.x=0;
@@ -624,6 +624,9 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         info.x=block_num;
         info.y=0;
         add_mission(GRABPOSSET,set_flags,1,&info);
+        
+        info.x=tower_bottom;
+        add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
         
         if(block_num!=6)
             set_flags[grab_status]=stop;
@@ -805,13 +808,13 @@ int auto_place(mission_queue *current_task)
         set_flags[auto_drive_status]=either;
         add_mission(GRABPOSSET,set_flags,1,&release_pos);
         
-        release_pos.x=tower_bottom2;
+        release_pos.x=tower_bottom;
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_complete3;
 //        add_mission(HOOKGRASP,set_flags,0,&release_pos);
         set_flags[grab_status]=stop;
         add_mission(GRABPOSSET,set_flags,1,&release_pos);
-        set_flags[grab_pos]=tower_bottom2;
+        set_flags[grab_pos]=tower_bottom;
 //        add_mission(HOOKRELEASE,set_flags,0,&release_pos);
 
     }
