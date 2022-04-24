@@ -93,6 +93,7 @@ ANN_PID_handle velocity_nn_x,velocity_nn_y;
 Ort raw_correction_value;
 uint8_t block_color=0;
 uint8_t communciation_error_counter=0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -443,7 +444,9 @@ void update_target_info(uint8_t *data)
     uint8_t temp2,cmd,id;
     cmd=data[2];
     barrier *base;
-        
+    static uint8_t fifo[10];
+    uint8_t counter[4]={0};
+    
     if(cmd>0&&cmd<6)
     {
         memcpy(temp,data+3,4);
@@ -502,7 +505,29 @@ void update_target_info(uint8_t *data)
     }
     else if(cmd==9)
     {
-        block_color=data[3];
+        if(data[3]<=3)
+        {
+            for(int i=9;i>0;i--)
+            {
+                fifo[i]=fifo[i-1];
+            }
+            fifo[0]=data[3];
+            for(int i=0;i<4;i++)
+                counter[i]=0;
+            for(int i=0;i<10;i++)
+            {
+                counter[fifo[i]]++;
+            }
+            uint8_t biggest=0;
+            for(int i=0;i<4;i++)
+            {
+                if(counter[i]>counter[biggest])
+                {
+                    biggest=i;
+                }
+            }
+            block_color=biggest;
+        }
     }
 //    else if(cmd>=7&&cmd<50)
 //    {
@@ -543,6 +568,7 @@ void update_target_info(uint8_t *data)
             //correction_value.z=temp1.z-current_pos.z;
         }
     }
+    
     return;
 }
 
@@ -640,6 +666,7 @@ float *Fifo_update(float num1,float num2,float num3,float num4,int retnum)
   * @param  htim : TIM handle
   * @retval None
   */
+extern uint8_t get_block_flag;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
@@ -652,6 +679,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim->Instance == TIM6)	/**/
 	{
 		static uint8_t ID=2,flag_sendlog=0;
+        
+        if(get_block_flag==2&&HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)&&sqrt(dX*dX+dY*dY)>0.3f&&flags[hook_pos]==release)
+        {
+            dX=dX*sqrt(dX*dX+dY*dY)*0.3f;
+            dY=dY*sqrt(dX*dX+dY*dY)*0.3f;
+        }
         
         if(flags[auto_drive_status]!=moving)
             acceration_limit();
@@ -691,7 +724,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         send_msg();
 
-        
 //        send_debug_msg(&huart8,0,0,0);
 //        if(fabs(dX)>2.0f)
 //            send_log(0x03,dX,Read_Rocker(0),Read_Rocker(1),0,&huart3);
@@ -709,6 +741,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             speed_cal();
             speed_clock=0;
         }
+
 	}
     else if(htim->Instance == TIM16)
     {

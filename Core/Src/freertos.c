@@ -459,7 +459,7 @@ void RobotTask(void *argument)
                 get_block_flag=1;
               }
           }
-          if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8))&&get_block_flag!=2&&get_block_flag!=1&&flags[regulator_catapult_pos]==release)
+          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f)&&get_block_flag!=2&&get_block_flag!=1&&flags[regulator_catapult_pos]==release)
           {
               if(target->location.z==forward||target->location.z==backward)
               {
@@ -491,6 +491,8 @@ void RobotTask(void *argument)
          count++;
       }
       
+      
+      
     osDelay(10);
   }
   /* USER CODE END RobotTask */
@@ -511,7 +513,7 @@ void manual_move(void *argument)
   for(;;)
   {
           instruction_refresh();
-      if(Read_Button(23)==manualmode||(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||flags[auto_drive_status]==stop)
+      if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||flags[auto_drive_status]==stop)
       {
         flags[0]=manualmode;
         static int rocker[4]={0};

@@ -188,7 +188,7 @@
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
-          <ItemText>block_color</ItemText>
+          <ItemText>block_color,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>6</count>
@@ -218,7 +218,7 @@
         <Ww>
           <count>11</count>
           <WinNumber>1</WinNumber>
-          <ItemText>debug</ItemText>
+          <ItemText>debuggg,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>12</count>
@@ -326,6 +326,11 @@
           <count>13</count>
           <WinNumber>2</WinNumber>
           <ItemText>mission_queue_head</ItemText>
+        </Ww>
+        <Ww>
+          <count>14</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>delay_count,0x0A</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow1>

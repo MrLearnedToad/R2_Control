@@ -287,7 +287,7 @@ int hook_release(mission_queue *current_task)
     }
     return 0;
 }    
-
+int debuggg=0;
 /*********************************************************************************
   *@  name      : switcher_direction_set
   *@  function  : 设定翻转位置
@@ -326,12 +326,27 @@ int switcher_direction_set(mission_queue *current_task)
                     FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
                 }
             }
-            else
+            else if(block_color==up)
             {
                 current_task->flag_finish=1;
                 flags[switcher_status]=stop;
                 cmd_feedback[3]=0;
             }
+            else if(block_color==forward)
+            {
+                flags[switcher_status]=moving;
+                flags[switcher_pos]=up;
+                can_msg[3]=up+1;
+                FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+            }
+            else if(block_color==backward)
+            {
+                flags[switcher_status]=moving;
+                flags[switcher_pos]=down;
+                can_msg[3]=down+1;
+                FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+            }
+            debuggg=block_num;
         }
     }
     if(cmd_feedback[3]==1)
@@ -530,8 +545,8 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
         info.x=0;
         
-        if(pos!=up)
-        {
+//        if(1)
+//        {
             set_flags[grab_status]=stop;
             
             set_flags[hook_status]=stop;
@@ -556,8 +571,8 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
                 set_flags[i]=either;
             }
             info.x=0;
-            if(block_num!=6)
-                set_flags[grab_status]=stop;        
+//            if(block_num!=6)
+//                set_flags[grab_status]=stop;        
             set_flags[hook_status]=stop;
             set_flags[regulator_status]=stop;
             if(block_color==down&&mode==manualmode)
@@ -583,26 +598,27 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
             {
                 info.x=down;
             }
+            info.y=1;
             add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
             info.x=0;
             set_flags[hook_status]=either;
-        }
-        else
-        {
-            
-            set_flags[hook_status]=stop;
-            info.x=block_num;
-            add_mission(GRABPOSSET,set_flags,1,&info);
-            
-            info.x=tower_bottom;
-            add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
-            info.x=0;
-            
-            info.x=-1;
-            info.y=-1;
-            info.z=release;
-            add_mission(POSREGULATORPOSSET,set_flags,0,&info);
-        }
+//        }
+//        else
+//        {
+//            
+//            set_flags[hook_status]=stop;
+//            info.x=block_num;
+//            add_mission(GRABPOSSET,set_flags,1,&info);
+//            
+//            info.x=tower_bottom;
+//            add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+//            info.x=0;
+//            
+//            info.x=-1;
+//            info.y=-1;
+//            info.z=release;
+//            add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+//        }
     }
     else
     {
@@ -628,12 +644,13 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         info.x=tower_bottom;
         add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
         
-        if(block_num!=6)
-            set_flags[grab_status]=stop;
+
+        set_flags[grab_status]=either;
         if(pos==forward)
             info.x=up;
         else
             info.x=down;
+        info.y=1;
         add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
     }
     return;
@@ -850,13 +867,13 @@ int auto_place(mission_queue *current_task)
         
 //
         
-        if(block_num==4)
-        {
-            release_pos.x=down;
-            release_pos.y=backward;
-            release_pos.z=-1;
-            add_mission(POSREGULATORPOSSET,set_flags,0,&release_pos);
-        }
+//        if(block_num==4)
+//        {
+//            release_pos.x=down;
+//            release_pos.y=backward;
+//            release_pos.z=-1;
+//            add_mission(POSREGULATORPOSSET,set_flags,0,&release_pos);
+//        }
         
         //focus_mode=1;
         

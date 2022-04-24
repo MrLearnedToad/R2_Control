@@ -212,5 +212,6 @@ void send_velocity(float x,float y,float z)
     *(short*)(transmit_buffer+0)=x*2048.0f;
     *(short*)(transmit_buffer+2)=y*2048.0f;
     *(short*)(transmit_buffer+4)=z*128.0f;
+    transmit_buffer[7]=Read_Button(23);
     FDCAN_SendData(&hfdcan1,transmit_buffer,0x234,8);
 }
