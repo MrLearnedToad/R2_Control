@@ -282,34 +282,42 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(4)==1&&last_key_status[4]==0)
       {
-          if(flags[regulator_horizontal_pos]==backward)
+//          if(flags[regulator_horizontal_pos]==backward)
+//          {
+//              info.x=up;
+//              info.y=forward;
+//              info.z=-1;
+//          }
+//          else
+//          {
+//              info.x=down;
+//              info.y=backward;
+//              info.z=-1;
+//          }
+          if(flags[regulator_R_pos]==sweep)
           {
-              info.x=up;
-              info.y=forward;
-              info.z=-1;
+              info.z=flags[regulator_L_pos];
           }
           else
           {
-              info.x=down;
-              info.y=backward;
-              info.z=-1;
+              info.z=sweep;
           }
           add_mission(POSREGULATORPOSSET,set_flags,0,&info);
           last_key_status[4]=1;
       }
       else if(Read_Button(5)==1&&last_key_status[5]==0)
       {
-          if(flags[regulator_catapult_pos]==grasp)
+          if(flags[regulator_L_pos]==regulate)
           {
               info.x=-1;
               info.y=-1;
-              info.z=release;
+              info.z=standby;
           }
           else
           {
               info.x=-1;
               info.y=-1;
-              info.z=grasp;
+              info.z=regulate;
           }
           add_mission(POSREGULATORPOSSET,set_flags,0,&info);
           last_key_status[5]=1;
@@ -459,7 +467,7 @@ void RobotTask(void *argument)
                 get_block_flag=1;
               }
           }
-          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f)&&get_block_flag!=2&&get_block_flag!=1&&flags[regulator_catapult_pos]==release)
+          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f)&&get_block_flag!=2&&get_block_flag!=1)
           {
               if(target->location.z==forward||target->location.z==backward)
               {
@@ -469,6 +477,8 @@ void RobotTask(void *argument)
                   add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
                   info.x=forward;
                   add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
+                  info.z=regulate;
+                  add_mission(POSREGULATORPOSSET,set_flags,0,&info);
                   get_block_flag=2;
               }
           }

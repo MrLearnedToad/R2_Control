@@ -81,9 +81,8 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define switcher_status 6
 #define auto_drive_status 7
 #define lock_mode_status 8
-#define regulator_vertical_pos 9
-#define regulator_horizontal_pos 10
-#define regulator_catapult_pos 10
+#define regulator_L_pos 9
+#define regulator_R_pos 10
 #define regulator_status 11
 #define activator_pos 12
 #define activator_status 13
@@ -150,6 +149,10 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 
 #define either 114
 #define total_flags 15 //定义标志位总数量
+
+#define standby 0
+#define regulate 1
+#define sweep 2
 /*Private Typedef*/
 typedef struct Ort
 {

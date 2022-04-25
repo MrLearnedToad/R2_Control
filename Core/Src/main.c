@@ -680,10 +680,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		static uint8_t ID=2,flag_sendlog=0;
         
-        if(get_block_flag==2&&HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)&&sqrt(dX*dX+dY*dY)>0.3f&&flags[hook_pos]==release)
+        if(get_block_flag==2&&HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)&&sqrt(dX*dX+dY*dY)>0.1f&&flags[hook_pos]==release)
         {
-            dX=dX*sqrt(dX*dX+dY*dY)*0.3f;
-            dY=dY*sqrt(dX*dX+dY*dY)*0.3f;
+            dX=dX*sqrt(dX*dX+dY*dY)*0.1f;
+            dY=dY*sqrt(dX*dX+dY*dY)*0.1f;
         }
         
         if(flags[auto_drive_status]!=moving)
@@ -722,7 +722,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             dX=0;
             dY=0;
         }
-        send_msg();
+        
 
 //        send_debug_msg(&huart8,0,0,0);
 //        if(fabs(dX)>2.0f)
@@ -736,6 +736,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         speed_clock++;
         if(speed_clock==10)
             DMA_recieve();
+        if(speed_clock==49)
+            send_msg();
         if(speed_clock==50)
         {
             speed_cal();

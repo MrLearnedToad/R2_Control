@@ -307,7 +307,7 @@ int switcher_direction_set(mission_queue *current_task)
     }
     if(flags[switcher_status]==stop&&current_task->info.y==1)
     {
-        if(flags[regulator_catapult_pos]==release&&flags[regulator_status]==stop)
+        if(flags[regulator_L_pos]==release&&flags[regulator_R_pos]==release&&flags[regulator_status]==stop)
         {
             if(block_color==down)
             {
@@ -384,28 +384,37 @@ int pos_regulator_pos_set(mission_queue *current_task)
     if(flags[regulator_status]==stop)
     {
         flags[regulator_status]=moving;
-        if(current_task->info.x!=-1)
-            flags[regulator_vertical_pos]=current_task->info.x;
-        if(current_task->info.y!=-1)
-            flags[regulator_horizontal_pos]=current_task->info.y;
-        if(current_task->info.z!=-1)
-            flags[regulator_catapult_pos]=current_task->info.z;
+//        if(current_task->info.x!=-1)
+//            flags[regulator_vertical_pos]=current_task->info.x;
+//        if(current_task->info.y!=-1)
+//            flags[regulator_horizontal_pos]=current_task->info.y;
+//        if(current_task->info.z!=-1)
+//            flags[regulator_catapult_pos]=current_task->info.z;
+        if(current_task->info.z==sweep)
+        {
+            flags[regulator_R_pos]=sweep;
+        }
+        else
+        {
+            flags[regulator_R_pos]=current_task->info.z;
+            flags[regulator_L_pos]=current_task->info.z;
+        }
         if(current_task->info.z!=-1)
         {
             can_msg[5]=current_task->info.z+1;
         }
-        else
-        {
-            if(current_task->info.x==down)
-            {
-                can_msg[4]=1;
-                
-            }
-            else
-            {
-                can_msg[4]=2;
-            }
-        }
+//        else
+//        {
+//            if(current_task->info.x==down)
+//            {
+//                can_msg[4]=1;
+//                
+//            }
+//            else
+//            {
+//                can_msg[4]=2;
+//            }
+//        }
         
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
@@ -637,6 +646,12 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         }
         
         set_flags[hook_status]=stop;
+        set_flags[hook_pos]=grasp;
+        
+        info.z=standby;
+        add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+        info.z=0;
+        
         info.x=block_num;
         info.y=0;
         add_mission(GRABPOSSET,set_flags,1,&info);
