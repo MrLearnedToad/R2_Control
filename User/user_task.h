@@ -235,6 +235,7 @@ extern uint8_t block_color;
 extern uint8_t focus_mode;
 extern Ort open_loop_velocity;
 extern uint8_t communciation_error_counter;
+extern short tof_read;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);

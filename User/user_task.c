@@ -916,6 +916,9 @@ void place_block(uint8_t tower_num)
     }
     Ort info={.x=0,.y=0,.z=0};
     
+    set_flags[auto_drive_status]=moving_place_block;
+    info.x=tower_num+10;
+    add_mission(GRABPOSSET,set_flags,0,&info);
     
     for(int i=0;i<total_flags;i++)
     {

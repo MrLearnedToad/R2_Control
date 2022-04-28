@@ -74,6 +74,8 @@ uint8_t rxtemp=0;
 int rocker[4];
 uint8_t turret_buffer[8];
 uint8_t dma_buffer[30]={0};
+uint8_t tof_buffer[10]={0};
+short tof_read;
 uint8_t Rx_buffer[16]={0};
 uint8_t huart3_rxbuffer[16]={0};
 Ort current_acceration;
@@ -93,7 +95,7 @@ ANN_PID_handle velocity_nn_x,velocity_nn_y;
 Ort raw_correction_value;
 uint8_t block_color=0;
 uint8_t communciation_error_counter=0;
-
+extern uint8_t get_block_flag;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,6 +122,7 @@ void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID);
   * @retval int
   */
 int main(void)
+
 {
   /* USER CODE BEGIN 1 */
     
@@ -152,6 +155,7 @@ int main(void)
   MX_FDCAN1_Init();
   MX_FDCAN2_Init();
   MX_USART3_UART_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 nrf_init();
 HAL_Delay(20);
@@ -163,7 +167,7 @@ FDCAN2_Init(&hfdcan2);
 HAL_Delay(20);
 HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
 HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
-
+HAL_UART_Receive_DMA(&huart2,tof_buffer,10);
 extern uint16_t RGB_DEFAULT[2];
 RGB_DEFAULT[0]=0;
 RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
@@ -640,6 +644,40 @@ void DMA_recieve(void)
     return;
 }
 
+void tof_recieve()
+{
+    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) //如果发生了上溢错误，就将标志位清零，并重新开始接收头帧
+    {
+        __HAL_UART_CLEAR_OREFLAG(&huart2);
+    }
+    uint8_t buffer[4]={0};
+    int i=0;
+    for(;i<10;i++)
+    {
+        if(tof_buffer[i]==0x59)
+        {
+            break;
+        }
+    }
+    if(i==9&&tof_buffer[i]!=0x59) return;
+    
+    for(int k=0;k<4;k++)
+    {
+        buffer[k]=tof_buffer[i];
+        if(k==1&&tof_buffer[i]!=0x59)
+            return;
+        if(i==9)
+            i=0;
+        else
+            i++;
+            
+    }
+    
+    if(*((short*)(buffer+2))<=1000&&*((short*)(buffer+2))>=0)
+        tof_read=*((short*)(buffer+2))/0.88f;
+    return;
+}
+
 float *Fifo_update(float num1,float num2,float num3,float num4,int retnum)
 {
     static float buffer[10][4];
@@ -666,7 +704,7 @@ float *Fifo_update(float num1,float num2,float num3,float num4,int retnum)
   * @param  htim : TIM handle
   * @retval None
   */
-extern uint8_t get_block_flag;
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
@@ -679,11 +717,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim->Instance == TIM6)	/**/
 	{
 		static uint8_t ID=2,flag_sendlog=0;
-        
-        if(get_block_flag==2&&HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)&&sqrt(dX*dX+dY*dY)>0.1f&&flags[hook_pos]==release)
+        float temp;
+        if(get_block_flag==2&&tof_read>200&&tof_read<900&&sqrt(dX*dX+dY*dY)>tof_read/500.0f&&flags[hook_pos]==release)
         {
-            dX=dX*sqrt(dX*dX+dY*dY)*0.1f;
-            dY=dY*sqrt(dX*dX+dY*dY)*0.1f;
+            if(dX!=0&&dY!=0)
+            {
+                temp=dX/sqrt(dX*dX+dY*dY)*tof_read/800.0f;
+                dY=dY/sqrt(dX*dX+dY*dY)*tof_read/800.0f;
+                dX=temp;
+            }
+        }
+        else if(get_block_flag==2&&tof_read>0&&tof_read<=200&&sqrt(dX*dX+dY*dY)>0.4&&flags[hook_pos]==release)
+        {
+            if(dX!=0&&dY!=0)
+            {
+                temp=dX/sqrt(dX*dX+dY*dY)*0.4f;
+                dY=dY/sqrt(dX*dX+dY*dY)*0.4f;
+                dX=temp;
+            }
         }
         
         if(flags[auto_drive_status]!=moving)
@@ -736,6 +787,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         speed_clock++;
         if(speed_clock==10)
             DMA_recieve();
+        if(speed_clock==11)
+            tof_recieve();
         if(speed_clock==49)
             send_msg();
         if(speed_clock==50)

@@ -180,7 +180,7 @@ void GM6020_Get_Feedback(uint32_t std_id, uint8_t* data_p)
                 if(GM6020_Temp_error_counter[i]<255)
                     GM6020_Temp_error_counter[i]++;
                 else
-                    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_2,GPIO_PIN_SET);
+                    HAL_GPIO_WritePin(GPIOD,GPIO_PIN_3,GPIO_PIN_SET);
             }
             return;
         }
