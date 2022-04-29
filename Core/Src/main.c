@@ -91,7 +91,8 @@ int speed_clock;
 float vx[10],vy[10],ababa;
 Ort pos_log[10];
 uint8_t pos_reset=0;
-ANN_PID_handle velocity_nn_x,velocity_nn_y;
+ANN_PID_handle velocity_nn_x={.network.input_2_hidden.mat={0.07388,0,0.102044,0,0,0.102044,0,0.0574135,0,0,0.0574135,0,0.102044,0,0,0.10204422,0,-0.0063,0},.network.hidden_2_output.mat={0.073885,0,0.102044,0,0.0574135,0,0.10204422,0,-0.006343383}}
+,velocity_nn_y={.network.input_2_hidden.mat={0.07388,0,0.102044,0,0,0.102044,0,0.0574135,0,0,0.0574135,0,0.102044,0,0,0.10204422,0,-0.0063,0},.network.hidden_2_output.mat={0.073885,0,0.102044,0,0.0574135,0,0.10204422,0,-0.006343383}};
 Ort raw_correction_value;
 uint8_t block_color=0;
 uint8_t communciation_error_counter=0;
@@ -202,8 +203,8 @@ block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
 
-//ANN_pid_init(&velocity_nn_x);
-//ANN_pid_init(&velocity_nn_y);
+ANN_pid_init(&velocity_nn_x);
+ANN_pid_init(&velocity_nn_y);
 
 hmi_init(&huart3);
 
@@ -363,8 +364,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.1f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.1f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.7f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.7f*speed_plan[global_clock].y;
     return;
 }
 
@@ -431,10 +432,10 @@ void speed_cal(void)
     }
     vx[0]=current_pos.x;
     vy[0]=current_pos.y;
-    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.045f;
-    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.045f;
-//    current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.005f);
-//    current_speed.y=Kalman_Filter(&kal_velocity_x,(vy[0]-vy[1])/0.005f);
+//    current_speed.x=(vx[0]+vx[1]+vx[2]-vx[3]-vx[4]-vx[5])/0.045f;
+//    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.045f;
+    current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.005f);
+    current_speed.y=Kalman_Filter(&kal_velocity_y,(vy[0]-vy[1])/0.005f);
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     if(gyro.error_counter<1000)
         gyro.error_counter++;
@@ -737,10 +738,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             }
         }
         
-        if(flags[auto_drive_status]!=moving)
-            acceration_limit();
-
-        
         check_dead_barrier();
         if(global_clock<1499&&thread_lock==0)
             global_clock++;
@@ -757,13 +754,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
+        //if(flags[auto_drive_status]!=moving)
+            acceration_limit();
         Set_Pos();
 //        Elmo_Run();
         if(log_clock==5)
         {
-//            send_log2(current_speed.x,(vx[0]-vx[1])/0.005f,current_speed.y,(vx[0]-vx[1])/0.005f,&huart3);
-//            
-//            log_clock=0;
+            send_log2(sqrt(pow(current_pos.x-pos_log[global_clock].x,2)+pow(current_pos.y-pos_log[global_clock].y,2)),dX,current_speed.y,dY,&huart3);
+            
+            log_clock=0;
         }
         log_clock++;
 //        GM6020_Set_Speed(0,1);

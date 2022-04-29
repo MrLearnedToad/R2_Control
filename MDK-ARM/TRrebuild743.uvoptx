@@ -173,7 +173,7 @@
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>raw_correction_value</ItemText>
+          <ItemText>current_speed</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
@@ -265,6 +265,16 @@
           <WinNumber>1</WinNumber>
           <ItemText>tof_read,0x0A</ItemText>
         </Ww>
+        <Ww>
+          <count>21</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>velocity_nn_x</ItemText>
+        </Ww>
+        <Ww>
+          <count>22</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>NNlearn</ItemText>
+        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>
@@ -341,6 +351,21 @@
           <count>14</count>
           <WinNumber>2</WinNumber>
           <ItemText>delay_count,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>15</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>kal_velocity_x</ItemText>
+        </Ww>
+        <Ww>
+          <count>16</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>kal_velocity_y</ItemText>
+        </Ww>
+        <Ww>
+          <count>17</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>global_clock,0x0A</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow1>

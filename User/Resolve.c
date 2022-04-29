@@ -13,7 +13,7 @@ int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
 PID_T pid_speedx={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
 PID_T pid_speedy={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
 PID_T pid_deg={.KP=5.5,.KI=0,.KD=15,.PID_MAX=200,.Dead_Zone=0.5f};
-PID_T pid_pos={.KP=3.6,.KI=0,.KD=0,.PID_MAX=4};
+PID_T pid_pos={.KP=2.6,.KI=0,.KD=0,.PID_MAX=2};
 uint8_t deg_pid_disable;
 Ort open_loop_velocity;
 extern Ort current_pos;
@@ -27,18 +27,18 @@ extern float ababa;
 Kal_Filter kal_velocity_x =
 {   1.0f,				//k_flt.C_last
     0.0f,			    //k_flt.X_last
-    0.0001f,	  	    //k_flt.Q
-    0.04f,		  		//k_flt.R 4.0
+    0.001f,	  	    //k_flt.Q
+    0.03f,		  		//k_flt.R 4.0
     0.0f, 0.0f, 0.0f, 0.0f
-};
+};//X方向速度卡尔曼滤波
 
 Kal_Filter kal_velocity_y =
 {   1.0f,				//k_flt.C_last
     0.0f,			    //k_flt.X_last
-    0.0001f,	  	    //k_flt.Q
-    0.04f,		  		//k_flt.R 4.0
+    0.001f,	  	    //k_flt.Q
+    0.03f,		  		//k_flt.R 4.0
     0.0f, 0.0f, 0.0f, 0.0f
-};
+};//y方向速度卡尔曼滤波
 
 /*到达指定位置*/
 /********************************************************************************
@@ -52,8 +52,11 @@ void Set_Pos(void)
     float dx,dy,ddx,ddy;//input[2];
 //    ddx=Pid_Run(&pid_speedx,dX,current_speed.x);
 //    ddy=Pid_Run(&pid_speedy,dY,current_speed.y);
-    ddx=dX;
-    ddy=dY;
+//    ddx=dX;
+//    ddy=dY;
+    ddx=ANN_pid_run(&velocity_nn_x,dX,current_speed.x);//神经网络速度控制
+    ddy=ANN_pid_run(&velocity_nn_y,dY,current_speed.y);
+       //太艹了，这玩意居然很好使
 //    input[0]=dX;
 //    input[1]=current_speed.x;
 //    ddx=*xtpredict(velocity_nn_x,input);

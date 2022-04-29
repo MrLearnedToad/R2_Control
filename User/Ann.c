@@ -7,45 +7,24 @@ uint8_t NNlearn=1;
 
 double ANN_pid_run(ANN_PID_handle *handle,double target,double current_value)
 {
-    static float last_speed;
-    for(int i=3;i>0;i--)
+    if(fabs(current_value)<0.02)
     {
-        handle->error[i]=handle->error[i-1];
+        current_value=0;
     }
-    if(fabs(last_speed-current_value)>handle->pid_handle.Dead_Zone)
-        handle->error[0]=(last_speed-current_value)/normalize_factor;
-    else
-        handle->error[0]=0;
+    handle->error[0]=(handle->network.last_speed-current_value)/normalize_factor;
     if(NNlearn==1)
         NN_bcak_prop(&handle->network,handle->error,ANN_learning_rate);//神经网络学习
-    handle->input[0]=handle->error[0];
-    handle->input[1]=handle->error[1];
-    handle->input[2]=handle->error[2];
-    if(NNlearn==1)
-    {
-        NN_fprop(&handle->network,handle->input);//神经网络正向运行
-        handle->pid_handle.KP=handle->network.outputout[0]*multiply_factor_P;
-        handle->pid_handle.KI=handle->network.outputout[1]*multiply_factor_I;
-        handle->pid_handle.KD=handle->network.outputout[2]*multiply_factor_D;
-    }
-    last_speed=target;
-    return Pid_Run(&handle->pid_handle,target,current_value)*multiply_factor_PID_out;
+    handle->input[0]=target;
+    NN_fprop(&handle->network,handle->input);//神经网络正向运行
+    handle->network.last_speed=target;
+    return handle->network.outputout[0]*normalize_factor;
 }
 
 ANN_PID_handle* ANN_pid_init(ANN_PID_handle *handle)//在最开始首先执行这个函数
 {
     NN_create_network(3,4,&handle->network);
     handle->input[0]=0;
-    handle->input[1]=0;
-    handle->input[2]=0;
-    handle->pid_handle.I_Limit=10000;
-    handle->pid_handle.Dead_Zone=1;
-    handle->pid_handle.I_MAX=10000;
-    handle->pid_handle.PID_MAX=100000;
     NN_fprop(&handle->network,handle->input);
-    handle->pid_handle.KP=handle->network.outputout[0];
-    handle->pid_handle.KI=handle->network.outputout[1];
-    handle->pid_handle.KD=handle->network.outputout[2];
     return handle;
 }
 
@@ -95,7 +74,7 @@ void rand_matrix(matrix *tar)
     {
         for (int j = 0; j < tar->col; j++)
         {
-            set_matrix(tar,i,j,0.3);
+            set_matrix(tar,i,j,0.1);
         }
     }
     return;
@@ -110,16 +89,14 @@ void NN_bcak_prop(NN_handler *network,double *output_error,double rate)
 {
     double gradient,pd_pidout_nnout[3];
 
-    pd_pidout_nnout[0]=output_error[1]-output_error[2];
-    pd_pidout_nnout[1]=output_error[1];
-    pd_pidout_nnout[2]=output_error[1]-2*output_error[2]+output_error[3];
+    pd_pidout_nnout[0]=output_error[0];
     /*修正隐藏层到输出层系数*/
     for (int i = 0; i < network->hidden_num+1; i++)
     {
-        for (int j = 0; j < 3; j++)
+        for (int j = 0; j < 1; j++)
         {
                         
-            gradient=-(-output_error[0]*1*pd_pidout_nnout[j]*pd_tanh(network->hiddensum[j])*network->hiddenout[i]);
+            gradient=-(-output_error[0]*network->hiddenout[i]);
             set_matrix(&network->hidden_2_output,i,j,read_matrix(&network->hidden_2_output,i,j)+gradient*rate);
         }
     }
@@ -128,11 +105,7 @@ void NN_bcak_prop(NN_handler *network,double *output_error,double rate)
     {
         for (int j = 0; j < network->hidden_num; j++)
         {
-            gradient=-(-output_error[0]*1
-            *(pd_pidout_nnout[0]*pd_tanh(network->hiddensum[0])*read_matrix(&network->hidden_2_output,j,0)
-             +pd_pidout_nnout[1]*pd_tanh(network->hiddensum[1])*read_matrix(&network->hidden_2_output,j,1)
-             +pd_pidout_nnout[2]*pd_tanh(network->hiddensum[2])*read_matrix(&network->hidden_2_output,j,2)
-            )*0.5*pd_tanh(network->inputsum[j])*network->inputout[i]);
+            gradient=-(-output_error[0]*1*read_matrix(&network->hidden_2_output,j,0)*0.5*pd_tanh(network->inputsum[j])*network->inputout[i]);
             set_matrix(&network->input_2_hidden,i,j,read_matrix(&network->hidden_2_output,i,j)+gradient*rate);
         }
     }
@@ -157,14 +130,14 @@ void NN_fprop(NN_handler *network,double *input)
         network->hiddenout[i]=tanh(network->inputsum[i]);
     }
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 1; i++)
     {
         network->hiddensum[i]=0;
         for (int j = 0; j < network->hidden_num+1; j++)
         {
             network->hiddensum[i]+=read_matrix(&network->hidden_2_output,j,i)*network->hiddenout[j];
         }
-        network->outputout[i]=0.5f*(1+tanh(network->hiddensum[i]));
+        network->outputout[i]=network->hiddensum[i];
     }
     return;
 }
@@ -174,7 +147,7 @@ NN_handler* NN_create_network(int input_num,int hidden_num,NN_handler *network)
     network->input_2_hidden.col=hidden_num;
     network->input_2_hidden.row=input_num+1;
     network->hidden_2_output.row=hidden_num+1;
-    network->hidden_2_output.col=3;
+    network->hidden_2_output.col=1;
 
     network->hidden_num=hidden_num;
 
@@ -183,8 +156,8 @@ NN_handler* NN_create_network(int input_num,int hidden_num,NN_handler *network)
     network->hiddenout[hidden_num]=1;
     network->inputout[input_num]=1;
 
-    rand_matrix(&(network->hidden_2_output));
-    rand_matrix(&(network->input_2_hidden));
+    //rand_matrix(&(network->hidden_2_output));
+    //rand_matrix(&(network->input_2_hidden));
     
     return network;
 }

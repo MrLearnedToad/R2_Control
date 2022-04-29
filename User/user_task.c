@@ -952,6 +952,7 @@ int move_forward(mission_queue *current_task)
 {
     static uint8_t PA0_triggered_time=8,PA1_triggered_time=8;
     static int timer=0;
+    NNlearn=0;
     
     if(PA0_triggered_time<8)
         PA0_triggered_time++;
@@ -989,6 +990,7 @@ int move_forward(mission_queue *current_task)
         open_loop_velocity.y=0;
         open_loop_velocity.z=0;
         timer=0;
+        NNlearn=1;
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
     }

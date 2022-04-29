@@ -358,6 +358,30 @@ void RobotTask(void *argument)
           focus_mode=0;
           last_key_status[12]=1;
       }
+      else if(Read_Button(13)==1&&last_key_status[13]==0)
+      {
+          info.x=tower_bottom;
+          add_mission(GRABPOSSET,set_flags,0,&info);
+          add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+          info.x=up;
+          add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
+          info.x=0;
+          info.z=standby;
+          add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+          get_block_flag=0;
+          last_key_status[13]=1;
+      }
+      else if(Read_Button(14)==1&&last_key_status[14]==0)
+      {
+          extern float short_drive_deadzone;
+          flags[auto_drive_status]=moving;
+          short_drive_deadzone=0.10f;
+          info.x=current_pos.x+1.5f;
+          info.y=current_pos.y+1.5f;
+          info.z=moving_complete1;
+          add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+          last_key_status[14]=1;
+      }
       else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop)
       {
           add_mission(AUTOPLACE,set_flags,0,&info);
@@ -415,7 +439,7 @@ void RobotTask(void *argument)
               last_key_status[i]=0;
           }
       }
-      task_reset=Read_Button(14);
+      //task_reset=Read_Button(14);
                   
       target=find_barrier(block_num);
       if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0))

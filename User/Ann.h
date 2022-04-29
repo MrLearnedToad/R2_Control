@@ -71,12 +71,12 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
                                                                    
 */
 
-#define multiply_factor_P 300//调节神经网络kP输出大小
-#define multiply_factor_I 50//调节神经网络kI输出大小
-#define multiply_factor_D 50//调节神经网络kD输出大小
+#define multiply_factor_P 1.2//调节神经网络kP输出大小
+#define multiply_factor_I 0.2//调节神经网络kI输出大小
+#define multiply_factor_D 0.2//调节神经网络kD输出大小
 #define multiply_factor_PID_out 1//调节PID输出大小
-#define normalize_factor 100//调节神经网络输入时数据归一化程度
-#define ANN_learning_rate 0.001//调节神经网络学习速率
+#define normalize_factor 5//调节神经网络输入时数据归一化程度
+#define ANN_learning_rate 0.05//调节神经网络学习速率
 /*求绝对值*/
 #define ABS(x) (((x) > 0) ? x : (-(x)))
 /*限幅*/
@@ -125,6 +125,7 @@ typedef struct NN_handler
     double inputout[5];
     int input_num;
     int hidden_num;
+    double last_speed;
     char a;
 }NN_handler;
 
