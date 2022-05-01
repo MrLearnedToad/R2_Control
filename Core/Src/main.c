@@ -747,7 +747,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-        if(flags[auto_drive_status]!=moving)
+        if(flags[auto_drive_status]!=moving||global_clock<30)
             acceration_limit();
         Set_Pos();
 //        Elmo_Run();

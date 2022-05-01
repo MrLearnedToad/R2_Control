@@ -384,7 +384,7 @@ void RobotTask(void *argument)
           add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
           last_key_status[14]=1;
       }
-      else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop)
+      else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop&&flags[hook_pos]==grasp)
       {
           add_mission(AUTOPLACE,set_flags,0,&info); 
           focus_mode=0;
