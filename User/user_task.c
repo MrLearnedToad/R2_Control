@@ -50,7 +50,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
     {
         //send_log(2,current_pos.x,current_pos.y,current_task->info.x,current_task->info.y,&huart3);
         pre_plan(current_task->info);
-        global_clock=3;
+        global_clock=5;
         flag_running=1;
         flags[auto_drive_status]=moving;
     }
@@ -133,17 +133,33 @@ int auto_drive_longdistance(mission_queue *current_task)
     {
         flag_running=1;
         current_point=planned_path[0];
-        dZ=-atan2f(current_point.x-current_pos.x,current_point.y-current_pos.y)*180.0f/3.1415926f;
+        dZ=-atan2f(current_point.x-current_pos.x,current_point.y-current_pos.y)*180.0f/3.1415926f+135.0f;
+        if(dZ<-180)
+        {
+            dZ=dZ+360;
+        }
+        else if(dZ>180)
+        {
+            dZ=dZ-360;
+        }
         pre_plan(current_point);   
         flags[auto_drive_status]=moving;
         global_clock=3;
         return 0;
     }
-    dZ=-atan2f(barr->location.x-current_pos.x,barr->location.y-current_pos.y)*180.0f/3.1415926f;
+    dZ=-atan2f(barr->location.x-current_pos.x,barr->location.y-current_pos.y)*180.0f/3.1415926f+135.0f;
+    if(dZ<-180)
+    {
+        dZ=dZ+360;
+    }
+    else if(dZ>180)
+    {
+        dZ=dZ-360;
+    }
     if(flag_start_signal_send==0&&fabs(current_pos.z+dZ)<20)
     {
         msg=6;     
-        xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
+        //xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
         flag_start_signal_send=1;
     }
     
@@ -171,7 +187,7 @@ int auto_drive_longdistance(mission_queue *current_task)
                     flag_running=0;
                     flags[drivemode]=manualmode;
                     flag_start_signal_send=0;
-                    xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
+                    //xTaskCreate(send_msg_synchronal,"kksk",100,&msg,osPriorityNormal,&task_handle_temp);
                     error_sum=0;
                     //send_log(9,0,0,0,0,&huart3);
                     return 0;
@@ -187,7 +203,7 @@ int auto_drive_longdistance(mission_queue *current_task)
             thread_lock=1;
             pre_plan(current_point);
             //send_log(0x05,current_point.x,current_point.y,0,0,&huart3);
-            global_clock=3;
+            global_clock=7;
             thread_lock=0;
         }
     }
@@ -307,8 +323,8 @@ int switcher_direction_set(mission_queue *current_task)
     }
     if(flags[switcher_status]==stop&&current_task->info.y==1)
     {
-        if(flags[regulator_L_pos]==release&&flags[regulator_R_pos]==release&&flags[regulator_status]==stop)
-        {
+//        if(flags[regulator_L_pos]==release&&flags[regulator_R_pos]==release&&flags[regulator_status]==stop)
+//        {
             if(block_color==down)
             {
                 if(flags[switcher_pos]==up)
@@ -316,6 +332,7 @@ int switcher_direction_set(mission_queue *current_task)
                     flags[switcher_status]=moving;
                     flags[switcher_pos]=down;
                     can_msg[3]=down+1;
+                    osDelay(500);
                     FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
                 }
                 else if(flags[switcher_pos]==down)
@@ -323,6 +340,7 @@ int switcher_direction_set(mission_queue *current_task)
                     flags[switcher_status]=moving;
                     flags[switcher_pos]=up;
                     can_msg[3]=up+1;
+                    osDelay(500);
                     FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
                 }
             }
@@ -347,7 +365,7 @@ int switcher_direction_set(mission_queue *current_task)
                 FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
             }
             debuggg=block_num;
-        }
+//        }
     }
     if(cmd_feedback[3]==1)
     {
@@ -966,17 +984,17 @@ int move_forward(mission_queue *current_task)
     
     if(PA0_triggered_time==8&&PA1_triggered_time!=8)
     {
-        open_loop_velocity.y=0.2;
+        open_loop_velocity.y=0.3f;
         open_loop_velocity.z=15;
     }
     else if(PA0_triggered_time!=8&&PA1_triggered_time==8)
     {
-        open_loop_velocity.y=0.2;
+        open_loop_velocity.y=0.3f;
         open_loop_velocity.z=-15;
     }
     else
     {
-        open_loop_velocity.y=0.2;
+        open_loop_velocity.y=0.3f;
         open_loop_velocity.z=0;
     }
     
@@ -985,6 +1003,8 @@ int move_forward(mission_queue *current_task)
     
     if((PA0_triggered_time!=8&&PA1_triggered_time!=8)||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||timer>900)
     {
+        open_loop_velocity.y=0.3f;
+        osDelay(200);
         PA0_triggered_time=8;
         PA1_triggered_time=8;
         open_loop_velocity.y=0;

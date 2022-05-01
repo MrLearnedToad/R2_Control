@@ -182,14 +182,7 @@ RGB_Init(&htim8,TIM_CHANNEL_3);
 
 for(int i=0;i<10;i++)
 {
-    if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
-    {
-        send_init_msg(&huart8,0x02);
-    }
-    else
-    {
-        send_init_msg(&huart8,0x03);
-    }
+    
     HAL_Delay(10);
 }
 HAL_TIM_Base_Start_IT(&htim6);
@@ -364,8 +357,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.7f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.7f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.1f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.1f*speed_plan[global_clock].y;
     return;
 }
 
@@ -719,7 +712,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		static uint8_t ID=2,flag_sendlog=0;
         float temp;
-        if(get_block_flag==2&&tof_read>200&&tof_read<900&&sqrt(dX*dX+dY*dY)>tof_read/500.0f&&flags[hook_pos]==release)
+        if(tof_read>200&&tof_read<900&&sqrt(dX*dX+dY*dY)>tof_read/500.0f&&flags[hook_pos]==release&&focus_mode==1)
         {
             if(dX!=0&&dY!=0)
             {
@@ -728,7 +721,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 dX=temp;
             }
         }
-        else if(get_block_flag==2&&tof_read>0&&tof_read<=200&&sqrt(dX*dX+dY*dY)>0.4&&flags[hook_pos]==release)
+        else if(tof_read>0&&tof_read<=200&&sqrt(dX*dX+dY*dY)>0.4&&flags[hook_pos]==release&&focus_mode==1)
         {
             if(dX!=0&&dY!=0)
             {
@@ -754,14 +747,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-        //if(flags[auto_drive_status]!=moving)
+        if(flags[auto_drive_status]!=moving)
             acceration_limit();
         Set_Pos();
 //        Elmo_Run();
-        if(log_clock==5)
+        if(log_clock==100)
         {
-            send_log2(sqrt(pow(current_pos.x-pos_log[global_clock].x,2)+pow(current_pos.y-pos_log[global_clock].y,2)),dX,current_speed.y,dY,&huart3);
-            
+            //send_log2(sqrt(pow(current_pos.x-pos_log[global_clock].x,2)+pow(current_pos.y-pos_log[global_clock].y,2)),dX,current_speed.y,dY,&huart3);
+//            if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
+//            {
+//                send_init_msg(&huart8,0x02);
+//            }
+//            else
+//            {
+//                send_init_msg(&huart8,0x03);
+//            }
             log_clock=0;
         }
         log_clock++;

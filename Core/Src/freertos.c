@@ -362,6 +362,8 @@ void RobotTask(void *argument)
       {
           info.x=tower_bottom;
           add_mission(GRABPOSSET,set_flags,0,&info);
+          info.x=block_num;
+          
           add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
           info.x=up;
           add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
@@ -384,7 +386,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop)
       {
-          add_mission(AUTOPLACE,set_flags,0,&info);
+          add_mission(AUTOPLACE,set_flags,0,&info); 
           focus_mode=0;
           last_key_status[15]=1;
       }
@@ -474,24 +476,27 @@ void RobotTask(void *argument)
       }
       
 
+      if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag!=1)
+      {
+          if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+          {
+            focus_mode=0;
+            if(get_block_flag==0)
+                pick_up(target->location.z,manualmode,0);
+            else
+                pick_up(target->location.z,manualmode,1);
+            get_block_flag=1;
+          }
+      }
       if(target!=NULL)
       {
 //          debug.x=fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f);
 //          debug.y=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.595f);
           //((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||
-          if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag!=1)
-          {
-              if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
-              {
-                focus_mode=0;
-                if(get_block_flag==0)
-                    pick_up(target->location.z,manualmode,0);
-                else
-                    pick_up(target->location.z,manualmode,1);
-                get_block_flag=1;
-              }
-          }
-          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f)&&get_block_flag!=2&&get_block_flag!=1)
+          
+          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f
+              &&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<2.0f)
+              &&get_block_flag==0&&target->last_update_time<300)
           {
               if(target->location.z==forward||target->location.z==backward)
               {
@@ -502,13 +507,16 @@ void RobotTask(void *argument)
                   info.x=forward;
                   add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
                   info.z=regulate;
+                  set_flags[grab_status]=stop;
                   add_mission(POSREGULATORPOSSET,set_flags,0,&info);
                   get_block_flag=2;
               }
+//              else
+//                  get_block_flag=3;
           }
       }
       
-      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f)
+      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f)
       {
          if(last_target_id!=target->barrier_ID)
          {
