@@ -357,8 +357,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.1f*speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.1f*speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+speed_plan[global_clock].y;
     return;
 }
 
@@ -712,16 +712,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		static uint8_t ID=2,flag_sendlog=0;
         float temp;
-        if(tof_read>200&&tof_read<900&&sqrt(dX*dX+dY*dY)>tof_read/500.0f&&flags[hook_pos]==release&&focus_mode==1)
+        if(tof_read>150&&tof_read<500&&sqrt(dX*dX+dY*dY)>tof_read/375.0f&&flags[hook_pos]==release&&find_barrier(block_num)!=NULL)
         {
             if(dX!=0&&dY!=0)
             {
-                temp=dX/sqrt(dX*dX+dY*dY)*tof_read/800.0f;
-                dY=dY/sqrt(dX*dX+dY*dY)*tof_read/800.0f;
+                temp=dX/sqrt(dX*dX+dY*dY)*tof_read/375.0f;
+                dY=dY/sqrt(dX*dX+dY*dY)*tof_read/375.0f;
                 dX=temp;
             }
         }
-        else if(tof_read>0&&tof_read<=200&&sqrt(dX*dX+dY*dY)>0.4&&flags[hook_pos]==release&&focus_mode==1)
+        else if(tof_read>0&&tof_read<=150&&sqrt(dX*dX+dY*dY)>0.4&&flags[hook_pos]==release&&find_barrier(block_num)!=NULL)
         {
             if(dX!=0&&dY!=0)
             {
@@ -747,7 +747,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             ID++;
             flag_sendlog=1;
         }
-        if(flags[auto_drive_status]!=moving||global_clock<30)
+        if(flags[auto_drive_status]!=moving||global_clock<10)
             acceration_limit();
         Set_Pos();
 //        Elmo_Run();

@@ -265,7 +265,7 @@ int hook_grasp(mission_queue *current_task)
     if(flags[hook_status]==stop)
     {
         flags[hook_status]=moving;
-        can_msg[1]=1;
+        can_msg[1]=block_num-1;
         flags[hook_pos]=grasp;
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
@@ -323,7 +323,7 @@ int switcher_direction_set(mission_queue *current_task)
     }
     if(flags[switcher_status]==stop&&current_task->info.y==1)
     {
-//        if(flags[regulator_L_pos]==release&&flags[regulator_R_pos]==release&&flags[regulator_status]==stop)
+        
 //        {
             if(block_color==down)
             {
@@ -352,16 +352,22 @@ int switcher_direction_set(mission_queue *current_task)
             }
             else if(block_color==forward)
             {
+                while(flags[hook_pos]==release||flags[hook_status]==moving)
+                    osDelay(50);
                 flags[switcher_status]=moving;
                 flags[switcher_pos]=up;
                 can_msg[3]=up+1;
+                osDelay(100);
                 FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
             }
             else if(block_color==backward)
             {
+                while(flags[hook_pos]==release||flags[hook_status]==moving)
+                    osDelay(50);
                 flags[switcher_status]=moving;
                 flags[switcher_pos]=down;
                 can_msg[3]=down+1;
+                osDelay(100);
                 FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
             }
             debuggg=block_num;
@@ -654,6 +660,13 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         add_mission(TASKQUEUEDELAY,set_flags,1,&info);
         info.x=0;
         
+        if(pos==forward)
+            info.x=up;
+        else
+            info.x=down;
+        info.y=1;
+        add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
+        
         set_flags[grab_status]=stop;
         set_flags[switcher_status]=stop;
         set_flags[delay_status]=delay_complete;
@@ -679,12 +692,7 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         
 
         set_flags[grab_status]=either;
-        if(pos==forward)
-            info.x=up;
-        else
-            info.x=down;
-        info.y=1;
-        add_mission(SWITCHERDIRECTIONSET,set_flags,1,&info);
+        
     }
     return;
 }
@@ -908,7 +916,7 @@ int auto_place(mission_queue *current_task)
 //            add_mission(POSREGULATORPOSSET,set_flags,0,&release_pos);
 //        }
         
-        //focus_mode=1;
+        focus_mode=1;
         
         flags[lock_mode_status]=stop;
         flag_running=0;

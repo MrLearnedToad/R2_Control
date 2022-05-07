@@ -215,7 +215,7 @@ osStatus_t osKernelInitialize (void) {
       stat = osError;
     }
   }
-
+  
   return (stat);
 }
 

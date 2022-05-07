@@ -496,7 +496,8 @@ void RobotTask(void *argument)
           
           if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f
               &&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<2.0f)
-              &&get_block_flag==0&&target->last_update_time<300)
+              &&get_block_flag==0&&target->last_update_time<300
+              &&flags[grab_pos]==tower_bottom&&flags[grab_status]==stop)
           {
               if(target->location.z==forward||target->location.z==backward)
               {
@@ -515,22 +516,36 @@ void RobotTask(void *argument)
 //                  get_block_flag=3;
           }
       }
-      
-      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f)
+      extern PID_T pid_deg;
+      static int lock_flag=0;
+      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f&&target->last_update_time<300)
       {
          if(last_target_id!=target->barrier_ID)
          {
-             count=41;
+             target_temp=*target;
              last_target_id=target->barrier_ID;
          }
-         if(count>40)
+         if(count>40&&lock_flag==1)
          {
              target_temp=*target;
              count=0;
-         } 
+         }
+         else if(lock_flag==0&&count>130)
+         {
+             target_temp=*target;
+             count=0;
+             lock_flag=1;
+         }
          if(pow(target_temp.location.x-current_pos.x,2)+pow(target_temp.location.y-current_pos.y,2)>0.09f)
             dZ=-atan2f(target_temp.location.x-current_pos.x,target_temp.location.y-current_pos.y)*180.0f/3.1415926f;
          count++;
+        
+         pid_deg.PID_MAX=50;
+      }
+      else
+      {
+          lock_flag=0;
+          pid_deg.PID_MAX=100;
       }
       
       
@@ -573,7 +588,7 @@ void manual_move(void *argument)
         {
             rocker[2]=-Read_Rocker(2);
             rocker[3]=-Read_Rocker(3);
-            dZ+=rocker[2]/2000.0f;
+            dZ+=rocker[2]/1500.0f;
             if(dZ>=180)
             {
                 dZ-=360.0f;

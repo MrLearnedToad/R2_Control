@@ -12,7 +12,7 @@
 int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
 PID_T pid_speedx={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
 PID_T pid_speedy={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};
-PID_T pid_deg={.KP=5.5,.KI=0,.KD=10,.PID_MAX=130,.Dead_Zone=0.5f};
+PID_T pid_deg={.KP=4.5,.KI=0,.KD=4,.PID_MAX=100,.Dead_Zone=0.5f};
 PID_T pid_pos={.KP=3.6,.KI=0,.KD=0,.PID_MAX=2};
 uint8_t deg_pid_disable;
 Ort open_loop_velocity;
@@ -52,10 +52,10 @@ void Set_Pos(void)
     float dx,dy,ddx,ddy;//input[2];
 //    ddx=Pid_Run(&pid_speedx,dX,current_speed.x);
 //    ddy=Pid_Run(&pid_speedy,dY,current_speed.y);
-    ddx=dX;
-    ddy=dY;
-//    ddx=ANN_pid_run(&velocity_nn_x,dX,current_speed.x);//神经网络速度控制
-//    ddy=ANN_pid_run(&velocity_nn_y,dY,current_speed.y);
+//    ddx=dX;
+//    ddy=dY;
+    ddx=ANN_pid_run(&velocity_nn_x,dX,current_speed.x);//神经网络速度控制
+    ddy=ANN_pid_run(&velocity_nn_y,dY,current_speed.y);
        //太艹了，这玩意居然很好使
 //    input[0]=dX;
 //    input[1]=current_speed.x;

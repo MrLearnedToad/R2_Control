@@ -52,15 +52,24 @@ void pre_plan(Ort pos_Goal)
     path_len=sqrt((pos_Goal.x-current_pos.x)*(pos_Goal.x-current_pos.x)+(pos_Goal.y-current_pos.y)*(pos_Goal.y-current_pos.y));
     direction.x=(pos_Goal.x-current_pos.x)/path_len;
     direction.y=(pos_Goal.y-current_pos.y)/path_len;
+    
     speed=sqrt(current_speed.x*current_speed.x+current_speed.y*current_speed.y);
+//    speed=sqrt(dX*dX+dY*dY);
+    
     dV.x=speed*direction.x-current_speed.x;
     dV.y=speed*direction.y-current_speed.y;
+//    dV.x=speed*direction.x-dX;
+//    dV.y=speed*direction.y-dY;
+    
     tmp=sqrt(dV.x*dV.x+dV.y*dV.y);
     direction_dV.x=dV.x/tmp;
     direction_dV.y=dV.y/tmp;
 
     speed_plan[i].x=current_speed.x;
     speed_plan[i].y=current_speed.y;
+//    speed_plan[i].x=dX;
+//    speed_plan[i].y=dY;
+    
     pos_plan[i].x=current_pos.x;
     pos_plan[i].y=current_pos.y;
     acceleration_plan[i][0]=0;
@@ -71,6 +80,9 @@ void pre_plan(Ort pos_Goal)
         {
             speed_plan[i].x=current_speed.x;
             speed_plan[i].y=current_speed.y;
+//            speed_plan[i].x=dX;
+//            speed_plan[i].y=dY;
+            
             pos_plan[i].x=current_pos.x;
             pos_plan[i].y=current_pos.y;
             acceleration_plan[i][0]=0;
