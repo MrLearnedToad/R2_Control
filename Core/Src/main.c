@@ -123,7 +123,6 @@ void send_init_msg(UART_HandleTypeDef *uart,uint8_t ID);
   * @retval int
   */
 int main(void)
-
 {
   /* USER CODE BEGIN 1 */
     
@@ -174,11 +173,19 @@ RGB_DEFAULT[0]=0;
 RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
 RGB_Init(&htim8,TIM_CHANNEL_3);
 
-//for(int i=0;i<500;i++)
-//{
-//    HAL_Delay(1);
-//}
-//__disable_fault_irq();//¾¿¼«½ûÊõ
+for(int i=0;i<10;i++)
+{
+    if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
+    {
+        send_init_msg(&huart8,0x02);
+    }
+    else
+    {
+        send_init_msg(&huart8,0x03);
+    }
+   HAL_Delay(10);
+}
+//__disable_fault_irq();//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 for(int i=0;i<10;i++)
 {
@@ -456,7 +463,7 @@ void update_target_info(uint8_t *data)
         }
         cmd=7-cmd;
         temp1.x=(float)temp[0]/1000.0f;
-        temp1.y=(float)(temp[1]+345.31f)/1000.0f;
+        temp1.y=(float)(temp[1]+197.0f)/1000.0f;
         temp1.z=temp2;
         temp1=coordinate_transform(temp1,current_pos);
         if(cmd>=block_num)
@@ -640,7 +647,7 @@ void DMA_recieve(void)
 
 void tof_recieve()
 {
-    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) //Èç¹û·¢ÉúÁËÉÏÒç´íÎó£¬¾Í½«±êÖ¾Î»ÇåÁã£¬²¢ÖØÐÂ¿ªÊ¼½ÓÊÕÍ·Ö¡
+    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ó£¬¾Í½ï¿½ï¿½ï¿½Ö¾Î»ï¿½ï¿½ï¿½ã£¬ï¿½ï¿½ï¿½ï¿½ï¿½Â¿ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Í·Ö¡
     {
         __HAL_UART_CLEAR_OREFLAG(&huart2);
     }
@@ -698,7 +705,6 @@ float *Fifo_update(float num1,float num2,float num3,float num4,int retnum)
   * @param  htim : TIM handle
   * @retval None
   */
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
@@ -754,14 +760,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(log_clock==100)
         {
             //send_log2(sqrt(pow(current_pos.x-pos_log[global_clock].x,2)+pow(current_pos.y-pos_log[global_clock].y,2)),dX,current_speed.y,dY,&huart3);
-//            if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
-//            {
-//                send_init_msg(&huart8,0x02);
-//            }
-//            else
-//            {
-//                send_init_msg(&huart8,0x03);
-//            }
             log_clock=0;
         }
         log_clock++;

@@ -451,7 +451,7 @@ void RobotTask(void *argument)
             RGB_DEFAULT[0]=30;
             RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
       }
-      else if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+      else if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))
       {
             extern uint16_t RGB_DEFAULT[2];
             RGB_DEFAULT[0]=180;
@@ -476,9 +476,9 @@ void RobotTask(void *argument)
       }
       
 
-      if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))&&get_block_flag!=1)
+      if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))&&get_block_flag!=1)
       {
-          if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+          if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))
           {
             focus_mode=0;
             if(get_block_flag==0)
@@ -629,7 +629,7 @@ void errordetector(void *argument)
 {
   /* USER CODE BEGIN errordetector */
     uint8_t system_status[10];
-    uint8_t transmit_buffer[7]={0};
+    uint8_t transmit_buffer[8]={0};
     uint8_t temp=0;
   /* Infinite loop */
   for(;;)

@@ -109,8 +109,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PBPin PBPin PB8 */
-  GPIO_InitStruct.Pin = Sensor1_Pin|Sensor2_Pin|GPIO_PIN_8;
+  /*Configure GPIO pins : PBPin PBPin PB8 PB9 */
+  GPIO_InitStruct.Pin = Sensor1_Pin|Sensor2_Pin|GPIO_PIN_8|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

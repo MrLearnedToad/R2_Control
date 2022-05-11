@@ -122,7 +122,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define tower_block_2_vertical 8
 #define tower_block_3_vertical 9
 #define tower_block_4_vertical 10
-#define tower_block_5_vertical 11
+#define to wer_block_5_vertical 11
 #define tower_block_1_place 12
 #define tower_block_2_place 13
 #define tower_block_3_place 14

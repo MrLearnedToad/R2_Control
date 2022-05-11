@@ -52,10 +52,10 @@ void Set_Pos(void)
     float dx,dy,ddx,ddy;//input[2];
 //    ddx=Pid_Run(&pid_speedx,dX,current_speed.x);
 //    ddy=Pid_Run(&pid_speedy,dY,current_speed.y);
-//    ddx=dX;
-//    ddy=dY;
-    ddx=ANN_pid_run(&velocity_nn_x,dX,current_speed.x);//神经网络速度控制
-    ddy=ANN_pid_run(&velocity_nn_y,dY,current_speed.y);
+    ddx=dX;
+    ddy=dY;
+//    ddx=ANN_pid_run(&velocity_nn_x,dX,current_speed.x);//神经网络速度控制
+//    ddy=ANN_pid_run(&velocity_nn_y,dY,current_speed.y);
        //太艹了，这玩意居然很好使
 //    input[0]=dX;
 //    input[1]=current_speed.x;

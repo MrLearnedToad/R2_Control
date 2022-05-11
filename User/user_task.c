@@ -752,7 +752,7 @@ int auto_pick_up(mission_queue *current_task)
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.445f;
+        distance_2_move=distance-0.556f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
         grasp_pos.z=moving_partially_complete1;
@@ -823,7 +823,7 @@ int auto_place(mission_queue *current_task)
     target_pos=find_barrier(1)->location;
     stop_pos=evaluate_place_pos(1,1.2f);
     if(flags[auto_drive_status]==stop&&flag_running==1)
-    { 
+    {
         flags[auto_drive_status]=moving;
         short_drive_deadzone=0.10f;
         dZ=stop_pos.z;
@@ -833,7 +833,7 @@ int auto_place(mission_queue *current_task)
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
         //distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.53f;//0.515
+        distance_2_move=distance-0.65f;//0.515
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
 //        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
