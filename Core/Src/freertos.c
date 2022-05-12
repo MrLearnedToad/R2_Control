@@ -380,7 +380,17 @@ void RobotTask(void *argument)
           short_drive_deadzone=0.10f;
           info.x=current_pos.x+1.5f;
           info.y=current_pos.y+1.5f;
-          info.z=moving_complete1;
+          info.z=moving_partially_complete1;
+          add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+          set_flags[auto_drive_status]=moving_partially_complete1;
+          info.x=current_pos.x+1.5f;
+          info.y=current_pos.y;
+          info.z=moving_partially_complete2;
+          add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+          set_flags[auto_drive_status]=moving_partially_complete2;
+          info.x=current_pos.x;
+          info.y=current_pos.y;
+          info.z=moving_partially_complete3;
           add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
           last_key_status[14]=1;
       }

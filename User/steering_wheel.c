@@ -5,10 +5,10 @@
 V_SteeringWheels Goal_V=
 {	.Kxy=3932.179,
 	.Kz = 70,
-    .Wheel[0].angle_offset=22.5f,
-    .Wheel[1].angle_offset=-38.715,
+    .Wheel[0].angle_offset=-157.5f,
+    .Wheel[1].angle_offset=142.5f,
     .Wheel[2].angle_offset=22.5f,
-    .Wheel[3].angle_offset=-157.5f,
+    .Wheel[3].angle_offset=22.5f,
 };
 V_SteeringWheels Goal_Vlast;
 
@@ -101,10 +101,10 @@ void motor_run(void)
 
 		GM6020_Set_Pos(Goal_V.Wheel[i].angle, i+1);	    
 		
-		if(i == 0) Goal_V.Wheel[i].v_out = Goal_V.Wheel[i].v_out; //1、3轮子方向反了
-        if(i == 1) Goal_V.Wheel[i].v_out = Goal_V.Wheel[i].v_out;
-        if(i == 2) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
-        if(i == 3) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
+		if(i == 0) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out; //1、3轮子方向反了
+        if(i == 1) Goal_V.Wheel[i].v_out = -Goal_V.Wheel[i].v_out;
+        if(i == 2) Goal_V.Wheel[i].v_out = Goal_V.Wheel[i].v_out;
+        if(i == 3) Goal_V.Wheel[i].v_out = Goal_V.Wheel[i].v_out;
 		VESC_COMMAND_SEND(&hfdcan2, 3, i+1, Goal_V.Wheel[i].v_out);		
 	}
 	

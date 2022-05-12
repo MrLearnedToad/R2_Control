@@ -50,7 +50,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
     {
         //send_log(2,current_pos.x,current_pos.y,current_task->info.x,current_task->info.y,&huart3);
         pre_plan(current_task->info);
-        global_clock=5;
+        global_clock=3;
         flag_running=1;
         flags[auto_drive_status]=moving;
     }
@@ -833,7 +833,7 @@ int auto_place(mission_queue *current_task)
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
         //distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.65f;//0.515
+        distance_2_move=distance-0.70f;//0.515
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
 //        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;

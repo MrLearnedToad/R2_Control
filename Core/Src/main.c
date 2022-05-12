@@ -80,6 +80,7 @@ uint8_t Rx_buffer[16]={0};
 uint8_t huart3_rxbuffer[16]={0};
 Ort current_acceration;
 Ort current_speed;
+Ort currrent_chassis_speed;
 Ort current_pos={.x=6,.y=0.41f};
 Ort correction_value={.x=6,.y=0.335f};
 uint8_t cmd_feedback[8];
@@ -364,8 +365,8 @@ void executive_auto_move(void)
     double distance,pid_distance;
     distance=sqrtf((current_pos.x-pos_plan[global_clock].x)*(current_pos.x-pos_plan[global_clock].x)+(current_pos.y-pos_plan[global_clock].y)*(current_pos.y-pos_plan[global_clock].y));
     pid_distance=-Pid_Run(&pid_pos,0,distance);
-    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+speed_plan[global_clock].x;
-    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+speed_plan[global_clock].y;
+    dX=(pos_plan[global_clock].x-current_pos.x)/distance*pid_distance+0.7f*speed_plan[global_clock].x;
+    dY=(pos_plan[global_clock].y-current_pos.y)/distance*pid_distance+0.7f*speed_plan[global_clock].y;
     return;
 }
 
@@ -436,6 +437,8 @@ void speed_cal(void)
 //    current_speed.y=(vy[0]+vy[1]+vy[2]-vy[3]-vy[4]-vy[5])/0.045f;
     current_speed.x=Kalman_Filter(&kal_velocity_x,(vx[0]-vx[1])/0.005f);
     current_speed.y=Kalman_Filter(&kal_velocity_y,(vy[0]-vy[1])/0.005f);
+    currrent_chassis_speed.x=current_speed.x*arm_cos_f32(-current_pos.z*3.1415926f/180.0f)-current_speed.y*arm_sin_f32(-current_pos.z*3.1415926f/180.0f);
+    currrent_chassis_speed.y=current_speed.x*arm_sin_f32(-current_pos.z*3.1415926f/180.0f)+current_speed.y*arm_cos_f32(-current_pos.z*3.1415926f/180.0f);
     //send_log(0x01,vx[time],vy[time],current_speed.x,current_speed.y,&huart3);
     if(gyro.error_counter<1000)
         gyro.error_counter++;
