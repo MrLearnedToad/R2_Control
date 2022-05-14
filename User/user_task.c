@@ -21,6 +21,7 @@ int (*pickupactivatorposset)(mission_queue *current_task)=pick_up_activator_pos_
 int (*autoturn)(mission_queue *current_task)=auto_turn;
 int (*taskqueuedelay)(mission_queue *current_task)=task_queue_delay;
 int (*moveforward)(mission_queue *current_task)=move_forward;
+int (*fuckblock)(mission_queue *current_task)=fuck_block;
 /*全局变量区*/
 Ort target_pos;
 int current_target_ID=0;
@@ -1019,6 +1020,67 @@ int move_forward(mission_queue *current_task)
         open_loop_velocity.z=0;
         timer=0;
         NNlearn=1;
+        current_task->flag_finish=1;
+        flags[auto_drive_status]=current_task->info.z;
+    }
+    return 0;
+}
+
+int fuck_block(mission_queue *current_task)
+{
+    static uint8_t flag_init=0;
+    uint8_t set_flags[total_flags]={0};
+    Ort info;
+    for (int i = 0; i < total_flags; i++)
+    {
+        set_flags[i]=114;
+    }
+    info.x=0;
+    info.y=0;
+    info.z=0;
+    dZ=0;
+    
+    if(flag_init==0)
+    {
+        flag_init=1;
+        flags[auto_drive_status]=moving;
+        info.x=7;
+        info.y=5.75f;
+        info.z=moving_partially_complete1;
+        short_drive_deadzone=0.10f;
+        dZ=0;
+        add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+    }
+
+    if (flags[auto_drive_status]==moving_partially_complete1)
+    {
+        dY=0.2f;
+        if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_4))
+        {
+            dX=-0.1f;
+        }
+        else
+        {
+            dX=0.1f;
+        }
+    }
+    
+    if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_4))
+    {
+        info.x=0;
+        info.y=0;
+        info.z=0;
+        dZ=60.0f;
+        for (int i = 0; i < 50; i++)
+        {
+            dY=0.2f;
+            dX=0;
+            osDelay(10);
+        }
+        
+        info.z=standby;
+        add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+        flag_init=0;
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
     }

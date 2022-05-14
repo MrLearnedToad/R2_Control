@@ -97,6 +97,13 @@ const osThreadAttr_t error_detector_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for debug_msg */
+osThreadId_t debug_msgHandle;
+const osThreadAttr_t debug_msg_attributes = {
+  .name = "debug_msg",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -110,6 +117,7 @@ void StartDefaultTask(void *argument);
 void RobotTask(void *argument);
 void manual_move(void *argument);
 void errordetector(void *argument);
+void send_debug_msg(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -151,6 +159,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of error_detector */
   error_detectorHandle = osThreadNew(errordetector, NULL, &error_detector_attributes);
+
+  /* creation of debug_msg */
+  debug_msgHandle = osThreadNew(send_debug_msg, NULL, &debug_msg_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -350,6 +361,11 @@ void RobotTask(void *argument)
           add_mission(4,set_flags,0,&info);
           last_key_status[10]=1;
       }
+      else if(Read_Button(11)==1&&last_key_status[11]==0)
+      {
+          mission_queue_head=NULL;
+          last_key_status[11]=1;
+      }
       else if(Read_Button(12)==1&&last_key_status[12]==0&&flags[lock_mode_status]==stop)
       {
           info.x=block_num;
@@ -360,17 +376,17 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(13)==1&&last_key_status[13]==0)
       {
+          mission_queue_head=NULL;
           info.x=tower_bottom;
           add_mission(GRABPOSSET,set_flags,0,&info);
           info.x=block_num;
-          
           add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
           info.x=up;
           add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
           info.x=0;
           info.z=standby;
           add_mission(POSREGULATORPOSSET,set_flags,0,&info);
-          get_block_flag=0;
+          get_block_flag=0;          
           last_key_status[13]=1;
       }
       else if(Read_Button(14)==1&&last_key_status[14]==0)
@@ -505,7 +521,7 @@ void RobotTask(void *argument)
           //((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||
           
           if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f
-              &&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<2.0f)
+              &&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<2.3f)
               &&get_block_flag==0&&target->last_update_time<300
               &&flags[grab_pos]==tower_bottom&&flags[grab_status]==stop)
           {
@@ -580,7 +596,7 @@ void manual_move(void *argument)
   for(;;)
   {
           instruction_refresh();
-      if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||flags[auto_drive_status]==stop)
+      if((Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
       {
         flags[0]=manualmode;
         static int rocker[4]={0};
@@ -697,6 +713,27 @@ void errordetector(void *argument)
   /* USER CODE END errordetector */
 }
 
+/* USER CODE BEGIN Header_send_debug_msg */
+/**
+* @brief Function implementing the debug_msg thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_send_debug_msg */
+void send_debug_msg(void *argument)
+{
+  /* USER CODE BEGIN send_debug_msg */
+  /* Infinite loop */
+  for(;;)
+  {
+    //   if(flags[auto_drive_status]==moving)
+    //     send_log2(current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+    send_log2(dX,dY,current_speed.x,current_speed.y,&huart3);
+    osDelay(50000);
+  }
+  /* USER CODE END send_debug_msg */
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info)//然后这里会添加任务
@@ -755,6 +792,10 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
         }
         case 13:{
             temp->taskname=moveforward;
+            break;
+        }
+        case 14:{
+            temp->taskname=fuckblock;
             break;
         }
     }   
@@ -847,7 +888,7 @@ void task_handler(void *task_info)//条件满足的时候这里会开始执行任务，任务具体函
             for(int i=0;i<total_flags;i++)
                 flags[i]=0;
             
-            vTaskDelete(current_handle);   
+            vTaskDelete(current_handle);
         }
         osDelay(10);
     }

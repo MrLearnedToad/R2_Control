@@ -186,7 +186,7 @@ for(int i=0;i<10;i++)
     }
    HAL_Delay(10);
 }
-//__disable_fault_irq();//��������
+//__disable_fault_irq();//????????
 
 for(int i=0;i<10;i++)
 {
@@ -650,7 +650,7 @@ void DMA_recieve(void)
 
 void tof_recieve()
 {
-    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) //���������������󣬾ͽ���־λ���㣬�����¿�ʼ����ͷ֡
+    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) //?????????????????????��??????????????????
     {
         __HAL_UART_CLEAR_OREFLAG(&huart2);
     }
@@ -768,7 +768,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         log_clock++;
 //        GM6020_Set_Speed(0,1);
         //VESC_COMMAND_SEND(&hfdcan2,3,1,(int)debug.x);  
-        if(drivemode==manualmode)
+        if(flags[auto_drive_status]!=moving)
         {
             dX=0;
             dY=0;
@@ -783,7 +783,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	else if(htim->Instance == TIM7)
 	{
-		
         speed_clock++;
         if(speed_clock==10)
             DMA_recieve();
@@ -796,7 +795,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             speed_cal();
             speed_clock=0;
         }
-
 	}
     else if(htim->Instance == TIM16)
     {
