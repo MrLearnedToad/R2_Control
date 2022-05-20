@@ -13,6 +13,7 @@
         "platform.h": "c",
         "elmo_fdcan.h": "c",
         "steering_wheel.h": "c",
-        "user_task.h": "c"
+        "user_task.h": "c",
+        "move.h": "c"
     }
 }

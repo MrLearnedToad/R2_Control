@@ -16,6 +16,14 @@ Ort output;
 int flag_center_access=1;
 float speed_st[1500]={0};
 
+plan_control_block control_block={
+    .acceleration_limit_increase=1.8,
+    .acceleration_limit_increase=1.8,
+    .acceleration_limit_turn=2.2,
+    .speed_limit=1.6,
+    .turn_speed_limit=1.0
+};
+
 Ort planned_path[5];
 Ort final_point;
 
@@ -35,10 +43,10 @@ void pre_plan(Ort pos_Goal)
 //    pos_Goal.x=check_point_head->pos.x;
 //    pos_Goal.y=check_point_head->pos.y;
 
-    double maxspeed=speed_limit;
-    double maxA=acceleration_limit_increase;
-    double maxD=acceleration_limit_decrease;
-    double maxT=acceleration_limit_turn;
+    double maxspeed=control_block.speed_limit;
+    double maxA=control_block.acceleration_limit_increase;
+    double maxD=control_block.acceleration_limit_decrease;
+    double maxT=control_block.acceleration_limit_turn;
     double dT=control_period;
 
     int i=0;

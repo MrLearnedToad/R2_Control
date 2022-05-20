@@ -102,7 +102,7 @@ osThreadId_t debug_msgHandle;
 const osThreadAttr_t debug_msg_attributes = {
   .name = "debug_msg",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityLow,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -237,7 +237,7 @@ void StartDefaultTask(void *argument)
               task_temp=task_temp->next;
           }while(task_temp!=NULL);
       }
-    osDelay(20);
+    osDelay(2);
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -392,7 +392,7 @@ void RobotTask(void *argument)
       else if(Read_Button(14)==1&&last_key_status[14]==0)
       {
           extern float short_drive_deadzone;
-          flags[auto_drive_status]=moving;
+          //flags[auto_drive_status]=moving;
           short_drive_deadzone=0.10f;
           info.x=current_pos.x+1.5f;
           info.y=current_pos.y+1.5f;
@@ -456,6 +456,17 @@ void RobotTask(void *argument)
           NVIC_SystemReset();//请求单片机重启
           last_key_status[21]=1;
       }
+      
+      if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5)&&flags[regulator_R_pos]==sweep)
+      { 
+          info.x=100;
+          add_mission(TASKQUEUEDELAY,set_flags,0,&info);
+          set_flags[delay_status]=delay_complete;
+          info.z=standby;
+          flags[regulator_R_pos]=standby;
+          add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+      }
+      
       for(int i=0;i<total_flags;i++)
       {
           set_flags[i]=either;
@@ -488,7 +499,7 @@ void RobotTask(void *argument)
 //              activator_flag=1;
 //          }
       }
-      else if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8))
+      else if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
       {
           extern uint16_t RGB_DEFAULT[2];
             RGB_DEFAULT[0]=0;
@@ -501,7 +512,7 @@ void RobotTask(void *argument)
           RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
       }
       
-
+    
       if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))&&get_block_flag!=1)
       {
           if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))
@@ -728,7 +739,7 @@ void send_debug_msg(void *argument)
   {
     //   if(flags[auto_drive_status]==moving)
     //     send_log2(current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
-    send_log2(dX,dY,current_speed.x,current_speed.y,&huart3);
+    
     osDelay(50000);
   }
   /* USER CODE END send_debug_msg */

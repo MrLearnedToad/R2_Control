@@ -1,8 +1,2 @@
-*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
-Build target 'TRrebuild743'
-Note: source file '../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c' - object file renamed from 'TRrebuild743\heap_4.o' to 'TRrebuild743\heap_4_1.o'.compiling freertos.c...
-linking...
-Program Size: Code=85584 RO-data=3544 RW-data=4428 ZI-data=514940  
-FromELF: creating hex file...
-"TRrebuild743\TRrebuild743.axf" - 0 Error(s), 0 Warning(s).
-Build Time Elapsed:  00:00:06
+Load "TRrebuild743\\TRrebuild743.axf" 
+Erase Done.Programming Done.Verify OK.Flash Load finished at 10:56:38

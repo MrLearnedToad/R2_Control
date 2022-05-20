@@ -6,6 +6,7 @@
 GYRO gyro;
 extern int debug;
 extern float dZ;
+extern uint32_t speed_timer;
 uint8_t Yaw[4] = {0};
 uint8_t X[4] = {0};
 uint8_t Y[4] = {0};
@@ -54,6 +55,7 @@ void GYRO_Resolve(uint32_t StdId, uint8_t *RxData)
 			gyro.y = *(int*)Y;
 			//gyro.sum_y += (gyro.y - gyro.last_y)*cos(gyro.z-gyro.last_z);
             gyro.y=gyro.y;
+			speed_cal();
 		}
         gyro.error_counter=0;
 	}

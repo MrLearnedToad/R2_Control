@@ -51,7 +51,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
     {
         //send_log(2,current_pos.x,current_pos.y,current_task->info.x,current_task->info.y,&huart3);
         pre_plan(current_task->info);
-        global_clock=3;
+        global_clock=1;
         flag_running=1;
         flags[auto_drive_status]=moving;
     }
@@ -975,6 +975,13 @@ int task_queue_delay(mission_queue *current_task)
     return 0;
 }
 
+/*********************************************************************************
+  *@  name      : move_forward
+  *@  function  : ´îËþÁ÷³Ìº¯Êý
+  *@  input     : Ëþ¿é±àºÅ
+  *@  output    : NULL
+  *@  note      : 
+*********************************************************************************/
 int move_forward(mission_queue *current_task)
 {
     static uint8_t PA0_triggered_time=8,PA1_triggered_time=8;
@@ -1026,6 +1033,13 @@ int move_forward(mission_queue *current_task)
     return 0;
 }
 
+/*********************************************************************************
+  *@  name      : fuck_block
+  *@  function  : ´îËþÁ÷³Ìº¯Êý
+  *@  input     : Ëþ¿é±àºÅ
+  *@  output    : NULL
+  *@  note      : 
+  *********************************************************************************/
 int fuck_block(mission_queue *current_task)
 {
     static uint8_t flag_init=0;
@@ -1055,7 +1069,7 @@ int fuck_block(mission_queue *current_task)
     if (flags[auto_drive_status]==moving_partially_complete1)
     {
         dY=0.2f;
-        if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_4))
+        if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8))
         {
             dX=-0.1f;
         }
@@ -1065,13 +1079,13 @@ int fuck_block(mission_queue *current_task)
         }
     }
     
-    if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_4))
+    if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
     {
         info.x=0;
         info.y=0;
         info.z=0;
         dZ=60.0f;
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < 10; i++)
         {
             dY=0.2f;
             dX=0;
@@ -1086,3 +1100,4 @@ int fuck_block(mission_queue *current_task)
     }
     return 0;
 }
+

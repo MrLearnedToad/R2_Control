@@ -22,7 +22,7 @@ double ANN_pid_run(ANN_PID_handle *handle,double target,double current_value)
 
 ANN_PID_handle* ANN_pid_init(ANN_PID_handle *handle)//在最开始首先执行这个函数
 {
-    NN_create_network(1,3,&handle->network);
+    NN_create_network(1,2,&handle->network);
     handle->input[0]=0;
     NN_fprop(&handle->network,handle->input);
     return handle;
