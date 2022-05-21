@@ -625,7 +625,7 @@ void manual_move(void *argument)
         {
             rocker[2]=-Read_Rocker(2);
             rocker[3]=-Read_Rocker(3);
-            dZ+=rocker[2]/1500.0f;
+            dZ+=rocker[2]/1000.0f;
             if(dZ>=180)
             {
                 dZ-=360.0f;

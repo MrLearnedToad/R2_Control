@@ -1,0 +1,16 @@
+diff a/User/move.c b/User/move.c	(rejected hunks)
+@@ -16,6 +16,14 @@
+ int flag_center_access=1;
+ float speed_st[1500]={0};
+ 
++plan_control_block control_block={
++    .acceleration_limit_increase=1.8,
++    .acceleration_limit_increase=1.8,
++    .acceleration_limit_turn=2.2,
++    .speed_limit=1.6,
++    .turn_speed_limit=1.0
++};
++
+ Ort planned_path[5];
+ Ort final_point;
+ 

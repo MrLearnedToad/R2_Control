@@ -144,7 +144,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -312,10 +312,10 @@ void acceration_limit()
     current_acceration=sqrtf((dX-lastdx)*(dX-lastdx)+(dY-lastdy)*(dY-lastdy));
     if(((lastdx*lastdx+lastdy*lastdy)>0.0004f||(dX*dX+dY*dY)>0.0004f)&&flags[auto_drive_status]!=moving)
     {
-        if(current_acceration>0.03f)
+        if(current_acceration>0.06f)
         {
-            dX=judge_sign(dX-lastdx)*0.03f*fabs(dX-lastdx)/current_acceration+lastdx;
-            dY=judge_sign(dY-lastdy)*0.03f*fabs(dY-lastdy)/current_acceration+lastdy;
+            dX=judge_sign(dX-lastdx)*0.06f*fabs(dX-lastdx)/current_acceration+lastdx;
+            dY=judge_sign(dY-lastdy)*0.06f*fabs(dY-lastdy)/current_acceration+lastdy;
         }
     }
         lastdx=dX;
@@ -579,7 +579,7 @@ void update_target_info(uint8_t *data)
         if(temp1.x>11||temp1.y>9||temp1.x<5||temp1.y<3)
             return;
         raw_correction_value=temp1;
-        if(pos_reset==1)
+        if(0)
         {
             pos_reset=0;
             correction_value.x=temp1.x-(float)gyro.x/1000.0f;

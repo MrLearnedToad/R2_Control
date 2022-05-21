@@ -1,0 +1,36 @@
+diff a/User/move.h b/User/move.h	(rejected hunks)
+@@ -94,21 +94,26 @@
+     float cost_current;
+ }heap_node;
+ 
++typedef struct plan_control_block
++{
++    float acceleration_limit_increase;
++    float acceleration_limit_decrease;
++    float acceleration_limit_turn;
++    float speed_limit;
++    float turn_speed_limit;
++}plan_control_block;
+ 
+ 
+-//宏定义区
++ 
++//�궨����
+ #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
+-#define deadzone 0.45//路径点死区大小
+-#define acceleration_limit_increase 1.8
+-#define acceleration_limit_decrease 1.8
+-#define acceleration_limit_turn 2.2
+-#define speed_limit 1.6
++#define deadzone 0.45//·����������С
+ #define control_period 0.01
+ 
+-//全局变量区
++//ȫ�ֱ�����
+ extern Ort speed_plan[1500];
+ extern Ort pos_plan[1500];
+-extern float acceleration_plan[1500][2];//加速度计划数组，第一位为x方向加速度，第二位为y方向加速度
++extern float acceleration_plan[1500][2];//���ٶȼƻ����飬��һλΪx������ٶȣ��ڶ�λΪy������ٶ�
+ extern check_point *check_point_head;
+ extern barrier *barrier_head;
+ extern Ort current_pos;

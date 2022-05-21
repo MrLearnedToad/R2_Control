@@ -1027,6 +1027,10 @@ int move_forward(mission_queue *current_task)
         open_loop_velocity.z=0;
         timer=0;
         NNlearn=1;
+        
+        correction_value.x=(8.0f+arm_sin_f32(current_pos.z)*0.555f)-(float)gyro.x/1000.0f;
+        correction_value.y=(6.0f+arm_cos_f32(current_pos.z)*0.555f)-(float)gyro.y/1000.0f;
+        
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;
     }
