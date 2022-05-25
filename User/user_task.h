@@ -234,6 +234,7 @@ extern Ort raw_correction_value;
 extern Ort correction_value;
 extern void speed_cal(void);
 extern void send_log2(float data1,float data2,float data3,float data4,UART_HandleTypeDef *uart);
+extern void send_log3(float data1,float data2,float data3,uint8_t id,UART_HandleTypeDef *uart);
 extern uint8_t block_color;
 extern uint8_t focus_mode;
 extern Ort open_loop_velocity;

@@ -50,6 +50,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
     if(flag_running==0)
     {
         //send_log(2,current_pos.x,current_pos.y,current_task->info.x,current_task->info.y,&huart3);
+        
         pre_plan(current_task->info);
         global_clock=1;
         flag_running=1;
@@ -267,6 +268,8 @@ int hook_grasp(mission_queue *current_task)
     {
         flags[hook_status]=moving;
         can_msg[1]=block_num-1;
+        if(block_num>6)
+            can_msg[1]-=5;
         flags[hook_pos]=grasp;
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
@@ -468,8 +471,11 @@ int pick_up_activator_pos_set(mission_queue *current_task)
     if(flags[activator_status]==stop)
     {
         flags[activator_status]=moving;
+        if(current_task->info.x>6)
+           current_task->info.x-=5;
         flags[activator_pos]=current_task->info.x;
         can_msg[6]=7-current_task->info.x;
+        
         FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[6]==1)
@@ -545,6 +551,8 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
             set_flags[grab_status]=stop;
             set_flags[switcher_status]=stop;
             info.x=block_num+5;
+            if(block_num>6)
+                info.x-=5;
             add_mission(GRABPOSSET,set_flags,1,&info);
             set_flags[grab_status]=either;
             info.x=0;
@@ -587,6 +595,8 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
             if(mode==automode)
                 set_flags[auto_drive_status]=moving_partially_complete1;
             info.x=block_num;
+            if(block_num>6)
+                info.x-=5;
             add_mission(GRABPOSSET,set_flags,1,&info);
             
             set_flags[grab_status]=either;
@@ -685,6 +695,8 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         info.z=0;
         
         info.x=block_num;
+        if(block_num>6)
+                info.x-=5;
         info.y=0;
         add_mission(GRABPOSSET,set_flags,1,&info);
         
@@ -821,8 +833,17 @@ int auto_place(mission_queue *current_task)
         if(flags[auto_drive_status]!=moving)
             flags[auto_drive_status]=stop;
     }
-    target_pos=find_barrier(1)->location;
-    stop_pos=evaluate_place_pos(1,1.2f);
+    if (block_num<7)
+    {
+        target_pos=find_barrier(1)->location;
+        stop_pos=evaluate_place_pos(1,1.2f);
+    }
+    else
+    {
+        target_pos=find_barrier(12)->location;
+        stop_pos=evaluate_place_pos(12,1.2f);
+    }
+    
     if(flags[auto_drive_status]==stop&&flag_running==1)
     {
         flags[auto_drive_status]=moving;
@@ -853,17 +874,22 @@ int auto_place(mission_queue *current_task)
         set_flags[auto_drive_status]=moving_partially_complete2;
         add_mission(MOVEFORWARD,set_flags,1,&release_pos);
         
-        place_block(block_num);
+        if(block_num<7)
+            place_block(block_num);
+        else
+            place_block(block_num-5);
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_place_block;
         release_pos.x=stop_pos.x+(release_pos.x-target_pos.x)*0.2f;
         release_pos.y=stop_pos.y+(release_pos.y-target_pos.y)*0.2f;
         release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
-        if(block_num!=tower_block_5)
+        if(block_num!=tower_block_5&&block_num!=tower_block_5+5)
             release_pos.x=block_num+1;
         else
             release_pos.x=block_num;
+        if(release_pos.x>6)
+            release_pos.x-=5;
         set_flags[auto_drive_status]=either;
         add_mission(GRABPOSSET,set_flags,1,&release_pos);
         
@@ -1027,9 +1053,17 @@ int move_forward(mission_queue *current_task)
         open_loop_velocity.z=0;
         timer=0;
         NNlearn=1;
-        
-        correction_value.x=(8.0f+arm_sin_f32(current_pos.z)*0.555f)-(float)gyro.x/1000.0f;
-        correction_value.y=(6.0f+arm_cos_f32(current_pos.z)*0.555f)-(float)gyro.y/1000.0f;
+        if(block_num<7)
+        {
+            correction_value.x=(8.0f+arm_sin_f32(-current_pos.z*3.1415926f/180.0f)*0.555f)-(float)gyro.x/1000.0f;
+            correction_value.y=(6.0f-arm_cos_f32(-current_pos.z*3.1415926f/180.0f)*0.555f)-(float)gyro.y/1000.0f;
+        }
+        else
+        {
+            correction_value.x=(4.0f+arm_sin_f32(-current_pos.z*3.1415926f/180.0f)*0.555f)-(float)gyro.x/1000.0f;
+            correction_value.y=(6.0f-arm_cos_f32(-current_pos.z*3.1415926f/180.0f)*0.555f)-(float)gyro.y/1000.0f;
+
+        }
         
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;

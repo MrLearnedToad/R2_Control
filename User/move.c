@@ -398,14 +398,7 @@ void check_dead_barrier(void)
     barrier *tmp=barrier_head,*tmp2;
     while(tmp!=NULL)
     {
-        if(tmp->last_update_time>2000&&tmp->barrier_ID!=1&&tmp->barrier_ID<7)
-        {
-            tmp2=tmp->next;
-            remove_barrier(tmp->barrier_ID);
-            tmp=tmp2;
-            continue;
-        }
-        else if(tmp->last_update_time>1000&&tmp->barrier_ID!=1&&tmp->barrier_ID>=7)
+        if(tmp->last_update_time>2000&&tmp->barrier_ID!=1&&tmp->barrier_ID<12)
         {
             tmp2=tmp->next;
             remove_barrier(tmp->barrier_ID);
@@ -1116,7 +1109,7 @@ Ort evaluate_place_pos(int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location;
     float temp;
-    if(target_ID==1)
+    if(target_ID==1||target_ID==12)
     {
         temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
 //        if(temp>=-157.5f&&temp<-112.5f)

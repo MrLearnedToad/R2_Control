@@ -205,7 +205,9 @@ extern uint8_t block_num;
 block_num=2;
 Ort base={.x=8,.y=6};
 update_barrier(1,base,0.7f);
-
+base.x=4;
+base.y=6;
+update_barrier(12,base,0.7f);
 ANN_pid_init(&velocity_nn_x);
 ANN_pid_init(&velocity_nn_y);
 
@@ -400,6 +402,25 @@ void send_log2(float data1,float data2,float data3,float data4,UART_HandleTypeDe
     return;
 }
 
+void send_log3(float data1,float data2,float data3,uint8_t id,UART_HandleTypeDef *uart)
+{
+    uint8_t msg_buffer[16];
+    int ax,ay,az;
+    msg_buffer[0]='?';
+    msg_buffer[1]='!';
+    msg_buffer[2]=id;
+    ax=data1*1000;
+    ay=data2*1000;
+    memcpy(msg_buffer+3,&ax,4);
+    memcpy(msg_buffer+7,&ay,4);
+    az=(int)(data3*1000);
+    memcpy(msg_buffer+11,&az,4);
+    msg_buffer[15]='!';
+    
+    HAL_UART_Transmit(uart,msg_buffer,16,1);
+    return;
+}
+
 void speed_cal(void)
 {
 //    static float lastx[2]={0},lasty[2]={0};
@@ -548,26 +569,39 @@ void update_target_info(uint8_t *data)
             block_color=biggest;
         }
     }
-//    else if(cmd>=7&&cmd<50)
-//    {
-//        memcpy(temp,data+3,4);
-//        memcpy(temp+1,data+7,4);
-//        memcpy(temp+2,data+11,4);
-//        temp1.x=(float)(temp[0])/1000.0f;
-//        temp1.y=(float)(temp[1])/1000.0f;
-//        temp1.z=(float)(temp[2])/1000.0f;
-//        if(fabs(temp1.x)>14||fabs(temp1.y)>14||temp1.z>2||temp1.z<0)
-//            return;
+    else if(cmd>=10&&cmd<=14)
+    {
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        temp2=data[11];
+        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
+        {
+            return;
+        }
+        cmd=21-cmd;
+        temp1.x=(float)temp[0]/1000.0f;
+        temp1.y=(float)(temp[1]+197.0f)/1000.0f;
+        temp1.z=temp2;
+        temp1=coordinate_transform(temp1,current_pos);
+        if(cmd>=block_num)
+            update_barrier(cmd,temp1,0.5f-(cmd-2-5)*0.075f);
+    }
+    else if(cmd==15)
+    {
+        memcpy(temp,data+3,4);
+        memcpy(temp+1,data+7,4);
+        temp2=data[11];
+        temp1.x=(float)(temp[0])/1000.0f;
+        temp1.y=(float)(temp[1])/1000.0f;
 //        temp1.x-=pos_log[0].x-pos_log[5].x;
 //        temp1.y-=pos_log[0].y-pos_log[5].y;
-//        if(fabs(temp1.x)>14||fabs(temp1.y)>14)
-//            return;      
-//        update_barrier(cmd,temp1,temp1.z+0.3f);
-//    }
-//    else if(cmd>=50&&cmd!=114)
-//    {
-//        remove_barrier(cmd-50);
-//    }
+        temp1.z=temp2;
+        if(temp1.x>7||temp1.y>9||temp1.x<1||temp1.y<3)
+            return;
+        //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
+        //temp1=coordinate_transform(temp1,pos_log[5]);        
+        update_barrier(12,temp1,0.7);
+    }
     else if(cmd==114)
     {
         memcpy(temp,data+3,4);
@@ -661,7 +695,7 @@ void DMA_recieve(void)
 
 void tof_recieve()
 {
-    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) //?????????????????????¦Ë??????????????????
+    if(__HAL_UART_GET_FLAG(&huart2,UART_FLAG_ORE) != RESET) 
     {
         __HAL_UART_CLEAR_OREFLAG(&huart2);
     }
@@ -690,6 +724,50 @@ void tof_recieve()
     
     if(*((short*)(buffer+2))<=1000&&*((short*)(buffer+2))>=0)
         tof_read=*((short*)(buffer+2))/0.88f;
+    return;
+}
+
+void tof_speed_control(void)
+{
+    float R=0,distance=0,maxspeed,speed;
+    if(block_num<7)
+    {
+        R=0.5f*(0.5f-(block_num-2)*0.075f);
+    }
+    else
+    {
+        R=0.5f*(0.5f-(block_num-5-2)*0.075f);
+    }
+    if(block_color==forward||block_color==backward)
+    {
+        R=0.5f*(0.5f-(6-2)*0.075f);
+    }
+    distance=tof_read/1000.0f+R;
+    
+    if(distance>=0.5f&&distance<2.0f)
+    {
+        maxspeed=sqrt(2*5*(distance-0.5f)+0.3f*0.3f);
+    }
+    else if(distance<0.5f&&distance>0)
+    {
+        maxspeed=0.3f;
+    }
+    else
+    {
+        maxspeed=114514;
+    }
+    speed=sqrt(dX*dX+dY*dY);
+
+    float temp;
+    if(speed>maxspeed&&(flags[hook_pos]==release||(flags[hook_status]==moving&&flags[hook_pos]==grasp))&&find_barrier(block_num)!=NULL)
+    {
+        if(dX!=0&&dY!=0)
+        {
+            temp=dX/speed*maxspeed;
+            dY=dY/speed*maxspeed;
+            dX=temp;
+        }
+    }
     return;
 }
 
@@ -731,33 +809,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim->Instance == TIM6)	/**/
 	{
 		static uint8_t ID=2,flag_sendlog=0;
-        float temp;
-        if(tof_read>150&&tof_read<500&&sqrt(dX*dX+dY*dY)>tof_read/375.0f&&flags[hook_pos]==release&&find_barrier(block_num)!=NULL)
-        {
-            if(dX!=0&&dY!=0)
-            {
-                temp=dX/sqrt(dX*dX+dY*dY)*tof_read/375.0f;
-                dY=dY/sqrt(dX*dX+dY*dY)*tof_read/375.0f;
-                dX=temp;
-            }
-        }
-        else if(tof_read>0&&tof_read<=150&&sqrt(dX*dX+dY*dY)>0.4&&flags[hook_pos]==release&&find_barrier(block_num)!=NULL)
-        {
-            if(dX!=0&&dY!=0)
-            {
-                temp=dX/sqrt(dX*dX+dY*dY)*0.4f;
-                dY=dY/sqrt(dX*dX+dY*dY)*0.4f;
-                dX=temp;
-            }
-        }
         
+        tof_speed_control();
+
         check_dead_barrier();
         if(global_clock<1499&&thread_lock==0)
             global_clock++;
-        if(flags[auto_drive_status]==moving&&global_clock<1499)
+        if(flags[auto_drive_status]==moving&&global_clock<500)
         {
             executive_auto_move();
-            
+            send_log3(fabs(current_pos.x-pos_plan[global_clock].x),fabs(current_pos.y-pos_plan[global_clock].y),global_clock,99,&huart8);
 //            if(global_clock%8==0)
 //                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;

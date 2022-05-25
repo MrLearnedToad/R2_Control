@@ -425,7 +425,7 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(17)==1&&last_key_status[17]==0)
       {
-          if(block_num<6)
+          if(block_num<11)
             block_num++;
           last_key_status[17]=1;
       }
@@ -531,7 +531,7 @@ void RobotTask(void *argument)
 //          debug.y=fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-0.595f);
           //((fabs(sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2))-114.595f)<0.05f&&target->last_update_time<=500&&flags[auto_drive_status]!=moving)||
           
-          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f
+          if(fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<50.0f
               &&(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<2.3f)
               &&get_block_flag==0&&target->last_update_time<300
               &&flags[grab_pos]==tower_bottom&&flags[grab_status]==stop)
@@ -539,6 +539,8 @@ void RobotTask(void *argument)
               if(target->location.z==forward||target->location.z==backward)
               {
                   info.x=block_num+5;
+                  if(block_num>6)
+                      info.x-=5;
                   add_mission(GRABPOSSET,set_flags,0,&info);
                   info.x=tower_block_5;
                   add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
@@ -555,7 +557,7 @@ void RobotTask(void *argument)
       }
       extern PID_T pid_deg;
       static int lock_flag=0;
-      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<30.0f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f&&target->last_update_time<300)
+      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<50.0f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f&&target->last_update_time<300)
       {
          if(last_target_id!=target->barrier_ID)
          {
@@ -625,7 +627,7 @@ void manual_move(void *argument)
         {
             rocker[2]=-Read_Rocker(2);
             rocker[3]=-Read_Rocker(3);
-            dZ+=rocker[2]/1000.0f;
+            dZ+=rocker[2]/1500.0f;
             if(dZ>=180)
             {
                 dZ-=360.0f;
@@ -687,14 +689,20 @@ void errordetector(void *argument)
       system_status[4]=flags[regulator_status];
       system_status[5]=flags[activator_status];
       system_status[6]=focus_mode;
-      system_status[7]=deg_pid_disable;
+      if(block_num<7)//right(0) or left(1)
+          system_status[7]=0;
+      else
+          system_status[7]=1;
       temp=0;
       for(int i=0;i<8;i++)
       {
           temp=temp|(system_status[i]<<i);
       }
       transmit_buffer[0]=temp;
-      system_status[0]=7-block_num;//3bit
+      if(block_num<7)
+          system_status[0]=7-block_num;//3bit
+      else
+          system_status[0]=12-block_num;//3bit
       for(int i=1;i<=4;i++)
       {
           if(VESC_Feedback[i].error_flag==1)
