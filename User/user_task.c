@@ -6,6 +6,7 @@
 #include "move.h"
 #include "arm_math.h"
 #include "Remote_Control.h"
+#include "semphr.h"
 /*函数指针区*/
 int (*autodirveshortdistance)(mission_queue*)=auto_drive_shortdistance;
 int (*autodrivelongdistance)(mission_queue*)=auto_drive_longdistance;
@@ -29,7 +30,9 @@ float short_drive_deadzone=0.2f;
 extern uint8_t get_block_flag;
 uint8_t thread_lock=0;
 uint8_t final_point_lock;
-/*********************************************************************************
+fdcan_msg_queue *fdcan_msg_queue_head=NULL;
+
+/******************* **************************************************************
   *@  name      : auto_drive_shortdistance
   *@  function  : 机器人短距离移动函数
   *@  input     : current_task
@@ -82,8 +85,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
-    if(current_task->info.z==moving_place_block&&distance<0.2f)
-        deg_pid_disable=1;
+        
     return 0;
 }
 
@@ -243,7 +245,7 @@ int grab_pos_set(mission_queue *current_task)
         flags[grab_status]=moving;
         can_msg[0]=(int)current_task->info.x;
         flags[grab_pos]=can_msg[0];
-        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+        fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[0]==1)
     {
@@ -271,7 +273,7 @@ int hook_grasp(mission_queue *current_task)
         if(block_num>6)
             can_msg[1]-=5;
         flags[hook_pos]=grasp;
-        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+        fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[1]==1)
     {
@@ -297,7 +299,7 @@ int hook_release(mission_queue *current_task)
         flags[hook_status]=moving;
         can_msg[2]=1;
         flags[hook_pos]=release;
-        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+        fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[2]==1)
     {
@@ -323,7 +325,7 @@ int switcher_direction_set(mission_queue *current_task)
         flags[switcher_status]=moving;
         flags[switcher_pos]=current_task->info.x;
         can_msg[3]=current_task->info.x+1;
-        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+        fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
     }
     if(flags[switcher_status]==stop&&current_task->info.y==1)
     {
@@ -337,7 +339,7 @@ int switcher_direction_set(mission_queue *current_task)
                     flags[switcher_pos]=down;
                     can_msg[3]=down+1;
                     osDelay(500);
-                    FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+                    fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
                 }
                 else if(flags[switcher_pos]==down)
                 {
@@ -345,7 +347,7 @@ int switcher_direction_set(mission_queue *current_task)
                     flags[switcher_pos]=up;
                     can_msg[3]=up+1;
                     osDelay(500);
-                    FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+                    fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
                 }
             }
             else if(block_color==up)
@@ -362,7 +364,7 @@ int switcher_direction_set(mission_queue *current_task)
                 flags[switcher_pos]=up;
                 can_msg[3]=up+1;
                 osDelay(100);
-                FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+                fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
             }
             else if(block_color==backward)
             {
@@ -372,7 +374,7 @@ int switcher_direction_set(mission_queue *current_task)
                 flags[switcher_pos]=down;
                 can_msg[3]=down+1;
                 osDelay(100);
-                FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+                fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
             }
             debuggg=block_num;
 //        }
@@ -444,7 +446,7 @@ int pos_regulator_pos_set(mission_queue *current_task)
 //            }
 //        }
         
-        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+        fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[4]==1||cmd_feedback[5]==1)
     {
@@ -476,7 +478,7 @@ int pick_up_activator_pos_set(mission_queue *current_task)
         flags[activator_pos]=current_task->info.x;
         can_msg[6]=7-current_task->info.x;
         
-        FDCAN_SendData(&hfdcan1,can_msg,0x114,8);
+        fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
     }
     if(cmd_feedback[6]==1)
     {
@@ -1013,7 +1015,7 @@ int move_forward(mission_queue *current_task)
     static uint8_t PA0_triggered_time=8,PA1_triggered_time=8;
     static int timer=0;
     NNlearn=0;
-    
+    deg_pid_disable=1;
     if(PA0_triggered_time<8)
         PA0_triggered_time++;
     if(PA1_triggered_time<8)
@@ -1139,3 +1141,33 @@ int fuck_block(mission_queue *current_task)
     return 0;
 }
 
+void fdcan_add_msg_2_queue(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t StdId, uint32_t Length)
+{
+    xSemaphoreTake(fdcan_queue_mutex,5);
+    fdcan_msg_queue *tmp=malloc(sizeof(fdcan_msg_queue));
+    fdcan_msg_queue *tmp2=fdcan_msg_queue_head;
+    if(tmp==NULL)
+        Error_Handler();
+    tmp->fdcan=hfdcan;
+    tmp->ID=StdId;
+    tmp->next=NULL;
+    tmp->len=Length;
+    for (int i = 0; i < Length; i++)
+    {
+        tmp->msg[i]=TxData[i];
+    }
+    if(fdcan_msg_queue_head==NULL)
+    {
+        fdcan_msg_queue_head=tmp;       
+    }
+    else
+    {
+        while (tmp2->next!=NULL)    
+        {
+            tmp2=tmp2->next;
+        }
+        tmp2->next=tmp;
+    }
+    xSemaphoreGive(fdcan_queue_mutex);
+    return;
+}

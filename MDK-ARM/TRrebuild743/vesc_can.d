@@ -62,3 +62,5 @@ trrebuild743\vesc_can.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V
 trrebuild743\vesc_can.o: ..\User\Resolve.h
 trrebuild743\vesc_can.o: ..\User\user_task.h
 trrebuild743\vesc_can.o: ..\User\Ann.h
+trrebuild743\vesc_can.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\vesc_can.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h

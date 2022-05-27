@@ -1,5 +1,6 @@
 #include "move.h"
 #include "arm_math.h"
+#include "my_robot.h"
 
 Ort speed_plan[1500];
 Ort pos_plan[1500];
@@ -16,9 +17,30 @@ Ort output;
 int flag_center_access=1;
 float speed_st[1500]={0};
 
+plan_control_block pcb[2]={{
+        .acceleration_limit_increase=1.8f,
+        .acceleration_limit_decrease=1.8f,
+        .acceleration_limit_turn=2.2f,
+        .speed_limit=1.6f,
+        .turn_speed_limit=0.8f
+    },{
+        .acceleration_limit_increase=3.5f,
+        .acceleration_limit_decrease=3.5f,
+        .acceleration_limit_turn=4.0f,
+        .speed_limit=3.5f,
+        .turn_speed_limit=2.7f
+    }
+};
 
 Ort planned_path[5];
 Ort final_point;
+
+float my_sqrt(float n)
+{
+    float a;
+    arm_sqrt_f32(n,&a);
+    return a;
+}
 
 /*********************************************************************************
   *@  name      : pre_plan
@@ -36,10 +58,16 @@ void pre_plan(Ort pos_Goal)
 //    pos_Goal.x=check_point_head->pos.x;
 //    pos_Goal.y=check_point_head->pos.y;
 
-    double maxspeed=speed_limit;
-    double maxA=acceleration_limit_increase;
-    double maxD=acceleration_limit_decrease;
-    double maxT=acceleration_limit_turn;
+//    double maxspeed=speed_limit;
+//    double maxA=acceleration_limit_increase;
+//    double maxD=acceleration_limit_decrease;
+//    double maxT=acceleration_limit_turn;
+//    double dT=control_period;
+    
+    double maxspeed=pcb[Read_Button(22)].speed_limit;
+    double maxA=pcb[Read_Button(22)].acceleration_limit_increase;
+    double maxD=pcb[Read_Button(22)].acceleration_limit_decrease;
+    double maxT=pcb[Read_Button(22)].acceleration_limit_turn;
     double dT=control_period;
 
     int i=0;
@@ -56,7 +84,10 @@ void pre_plan(Ort pos_Goal)
     
 //    speed=sqrt(current_speed.x*current_speed.x+current_speed.y*current_speed.y);
     speed=sqrt(dX*dX+dY*dY);
-    
+    if(speed>pcb[Read_Button(22)].turn_speed_limit)
+    {
+        speed=pcb[Read_Button(22)].turn_speed_limit;
+    }
 //    dV.x=speed*direction.x-current_speed.x;
 //    dV.y=speed*direction.y-current_speed.y;
     dV.x=speed*direction.x-dX;
@@ -75,7 +106,8 @@ void pre_plan(Ort pos_Goal)
     pos_plan[i].y=current_pos.y;
     acceleration_plan[i][0]=0;
     acceleration_plan[i][1]=0;
-    while (fabs(dV.x)>0.05||fabs(dV.y)>0.05)
+    while (fabs(((direction.x*speed_plan[i].x+direction.y*speed_plan[i].y)
+        /(sqrt(direction.x*direction.x+direction.y*direction.y)*sqrt(speed_plan[i].x*speed_plan[i].x+speed_plan[i].y*speed_plan[i].y)))-1)>0.0001f)
     {
         if(i==0)
         {
@@ -113,7 +145,7 @@ void pre_plan(Ort pos_Goal)
         pos_plan[i+1].x=pos_plan[i].x+dT*(speed_plan[i].x+speed_plan[i+1].x)/2;
         pos_plan[i+1].y=pos_plan[i].y+dT*(speed_plan[i].y+speed_plan[i+1].y)/2;
             
-
+        i++;
         path_len=sqrt((pos_Goal.x-pos_plan[i].x)*(pos_Goal.x-pos_plan[i].x)+(pos_Goal.y-pos_plan[i].y)*(pos_Goal.y-pos_plan[i].y));
         direction.x=(pos_Goal.x-pos_plan[i].x)/path_len;
         direction.y=(pos_Goal.y-pos_plan[i].y)/path_len;
@@ -122,7 +154,7 @@ void pre_plan(Ort pos_Goal)
         tmp=sqrt(dV.x*dV.x+dV.y*dV.y);
         direction_dV.x=dV.x/tmp;
         direction_dV.y=dV.y/tmp;
-        i++;
+        
     }
     
     turn_end_time=i;
@@ -293,6 +325,7 @@ void add_barrier(Ort pos,double range,int barrier_id)
     tmp->range=range;
     tmp->last_update_time=0;
     tmp->next = NULL;
+    tmp->deg=0;
     return;
 }
 

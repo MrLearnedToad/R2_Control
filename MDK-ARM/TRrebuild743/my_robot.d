@@ -65,3 +65,5 @@ trrebuild743\my_robot.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V
 trrebuild743\my_robot.o: ..\User\Resolve.h
 trrebuild743\my_robot.o: ..\User\user_task.h
 trrebuild743\my_robot.o: ..\User\Ann.h
+trrebuild743\my_robot.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\my_robot.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h

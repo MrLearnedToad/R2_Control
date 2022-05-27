@@ -108,10 +108,10 @@ typedef struct plan_control_block
 //宏定义区
 #define CLAMP(x, lower, upper) (x >= upper ? upper : (x <= lower ? lower : x))
 #define deadzone 0.45//路径点死区大小
-#define speed_limit 1.6
-#define acceleration_limit_increase 1.8
-#define acceleration_limit_decrease 1.8
-#define acceleration_limit_turn 2.2
+//#define speed_limit 1.6
+//#define acceleration_limit_increase 1.8
+//#define acceleration_limit_decrease 1.8
+//#define acceleration_limit_turn 2.2
 #define control_period 0.01
 
 //全局变量区
@@ -153,4 +153,5 @@ Ort evaluate_place_pos(int target_ID,float dist);
 int check_barrier_point(Ort pos);
 Ort evaluate_approach_pos(int target_ID,float dist);
 void update_check_point(Ort point,uint8_t id);
+float my_sqrt(float n);
 #endif

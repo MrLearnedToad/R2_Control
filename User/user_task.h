@@ -69,7 +69,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #include "main.h"
 #include "fdcan_bsp.h"
 #include "Resolve.h"
-
+#include "semphr.h"
 /*Private define*/
 //任务序号宏定义
 #define drivemode 0
@@ -165,6 +165,7 @@ typedef struct Ort
 typedef struct barrier
 {
     Ort location;
+    float deg;
     double range;
     int barrier_ID;
     int last_update_time;
@@ -176,6 +177,15 @@ typedef struct check_point
     Ort pos;
     struct check_point *next;
 }check_point;
+
+typedef struct fdcan_msg_queue
+{
+    FDCAN_HandleTypeDef *fdcan;
+    uint8_t msg[8];
+    uint32_t ID;
+    uint8_t len;
+    struct fdcan_msg_queue *next;
+}fdcan_msg_queue;
 
 typedef struct mission_queue
 {
@@ -240,6 +250,8 @@ extern uint8_t focus_mode;
 extern Ort open_loop_velocity;
 extern uint8_t communciation_error_counter;
 extern short tof_read;
+extern fdcan_msg_queue *fdcan_msg_queue_head;
+extern SemaphoreHandle_t fdcan_queue_mutex;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);
@@ -257,6 +269,7 @@ int auto_turn(mission_queue *current_task);
 int task_queue_delay(mission_queue *current_task);
 int move_forward(mission_queue *current_task);
 int fuck_block(mission_queue *current_task);
+void fdcan_add_msg_2_queue(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t StdId, uint32_t Length);
 /*Advanced Private Function Prototypes*/
 void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode);
 void place_block(uint8_t tower_num);

@@ -63,3 +63,5 @@ trrebuild743\stm32h7xx_it.o: ..\User\fdcan_bsp.h
 trrebuild743\stm32h7xx_it.o: ..\User\Resolve.h
 trrebuild743\stm32h7xx_it.o: ..\User\user_task.h
 trrebuild743\stm32h7xx_it.o: ..\User\Ann.h
+trrebuild743\stm32h7xx_it.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\stm32h7xx_it.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h

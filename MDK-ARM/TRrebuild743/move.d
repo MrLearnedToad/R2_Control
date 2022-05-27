@@ -62,5 +62,11 @@ trrebuild743\move.o: ..\User\fdcan_bsp.h
 trrebuild743\move.o: ..\User\user_task.h
 trrebuild743\move.o: ..\User\Resolve.h
 trrebuild743\move.o: ..\User\Ann.h
+trrebuild743\move.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\move.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h
 trrebuild743\move.o: ..\Drivers\CMSIS\DSP\Include\arm_math.h
 trrebuild743\move.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\float.h
+trrebuild743\move.o: ..\User\my_robot.h
+trrebuild743\move.o: ..\User\nrf.h
+trrebuild743\move.o: ../Core/Inc/gpio.h
+trrebuild743\move.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h

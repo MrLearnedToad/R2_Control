@@ -218,7 +218,7 @@
         <Ww>
           <count>11</count>
           <WinNumber>1</WinNumber>
-          <ItemText>debuggg,0x0A</ItemText>
+          <ItemText>debug</ItemText>
         </Ww>
         <Ww>
           <count>12</count>
@@ -273,7 +273,7 @@
         <Ww>
           <count>22</count>
           <WinNumber>1</WinNumber>
-          <ItemText>NNlearn</ItemText>
+          <ItemText>pos_log</ItemText>
         </Ww>
         <Ww>
           <count>23</count>
@@ -289,6 +289,11 @@
           <count>25</count>
           <WinNumber>1</WinNumber>
           <ItemText>current_speed_before_filt</ItemText>
+        </Ww>
+        <Ww>
+          <count>26</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>lock_status</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>
@@ -390,14 +395,34 @@
         <Ww>
           <count>19</count>
           <WinNumber>2</WinNumber>
-          <ItemText>speed_timer,0x0A</ItemText>
+          <ItemText>tof_read,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>20</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>button</ItemText>
+        </Ww>
+        <Ww>
+          <count>21</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>speed_plan</ItemText>
+        </Ww>
+        <Ww>
+          <count>22</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>deg_pid_disable</ItemText>
+        </Ww>
+        <Ww>
+          <count>23</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>Rx_buffer</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow1>
         <Mm>
           <WinNumber>1</WinNumber>
           <SubType>1</SubType>
-          <ItemText>\\TRrebuild743\../Core/Src/main.c\current_speed_before_filt</ItemText>
+          <ItemText>0x240011c0</ItemText>
           <AccSizeX>0</AccSizeX>
         </Mm>
       </MemoryWindow1>
@@ -421,7 +446,7 @@
         <AscS3>0</AscS3>
         <aSer3>0</aSer3>
         <eProf>0</eProf>
-        <aLa>0</aLa>
+        <aLa>1</aLa>
         <aPa1>0</aPa1>
         <AscS4>0</AscS4>
         <aSer4>0</aSer4>
@@ -459,6 +484,10 @@
         <Entry>
           <Name>System Viewer\SPI1</Name>
           <WinId>35903</WinId>
+        </Entry>
+        <Entry>
+          <Name>System Viewer\UART8</Name>
+          <WinId>35900</WinId>
         </Entry>
         <Entry>
           <Name>System Viewer\USART2</Name>
@@ -661,7 +690,7 @@
 
   <Group>
     <GroupName>Drivers/CMSIS</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -681,7 +710,7 @@
 
   <Group>
     <GroupName>Drivers/STM32H7xx_HAL_Driver</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -965,7 +994,7 @@
 
   <Group>
     <GroupName>Middlewares/FreeRTOS</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

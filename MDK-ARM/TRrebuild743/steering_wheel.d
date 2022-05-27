@@ -64,3 +64,5 @@ trrebuild743\steering_wheel.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_
 trrebuild743\steering_wheel.o: ..\User\Resolve.h
 trrebuild743\steering_wheel.o: ..\User\user_task.h
 trrebuild743\steering_wheel.o: ..\User\Ann.h
+trrebuild743\steering_wheel.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\steering_wheel.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h

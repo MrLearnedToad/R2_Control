@@ -37,6 +37,7 @@
 #include "arm_math.h"
 #include "VESC_CAN.h"
 #include "Remote_Control.h"
+#include "semphr.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,7 +68,9 @@ mission_queue *running_task;
 extern Ort debug;
 uint8_t get_block_flag=0;
 uint8_t focus_mode=0;
+uint8_t lock_status=0;
 extern Tinn velocity_nn_x,velocity_nn_y;
+SemaphoreHandle_t fdcan_queue_mutex;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -186,6 +189,7 @@ void StartDefaultTask(void *argument)
     mission_queue *task_temp,*task_temp2;
     int flag_task_unavailable=0;
     TaskHandle_t *task_handle_temp;
+    fdcan_queue_mutex=xSemaphoreCreateMutex();
   /* Infinite loop */
   for(;;)
   {
@@ -557,19 +561,22 @@ void RobotTask(void *argument)
       }
       extern PID_T pid_deg;
       static int lock_flag=0;
-      if(target!=NULL&&focus_mode==1&&fabs(current_pos.z-atan2f(target->location.x-current_pos.x,target->location.y-current_pos.y)*180.0f/3.1415926f)<50.0f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<3.0f&&target->last_update_time<300)
+      debug.x=((arm_sin_f32(current_pos.z*3.1415926f/180.f)*(target->location.x-current_pos.x)+arm_cos_f32(current_pos.z*3.1415926f/180.f)*(target->location.y-current_pos.y))/sqrt(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)));
+      debug.y=pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2);
+      if(target!=NULL&&focus_mode==1&&((arm_sin_f32(current_pos.z*3.1415926f/180.f)*(target->location.x-current_pos.x)+arm_cos_f32(current_pos.z*3.1415926f/180.f)*(target->location.y-current_pos.y))/sqrt(pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)))>0.766f&&pow(target->location.x-current_pos.x,2)+pow(target->location.y-current_pos.y,2)<5.76f&&target->last_update_time<300)
       {
+          lock_status=1;
          if(last_target_id!=target->barrier_ID)
          {
              target_temp=*target;
              last_target_id=target->barrier_ID;
          }
-         if(count>40&&lock_flag==1)
+         if(count>10&&lock_flag==1)
          {
              target_temp=*target;
              count=0;
          }
-         else if(lock_flag==0&&count>130)
+         else if(lock_flag==0&&count>25)
          {
              target_temp=*target;
              count=0;
@@ -578,13 +585,13 @@ void RobotTask(void *argument)
          if(pow(target_temp.location.x-current_pos.x,2)+pow(target_temp.location.y-current_pos.y,2)>0.09f)
             dZ=-atan2f(target_temp.location.x-current_pos.x,target_temp.location.y-current_pos.y)*180.0f/3.1415926f;
          count++;
-        
-         pid_deg.PID_MAX=50;
+        pid_deg.PID_MAX=75.0f;
       }
       else
       {
+          pid_deg.PID_MAX=200.0f;
           lock_flag=0;
-          pid_deg.PID_MAX=100;
+          lock_status=0;
       }
       
       
@@ -623,11 +630,19 @@ void manual_move(void *argument)
             rocker[0]=0;
             rocker[1]=0;
         }
+        dX=(0.00005876f*rocker[0]*rocker[0]*rocker[0]+0.2471129f*rocker[0])/90.0f;
+        dY=(0.00005876f*rocker[1]*rocker[1]*rocker[1]+0.2471129f*rocker[1])/90.0f;
         if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100&&abs(Read_Rocker(2))<=190&&abs(Read_Rocker(3))<=190)
         {
             rocker[2]=-Read_Rocker(2);
             rocker[3]=-Read_Rocker(3);
-            dZ+=rocker[2]/1500.0f;
+            if(lock_status==0)
+                dZ+=rocker[2]/1500.0f;
+            else
+            {
+                dX+=-rocker[2]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
+                dY+=rocker[2]/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+            }
             if(dZ>=180)
             {
                 dZ-=360.0f;
@@ -642,15 +657,14 @@ void manual_move(void *argument)
             rocker[2]=0;
             rocker[3]=0;
         }
-        dX=(0.00005876f*rocker[0]*rocker[0]*rocker[0]+0.2471129f*rocker[0])/90.0f;
-        dY=(0.00005876f*rocker[1]*rocker[1]*rocker[1]+0.2471129f*rocker[1])/90.0f;
+        
         dX+=-rocker[3]/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
         dY+=-rocker[3]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
-        if(Read_Button(22)==1)
-        {
-            dX/=10;
-            dY/=10;
-        }
+//        if(Read_Button(22)==1)
+//        {
+//            dX/=10;
+//            dY/=10;
+//        }
       }
     osDelay(1);
   }
@@ -687,7 +701,8 @@ void errordetector(void *argument)
       else
           system_status[3]=0;
       system_status[4]=flags[regulator_status];
-      system_status[5]=flags[activator_status];
+//      system_status[5]=flags[activator_status];
+      system_status[5]=deg_pid_disable;
       system_status[6]=focus_mode;
       if(block_num<7)//right(0) or left(1)
           system_status[7]=0;
@@ -747,8 +762,17 @@ void send_debug_msg(void *argument)
   {
     //   if(flags[auto_drive_status]==moving)
     //     send_log2(current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
+    if(fdcan_msg_queue_head!=NULL)
+    {
+        xSemaphoreTake(fdcan_queue_mutex,5);
+        FDCAN_SendData(fdcan_msg_queue_head->fdcan,fdcan_msg_queue_head->msg,fdcan_msg_queue_head->ID,fdcan_msg_queue_head->len);
+        fdcan_msg_queue *temp=fdcan_msg_queue_head;
+        fdcan_msg_queue_head=fdcan_msg_queue_head->next;
+        free(temp);
+        xSemaphoreGive(fdcan_queue_mutex);
+    }
     
-    osDelay(50000);
+    osDelay(20);
   }
   /* USER CODE END send_debug_msg */
 }
@@ -911,6 +935,24 @@ void task_handler(void *task_info)//条件满足的时候这里会开始执行任务，任务具体函
         }
         osDelay(10);
     }
+}
+
+void manual_assistant(void)
+{
+    barrier *target;
+    float deg;
+    Ort vec_deg1,vec_deg2,vec_tar,vel;
+    target=find_barrier(block_num);
+    if(target==NULL)
+        return;
+    deg=target->deg;
+    vec_deg1.x=arm_sin_f32(deg*3.1415926f/180.0f);
+    vec_deg1.y=arm_cos_f32(deg*3.1415926f/180.0f);
+    vec_deg2.x=-vec_deg1.x;
+    vec_deg2.y=-vec_deg1.y;
+    vec_tar.x=(current_pos.x-target->location.x)/my_sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2));
+    vec_tar.y=(current_pos.y-target->location.y)/my_sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2));
+    
 }
 
 void send_msg_synchronal(void *id)

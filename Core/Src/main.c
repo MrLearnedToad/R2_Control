@@ -92,7 +92,7 @@ int global_clock;
 int speed_clock;
 uint32_t speed_timer=0;
 float vx[10],vy[10],ababa;
-Ort pos_log[10];
+Ort pos_log[50];
 uint8_t pos_reset=0;
 ANN_PID_handle velocity_nn_x={.network.input_2_hidden.mat={0.07388,0,0.102044,0,0,0.102044,0,0.0574135,0,0,0.0574135,0,0.102044,0,0,0.10204422,0,-0.0063,0},.network.hidden_2_output.mat={0.073885,0,0.102044,0,0.0574135,0,0.10204422,0,-0.006343383}}
 ,velocity_nn_y={.network.input_2_hidden.mat={0.07388,0,0.102044,0,0,0.102044,0,0.0574135,0,0,0.0574135,0,0.102044,0,0,0.10204422,0,-0.0063,0},.network.hidden_2_output.mat={0.073885,0,0.102044,0,0.0574135,0,0.10204422,0,-0.006343383}};
@@ -100,6 +100,9 @@ Ort raw_correction_value;
 uint8_t block_color=0;
 uint8_t communciation_error_counter=0;
 extern uint8_t get_block_flag;
+//int package_recieve=0,package_valid=0;
+//int start_nbr=0;
+    
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -489,10 +492,11 @@ void update_target_info(uint8_t *data)
     
     if(cmd>0&&cmd<6)
     {
+        
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
+        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[1]/1000.0f)<0.01)
         {
             return;
         }
@@ -500,7 +504,8 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)(temp[1]+197.0f)/1000.0f;
         temp1.z=temp2;
-        temp1=coordinate_transform(temp1,current_pos);
+        temp1=coordinate_transform(temp1,pos_log[19]);
+        
         if(cmd>=block_num)
             update_barrier(cmd,temp1,0.5f-(cmd-2)*0.075f);
     }
@@ -574,7 +579,7 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[0]/1000.0f)<0.01||fabs(temp[1]/1000.0f)<0.01)
+        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[1]/1000.0f)<0.01)
         {
             return;
         }
@@ -582,7 +587,7 @@ void update_target_info(uint8_t *data)
         temp1.x=(float)temp[0]/1000.0f;
         temp1.y=(float)(temp[1]+197.0f)/1000.0f;
         temp1.z=temp2;
-        temp1=coordinate_transform(temp1,current_pos);
+        temp1=coordinate_transform(temp1,pos_log[19]);
         if(cmd>=block_num)
             update_barrier(cmd,temp1,0.5f-(cmd-2-5)*0.075f);
     }
@@ -602,6 +607,18 @@ void update_target_info(uint8_t *data)
         //temp1=coordinate_transform(temp1,pos_log[5]);        
         update_barrier(12,temp1,0.7);
     }
+//    else if(cmd==99)
+//    {
+//        memcpy(temp,data+3,4);
+//        memcpy(temp+1,data+7,4);
+//        if(temp[0]>10000||temp[0]<=0)
+//            return;
+//        if(start_nbr==0)
+//            start_nbr=temp[0];
+//        package_recieve=temp[0]-start_nbr+1;
+//        package_valid++;
+//        send_log3(temp[0],(float)package_valid/(float)package_recieve,0,99,&huart8);
+//    }
     else if(cmd==114)
     {
         memcpy(temp,data+3,4);
@@ -638,15 +655,7 @@ void DMA_recieve(void)
         if(communciation_error_counter<255)
             communciation_error_counter++;
     }
-    for(int i=8;i>=0;i--)
-    {
-        pos_log[i+1].x=pos_log[i].x;
-        pos_log[i+1].y=pos_log[i].y;
-        pos_log[i+1].z=pos_log[i].z;
-    }
-    pos_log[0].x=current_pos.x;
-    pos_log[0].y=current_pos.y;
-    pos_log[0].z=current_pos.z;
+    
     
     int i;
     for(i=0;i<29;i++)
@@ -724,11 +733,15 @@ void tof_recieve()
     
     if(*((short*)(buffer+2))<=1000&&*((short*)(buffer+2))>=0)
         tof_read=*((short*)(buffer+2))/0.88f;
+    else
+        tof_read=0;
     return;
 }
 
 void tof_speed_control(void)
 {
+    // if(tof_read==0)
+    //     return;
     float R=0,distance=0,maxspeed,speed;
     if(block_num<7)
     {
@@ -742,13 +755,18 @@ void tof_speed_control(void)
     {
         R=0.5f*(0.5f-(6-2)*0.075f);
     }
-    distance=tof_read/1000.0f+R;
-    
-    if(distance>=0.5f&&distance<2.0f)
+    //distance=tof_read/1000.0f+R;
+
+    barrier *b=find_barrier(block_num);
+    if(b==NULL)
+        return;
+    distance=(sqrt(pow(b->location.x-current_pos.x,2)+pow(b->location.y-current_pos.y,2))-0.1f);
+
+    if(distance>=0.7f&&distance<2.5f)
     {
-        maxspeed=sqrt(2*5*(distance-0.5f)+0.3f*0.3f);
-    }
-    else if(distance<0.5f&&distance>0)
+        maxspeed=sqrt(2*4*(distance-0.7f)+0.3f*0.3f);
+    } 
+    else if(distance<0.7f&&distance>0)
     {
         maxspeed=0.3f;
     }
@@ -818,7 +836,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(flags[auto_drive_status]==moving&&global_clock<500)
         {
             executive_auto_move();
-            send_log3(fabs(current_pos.x-pos_plan[global_clock].x),fabs(current_pos.y-pos_plan[global_clock].y),global_clock,99,&huart8);
+            //send_log3(fabs(current_pos.x-pos_plan[global_clock].x),fabs(current_pos.y-pos_plan[global_clock].y),global_clock,99,&huart8);
 //            if(global_clock%8==0)
 //                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;
@@ -838,7 +856,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         log_clock++;
 //        GM6020_Set_Speed(0,1);
-        //send_log2(pos_plan[global_clock].x,current_pos.x,pos_plan[global_clock].y,current_pos.y,&huart8);
+        //send_log2(-dZ,current_pos.z,GM6020_Get_Pos(3),GM6020_Get_Pos(4),&huart8);
         //VESC_COMMAND_SEND(&hfdcan2,3,1,(int)debug.x);  
         if(flags[auto_drive_status]!=moving)
         {
@@ -861,7 +879,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(speed_clock==11)
             tof_recieve();
         if(speed_clock==49)
+        {   
+            for(int i=38;i>=0;i--)
+            {
+                pos_log[i+1].x=pos_log[i].x;
+                pos_log[i+1].y=pos_log[i].y;
+                pos_log[i+1].z=pos_log[i].z;
+            }
+            pos_log[0].x=current_pos.x;
+            pos_log[0].y=current_pos.y;
+            pos_log[0].z=current_pos.z;
             send_msg();
+        }
          if(speed_clock==50)
             speed_clock=0;
 

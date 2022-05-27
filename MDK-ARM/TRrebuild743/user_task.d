@@ -61,6 +61,8 @@ trrebuild743\user_task.o: ..\User\fdcan_bsp.h
 trrebuild743\user_task.o: ..\User\user_task.h
 trrebuild743\user_task.o: ..\User\Resolve.h
 trrebuild743\user_task.o: ..\User\Ann.h
+trrebuild743\user_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\user_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h
 trrebuild743\user_task.o: ..\User\my_robot.h
 trrebuild743\user_task.o: ..\User\nrf.h
 trrebuild743\user_task.o: ../Core/Inc/gpio.h

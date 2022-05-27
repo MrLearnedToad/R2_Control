@@ -62,6 +62,8 @@ trrebuild743\resolve.o: ..\User\fdcan_bsp.h
 trrebuild743\resolve.o: ..\User\Resolve.h
 trrebuild743\resolve.o: ..\User\user_task.h
 trrebuild743\resolve.o: ..\User\Ann.h
+trrebuild743\resolve.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
+trrebuild743\resolve.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h
 trrebuild743\resolve.o: ..\User\joyhandle.h
 trrebuild743\resolve.o: ..\User\nrf.h
 trrebuild743\resolve.o: ../Core/Inc/gpio.h
