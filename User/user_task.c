@@ -863,7 +863,7 @@ int auto_place(mission_queue *current_task)
 //        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
 //        release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
 
-        
+        short_drive_deadzone=0.05f;
         release_pos.z=moving_partially_complete2;
         flags[auto_drive_status]=moving;
         
