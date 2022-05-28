@@ -1141,6 +1141,7 @@ Ort coordinate_transform(Ort relative_pos,Ort target_pos)
 Ort evaluate_place_pos(int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location;
+    float dist2=sqrt(pow(target.x=current_pos.x,2)+pow(target.y-current_pos.y,2));
     float temp;
     if(target_ID==1||target_ID==12)
     {
@@ -1193,6 +1194,11 @@ Ort evaluate_place_pos(int target_ID,float dist)
 //            target.y=target.y+dist;
 //            target.z=180;
 //        }
+
+        if(dist2<dist)
+        {
+            dist=dist2;
+        }
 
         if(temp>=-135&&temp<-45)
         {

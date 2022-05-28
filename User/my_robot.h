@@ -22,7 +22,7 @@ void read_keys(void)
 
 extern bool nrf_mode;//nrf工作模式
 
-extern uint8_t button[26];//按键
+extern uint8_t button[29];//按键
 
 extern int16_t nrf_trans_cmd[7];   //解析后手柄全部数据
 

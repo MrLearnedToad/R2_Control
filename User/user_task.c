@@ -60,7 +60,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flags[auto_drive_status]=moving;
     }
     
-    if(distance<0.05||global_clock>500||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)
+    if(distance<0.05||global_clock>500||Read_Button(27)==1)
     {
 //        dX=0;
 //        dY=0;
@@ -212,7 +212,7 @@ int auto_drive_longdistance(mission_queue *current_task)
         }
     }
     if(((final_point.x-current_pos.x)*(final_point.x-current_pos.x)+(final_point.y-current_pos.y)*(final_point.y-current_pos.y))<0.09f||
-        (Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))>=100||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100)//到达目的地附近
+        Read_Button(27)==1)//到达目的地附近
     {
         msg=7;
         error_sum=0;
@@ -863,7 +863,7 @@ int auto_place(mission_queue *current_task)
 //        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
 //        release_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
 
-        short_drive_deadzone=0.05f;
+        
         release_pos.z=moving_partially_complete2;
         flags[auto_drive_status]=moving;
         
@@ -1119,7 +1119,7 @@ int fuck_block(mission_queue *current_task)
         }
     }
     
-    if((Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+    if(Read_Button(27)==1||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
     {
         info.x=0;
         info.y=0;

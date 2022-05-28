@@ -1,21 +1,2 @@
-*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
-Build target 'TRrebuild743'
-Note: source file '../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c' - object file renamed from 'TRrebuild743\heap_4.o' to 'TRrebuild743\heap_4_1.o'.compiling user_task.c...
-..\User\user_task.c(726): warning:  #550-D: variable "direction"  was set but never used
-      static uint8_t direction;
-..\User\user_task.c(1173): warning:  #1-D: last line of file ends without a newline
-  }
-..\User\user_task.c: 2 warnings, 0 errors
-compiling freertos.c...
-../Core/Src/freertos.c(944): warning:  #550-D: variable "vec_deg2"  was set but never used
-      Ort vec_deg1,vec_deg2,vec_tar,vel;
-../Core/Src/freertos.c(944): warning:  #550-D: variable "vec_tar"  was set but never used
-      Ort vec_deg1,vec_deg2,vec_tar,vel;
-../Core/Src/freertos.c(944): warning:  #177-D: variable "vel"  was declared but never referenced
-      Ort vec_deg1,vec_deg2,vec_tar,vel;
-../Core/Src/freertos.c: 3 warnings, 0 errors
-linking...
-Program Size: Code=88944 RO-data=3544 RW-data=4492 ZI-data=515444  
-FromELF: creating hex file...
-"TRrebuild743\TRrebuild743.axf" - 0 Error(s), 5 Warning(s).
-Build Time Elapsed:  00:00:06
+Load "TRrebuild743\\TRrebuild743.axf" 
+Erase Done.Programming Done.Verify OK.Flash Load finished at 21:38:15

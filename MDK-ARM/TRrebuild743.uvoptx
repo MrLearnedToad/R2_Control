@@ -295,6 +295,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>lock_status</ItemText>
         </Ww>
+        <Ww>
+          <count>27</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>button</ItemText>
+        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>

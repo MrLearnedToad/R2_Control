@@ -257,7 +257,7 @@ void RobotTask(void *argument)
 {
   /* USER CODE BEGIN RobotTask */
     uint8_t set_flags[20]={either};
-    uint8_t last_key_status[25]={0};
+    uint8_t last_key_status[29]={0};
     Ort info={.x=0,.y=0,.z=0};
     int count=0,last_target_id=0;
     
@@ -460,6 +460,16 @@ void RobotTask(void *argument)
           NVIC_SystemReset();//请求单片机重启
           last_key_status[21]=1;
       }
+      else if(Read_Button(26)==1&&last_key_status[26]==0)
+      {
+          
+          last_key_status[26]=1;
+      }
+      else if(Read_Button(27)==1&&last_key_status[27]==0)
+      {
+          
+          last_key_status[27]=1;
+      }
       
       if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5)&&flags[regulator_R_pos]==sweep)
       { 
@@ -475,7 +485,7 @@ void RobotTask(void *argument)
       {
           set_flags[i]=either;
       }
-      for(int i=0;i<=20;i++)
+      for(int i=0;i<=28;i++)
       {
           if(Read_Button(i)==0&&last_key_status[i]==1)
           {
@@ -637,7 +647,7 @@ void manual_move(void *argument)
             rocker[2]=-Read_Rocker(2);
             rocker[3]=-Read_Rocker(3);
             if(lock_status==0)
-                dZ+=rocker[2]/1500.0f;
+                dZ+=rocker[2]/1000.0f;
             else
             {
                 dX+=-rocker[2]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);

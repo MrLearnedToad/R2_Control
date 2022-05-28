@@ -32,7 +32,7 @@ last modified by DQS
 /* private variables --------------------------*/
 uint8_t nrf_cmd[32];              //初始数据
 int16_t nrf_trans_cmd[7];         //转换后数据
-uint8_t button[26];									//按键  
+uint8_t button[29];									//按键  
 
 int16_t abc = 0;
 bool nrf_mode = 1;//nrf工作模式
@@ -123,7 +123,7 @@ int16_t Read_Rocker(int id){
  18	 19	 07    | 05  10  11    
  |22| |23|     |     12  13     
    00 |24|     |          |25|  
-02    03       |     15  14      
+02    03   26  |  27 15  14      
    01          |                
 ***********************************************************************/ 
 int Read_Button(int i)
@@ -154,6 +154,8 @@ int Read_Button(int i)
 		button[23] = (nrf_trans_cmd[6]&0x0004)>>2;
 		button[24] = (nrf_trans_cmd[6]&0x0002)>>1;
 		button[25] = (nrf_trans_cmd[6]&0x0001);	
+        button[26] = (nrf_trans_cmd[0]&0x0100)>>8;
+		button[27] = (nrf_trans_cmd[0]&0x0200)>>9;
 		return button[i];
 }
 
