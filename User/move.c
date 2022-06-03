@@ -22,13 +22,13 @@ plan_control_block pcb[2]={{
         .acceleration_limit_decrease=1.8f,
         .acceleration_limit_turn=2.2f,
         .speed_limit=1.6f,
-        .turn_speed_limit=0.8f
+        .turn_speed_limit=1.8f
     },{
-        .acceleration_limit_increase=3.5f,
-        .acceleration_limit_decrease=3.5f,
-        .acceleration_limit_turn=4.0f,
-        .speed_limit=3.5f,
-        .turn_speed_limit=2.7f
+        .acceleration_limit_increase=3.0f,
+        .acceleration_limit_decrease=3.0f,
+        .acceleration_limit_turn=3.0f,
+        .speed_limit=3.0f,
+        .turn_speed_limit=2.4f
     }
 };
 
@@ -292,7 +292,7 @@ void pre_plan(Ort pos_Goal)
   *@  output    : NULL
   *@  note      : NULL
 *********************************************************************************/
-void add_barrier(Ort pos,double range,int barrier_id)
+void add_barrier(Ort pos,double range,int barrier_id,int deg)
 {
     barrier *tmp;
     tmp=barrier_head;
@@ -325,7 +325,7 @@ void add_barrier(Ort pos,double range,int barrier_id)
     tmp->range=range;
     tmp->last_update_time=0;
     tmp->next = NULL;
-    tmp->deg=0;
+    tmp->deg=deg;
     return;
 }
 
@@ -336,7 +336,7 @@ void add_barrier(Ort pos,double range,int barrier_id)
   *@  output    : NULL
   *@  note      : NULL
 *********************************************************************************/
-void update_barrier(int barrier_ID,Ort pos,double range)
+void update_barrier(int barrier_ID,Ort pos,double range,int deg)
 {
     barrier *tmp=barrier_head;
     int find_flag=0;
@@ -350,6 +350,7 @@ void update_barrier(int barrier_ID,Ort pos,double range)
             tmp->location.y=pos.y;
             tmp->location.z=pos.z;
             tmp->range=range;
+            tmp->deg=deg;
             extern Ort debug;
             debug.z=tmp->last_update_time;
             tmp->last_update_time=0;
@@ -359,7 +360,7 @@ void update_barrier(int barrier_ID,Ort pos,double range)
      }
     if(find_flag==0)
     {
-        add_barrier(pos,range,barrier_ID);
+        add_barrier(pos,range,barrier_ID,deg);
     }
     return;
 }    
@@ -1141,7 +1142,7 @@ Ort coordinate_transform(Ort relative_pos,Ort target_pos)
 Ort evaluate_place_pos(int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location;
-    float dist2=sqrt(pow(target.x=current_pos.x,2)+pow(target.y-current_pos.y,2));
+    float dist2=sqrt(pow(target.x-current_pos.x,2)+pow(target.y-current_pos.y,2));
     float temp;
     if(target_ID==1||target_ID==12)
     {

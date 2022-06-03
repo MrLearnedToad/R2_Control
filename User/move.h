@@ -135,8 +135,8 @@ extern Ort final_point;
 //º¯ÊıÉùÃ÷Çø
 void move_execute(Ort current__final_goal);
 void pre_plan(Ort pos_Goal);
-void add_barrier(Ort pos,double range,int barrier_id);
-void update_barrier(int barrier_ID,Ort pos,double range);
+void add_barrier(Ort pos,double range,int barrier_id,int deg);
+void update_barrier(int barrier_ID,Ort pos,double range,int deg);
 void remove_barrier(int barrier_ID);
 void check_dead_barrier(void);
 int check_barrier(Ort pos1,Ort pos2,float offset_len);

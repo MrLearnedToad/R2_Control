@@ -825,12 +825,6 @@ int auto_place(mission_queue *current_task)
     {         
         flag_running=1;
         flags[lock_mode_status]=moving;
-//        find_barrier(1)->location.x=find_barrier(1)->location.x+(raw_correction_value.x-current_pos.x);
-//        find_barrier(1)->location.y=find_barrier(1)->location.y+(raw_correction_value.y-current_pos.y);
-//        correction_value.x=raw_correction_value.x-(float)gyro.x/1000.0f;
-//        correction_value.y=raw_correction_value.y-(float)gyro.y/1000.0f;
-//        current_pos.x=(float)gyro.x/1000.0f+correction_value.x;
-//        current_pos.y=(float)gyro.y/1000.0f+correction_value.y;
         
         if(flags[auto_drive_status]!=moving)
             flags[auto_drive_status]=stop;
@@ -838,19 +832,19 @@ int auto_place(mission_queue *current_task)
     if (block_num<7)
     {
         target_pos=find_barrier(1)->location;
-        stop_pos=evaluate_place_pos(1,1.2f);
+        stop_pos=evaluate_place_pos(1,1.0f);
     }
     else
     {
         target_pos=find_barrier(12)->location;
-        stop_pos=evaluate_place_pos(12,1.2f);
+        stop_pos=evaluate_place_pos(12,1.0f);
     }
-    
+    dZ=stop_pos.z;
     if(flags[auto_drive_status]==stop&&flag_running==1)
     {
         flags[auto_drive_status]=moving;
         short_drive_deadzone=0.10f;
-        dZ=stop_pos.z;
+        
 //        dZ=-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         flag_running=2;
         stop_pos.z=moving_partially_complete1;
@@ -882,8 +876,39 @@ int auto_place(mission_queue *current_task)
             place_block(block_num-5);
         set_flags[hook_status]=stop;
         set_flags[auto_drive_status]=moving_place_block;
-        release_pos.x=stop_pos.x+(release_pos.x-target_pos.x)*0.2f;
-        release_pos.y=stop_pos.y+(release_pos.y-target_pos.y)*0.2f;
+        
+        if(block_num<7)
+        {
+            release_pos.x=8.0f;
+            release_pos.y=6.0f;
+        }
+        else
+        {
+            release_pos.x=4.0f;
+            release_pos.y=6.0f;
+        }
+        float temp=-atan2f(release_pos.x-current_pos.x,release_pos.y-current_pos.y)*180.0f/3.1415926f;
+        if(temp>=-135&&temp<-45)
+        {
+            release_pos.x=release_pos.x-1;
+            release_pos.y=release_pos.y;
+        }
+        else if(temp>=-45&&temp<45)
+        {
+            release_pos.x=release_pos.x;
+            release_pos.y=release_pos.y-1;
+        }
+        else if(temp>=45&&temp<135)
+        {
+            release_pos.x=release_pos.x+1;
+            release_pos.y=release_pos.y;
+        }
+        else
+        {
+            release_pos.x=release_pos.x;
+            release_pos.y=release_pos.y+1;
+        }
+        
         release_pos.z=moving_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         if(block_num!=tower_block_5&&block_num!=tower_block_5+5)
@@ -1045,10 +1070,14 @@ int move_forward(mission_queue *current_task)
     if(timer<1000)
         timer++;
     
-    if((PA0_triggered_time!=8&&PA1_triggered_time!=8)||(Read_Rocker(2)*Read_Rocker(2)+Read_Rocker(3)*Read_Rocker(3))>=100||timer>900)
+    if((PA0_triggered_time!=8&&PA1_triggered_time!=8)||Read_Button(27)==1||timer>900)
     {
-        open_loop_velocity.y=0.3f;
-        osDelay(200);
+        open_loop_velocity.y=0.2f;
+        flags[auto_drive_status]=current_task->info.z;
+        while(flags[hook_pos]!=release)
+        {
+            osDelay(10);
+        }
         PA0_triggered_time=8;
         PA1_triggered_time=8;
         open_loop_velocity.y=0;
@@ -1068,7 +1097,7 @@ int move_forward(mission_queue *current_task)
         }
         
         current_task->flag_finish=1;
-        flags[auto_drive_status]=current_task->info.z;
+        
     }
     return 0;
 }
@@ -1092,48 +1121,16 @@ int fuck_block(mission_queue *current_task)
     info.x=0;
     info.y=0;
     info.z=0;
-    dZ=0;
     
     if(flag_init==0)
     {
         flag_init=1;
-        flags[auto_drive_status]=moving;
-        info.x=7;
-        info.y=5.75f;
-        info.z=moving_partially_complete1;
-        short_drive_deadzone=0.10f;
-        dZ=0;
-        add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
-    }
-
-    if (flags[auto_drive_status]==moving_partially_complete1)
-    {
-        dY=0.2f;
-        if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8))
-        {
-            dX=-0.1f;
-        }
-        else
-        {
-            dX=0.1f;
-        }
+        
     }
     
-    if(Read_Button(27)==1||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_5))
+    if(1)
     {
-        info.x=0;
-        info.y=0;
-        info.z=0;
-        dZ=60.0f;
-        for (int i = 0; i < 10; i++)
-        {
-            dY=0.2f;
-            dX=0;
-            osDelay(10);
-        }
         
-        info.z=standby;
-        add_mission(POSREGULATORPOSSET,set_flags,0,&info);
         flag_init=0;
         current_task->flag_finish=1;
         flags[auto_drive_status]=current_task->info.z;

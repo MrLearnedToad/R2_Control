@@ -8,6 +8,7 @@
 #include "steering_wheel.h"
 #include "Ann.h"
 #include "fdcan_bsp.h"
+#include "user_task.h"
 
 int32_t Wheel_Speed[4] = {0};//分解到三个轮胎上的速度
 PID_T pid_speedx={.KP=1,.PID_MAX=2,.Dead_Zone=0.08};

@@ -71,6 +71,7 @@ uint8_t focus_mode=0;
 uint8_t lock_status=0;
 extern Tinn velocity_nn_x,velocity_nn_y;
 SemaphoreHandle_t fdcan_queue_mutex;
+Ort additional_vel;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -114,6 +115,7 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
 void task_handler(void *task_info);//任务执行函数
 void save_status(void);
 void load_status(void);
+void manual_assistant(void);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -414,10 +416,10 @@ void RobotTask(void *argument)
           add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
           last_key_status[14]=1;
       }
-      else if(Read_Button(15)==1&&last_key_status[15]==0&&flags[lock_mode_status]==stop&&flags[hook_pos]==grasp)
+      else if(Read_Button(15)==1&&last_key_status[15]==0)//全局重启
       {
-          add_mission(AUTOPLACE,set_flags,0,&info); 
-          focus_mode=0;
+          __disable_irq();//关闭总中断
+          NVIC_SystemReset();//请求单片机重启
           last_key_status[15]=1;
       }
       else if(Read_Button(16)==1&&last_key_status[16]==0)
@@ -454,10 +456,10 @@ void RobotTask(void *argument)
               focus_mode=1;
           last_key_status[20]=1;
       }
-      else if(Read_Button(21)==1)//全局重启
+      else if(Read_Button(21)==1&&last_key_status[21]==0&&flags[lock_mode_status]==stop&&flags[hook_pos]==grasp)
       {
-          __disable_irq();//关闭总中断
-          NVIC_SystemReset();//请求单片机重启
+          add_mission(AUTOPLACE,set_flags,0,&info); 
+          focus_mode=0;
           last_key_status[21]=1;
       }
       else if(Read_Button(26)==1&&last_key_status[26]==0)
@@ -596,12 +598,20 @@ void RobotTask(void *argument)
             dZ=-atan2f(target_temp.location.x-current_pos.x,target_temp.location.y-current_pos.y)*180.0f/3.1415926f;
          count++;
         pid_deg.PID_MAX=75.0f;
+         manual_assistant();
+         if(target->deg==90||fabs(target->deg)<5)
+         {
+             additional_vel.x=0;
+             additional_vel.y=0;
+         }
       }
       else
       {
           pid_deg.PID_MAX=200.0f;
           lock_flag=0;
           lock_status=0;
+          additional_vel.x=0;
+          additional_vel.y=0;
       }
       
       
@@ -650,8 +660,18 @@ void manual_move(void *argument)
                 dZ+=rocker[2]/1000.0f;
             else
             {
-                dX+=-rocker[2]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
-                dY+=rocker[2]/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+                if(abs(rocker[2])<120&&(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))<=100)
+                {
+                    dX+=-rocker[2]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
+                    dY+=rocker[2]/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+                    dX+=additional_vel.x;
+                    dY+=additional_vel.y;
+                }
+                else
+                {
+                    dX+=-rocker[2]/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
+                    dY+=rocker[2]/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+                }
             }
             if(dZ>=180)
             {
@@ -675,7 +695,9 @@ void manual_move(void *argument)
 //            dX/=10;
 //            dY/=10;
 //        }
+        
       }
+      
     osDelay(1);
   }
   /* USER CODE END manual_move */
@@ -947,22 +969,58 @@ void task_handler(void *task_info)//条件满足的时候这里会开始执行任务，任务具体函
     }
 }
 
+float vector_mod(Ort abab)
+{
+    return my_sqrt(abab.x*abab.x+abab.y*abab.y);
+}
+
+extern int judge_sign(double num);
+
 void manual_assistant(void)
 {
     barrier *target;
-    float deg;
-    Ort vec_deg1,vec_deg2,vec_tar,vel;
+    float deg,len;
+    //Ort vec_deg1,vec_deg2,vec_tar,vel1,vel2,vel_out;
     target=find_barrier(block_num);
     if(target==NULL)
         return;
     deg=target->deg;
-    vec_deg1.x=arm_sin_f32(deg*3.1415926f/180.0f);
-    vec_deg1.y=arm_cos_f32(deg*3.1415926f/180.0f);
-    vec_deg2.x=-vec_deg1.x;
-    vec_deg2.y=-vec_deg1.y;
-    vec_tar.x=(current_pos.x-target->location.x)/my_sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2));
-    vec_tar.y=(current_pos.y-target->location.y)/my_sqrt(pow(current_pos.x-target->location.x,2)+pow(current_pos.y-target->location.y,2));
-    
+    if(deg==90||deg==0||fabs(deg)<5)
+    {
+        return;
+    }
+    len=0.7f*arm_sin_f32(3.1415926f*fabs(deg)/60.0f);
+    additional_vel.x=judge_sign(deg)*len*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
+    additional_vel.y=-judge_sign(deg)*len*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+//    additional_vel.x+=-len/3.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+//    additional_vel.y+=-len/3.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
+//    vec_deg1.x=-arm_sin_f32(deg*3.1415926f/180.0f);
+//    vec_deg1.y=arm_cos_f32(deg*3.1415926f/180.0f);
+//    vec_deg2.x=-vec_deg1.x;
+//    vec_deg2.y=-vec_deg1.y;
+//    vec_tar.x=0;
+//    vec_tar.y=1;
+//    vel1.x=vec_deg1.x-vec_tar.x;
+//    vel1.y=vec_deg1.y-vec_tar.y;
+//    vel2.x=vec_deg2.x-vec_tar.x;
+//    vel2.y=vec_deg2.y-vec_tar.y;
+//    if(vector_mod(vel1)>vector_mod(vel2))
+//    {
+//        vel_out=vel2;
+//    }
+//    else
+//    {
+//        vel_out=vel1;
+//    }
+//    len=vector_mod(vel_out);
+//    vel_out.x=vel_out.x/len;
+//    vel_out.y=vel_out.y/len;
+//    len=arm_sin_f32(len*2.2214414690f);
+//    vel_out.x*=len;
+//    vel_out.y*=len;
+//    dX=vel_out.x;
+//    dY=vel_out.y;
+    return;
 }
 
 void send_msg_synchronal(void *id)

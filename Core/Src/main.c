@@ -207,10 +207,10 @@ extern uint8_t block_num;
 //tnn_buffer2_2[2]={0.326608,-0.0178685};
 block_num=2;
 Ort base={.x=8,.y=6};
-update_barrier(1,base,0.7f);
+update_barrier(1,base,0.7f,0);
 base.x=4;
 base.y=6;
-update_barrier(12,base,0.7f);
+update_barrier(12,base,0.7f,0);
 ANN_pid_init(&velocity_nn_x);
 ANN_pid_init(&velocity_nn_y);
 
@@ -483,6 +483,7 @@ void speed_cal(void)
 void update_target_info(uint8_t *data)
 {
     int temp[3];
+    int deg=0;
     Ort temp1;
     uint8_t temp2,cmd,id;
     cmd=data[2];
@@ -496,6 +497,7 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
+        deg=(int8_t)data[12];
         if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[1]/1000.0f)<0.01)
         {
             return;
@@ -507,7 +509,7 @@ void update_target_info(uint8_t *data)
         temp1=coordinate_transform(temp1,pos_log[19]);
         
         if(cmd>=block_num)
-            update_barrier(cmd,temp1,0.5f-(cmd-2)*0.075f);
+            update_barrier(cmd,temp1,0.5f-(cmd-2)*0.075f,deg);
     }
     else if(cmd==6)
     {
@@ -523,7 +525,7 @@ void update_target_info(uint8_t *data)
             return;
         //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
         //temp1=coordinate_transform(temp1,pos_log[5]);        
-        update_barrier(1,temp1,0.7);
+        update_barrier(1,temp1,0.7,0);
     }
     else if(cmd==7)
     {
@@ -579,6 +581,7 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
+        deg=(int8_t)data[12];
         if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[1]/1000.0f)<0.01)
         {
             return;
@@ -589,7 +592,7 @@ void update_target_info(uint8_t *data)
         temp1.z=temp2;
         temp1=coordinate_transform(temp1,pos_log[19]);
         if(cmd>=block_num)
-            update_barrier(cmd,temp1,0.5f-(cmd-2-5)*0.075f);
+            update_barrier(cmd,temp1,0.5f-(cmd-2-5)*0.075f,deg);
     }
     else if(cmd==15)
     {
@@ -605,7 +608,7 @@ void update_target_info(uint8_t *data)
             return;
         //send_debug_msg(&huart8,temp1.x,temp1.y,0x06);
         //temp1=coordinate_transform(temp1,pos_log[5]);        
-        update_barrier(12,temp1,0.7);
+        update_barrier(12,temp1,0.7,0);
     }
 //    else if(cmd==99)
 //    {
