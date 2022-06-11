@@ -519,7 +519,7 @@ int check_barrier(Ort pos1,Ort pos2,float offset_len)
     while (tmp2!=NULL)
     { 
         if(4*pow(tmp2->location.x-b*k+k*tmp2->location.y,2)-4*(k*k+1)*(pow(tmp2->location.x,2)+pow(b-tmp2->location.y,2)-pow(tmp2->range+offset_len,2))>0 //????
-            &&tmp2->barrier_ID!=current_target_ID)
+            &&tmp2->barrier_ID!=block_num&&(tmp2->barrier_ID==1||tmp2->barrier_ID==12))
         {
             if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<pow(tmp2->range+offset_len,2))
             {
@@ -1226,6 +1226,21 @@ Ort evaluate_place_pos(int target_ID,float dist)
             target.z=180;
         }
     }
+    else
+    {
+        temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
+        if(dist2<dist)
+        {
+            dist=dist2;
+        }
+        Ort ret,direction;
+        ret.z=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
+        direction.x=(-target.x+current_pos.x)/my_sqrt(pow(target.x-current_pos.x,2)+pow(target.y-current_pos.y,2));
+        direction.y=(-target.y+current_pos.y)/my_sqrt(pow(target.x-current_pos.x,2)+pow(target.y-current_pos.y,2));
+        ret.x=target.x+direction.x*dist;
+        ret.y=target.y+direction.y*dist;
+        target=ret;
+    }
     return target;
 }
 
@@ -1236,16 +1251,16 @@ Ort evaluate_place_pos(int target_ID,float dist)
   *@  output    : 
   *@  note      : NULL
 *********************************************************************************/
-Ort evaluate_approach_pos(int target_ID,float dist)
+Ort evaluate_approach_pos(Ort start_location,int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location,temp;
-    float current_deg=atan2f(current_pos.y-target.y,current_pos.x-target.x);
+    float current_deg=atan2f(start_location.y-target.y,start_location.x-target.x);
     int direction=1;
     float offset_deg=0;
     current_target_ID=target_ID;
     temp.x=target.x+dist*arm_cos_f32(direction*offset_deg+current_deg);
     temp.y=target.y+dist*arm_sin_f32(direction*offset_deg+current_deg);
-    while(check_barrier(temp,target,0.10f)!=0)
+    while(check_barrier(temp,target,0.20f)!=0)
     {
         offset_deg+=0.0466332312f;
         direction=-direction;

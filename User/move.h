@@ -151,7 +151,7 @@ double cal_average(uint8_t a[5000][2],int head,int end);
 Ort coordinate_transform(Ort realtive_pos,Ort target_pos);
 Ort evaluate_place_pos(int target_ID,float dist);
 int check_barrier_point(Ort pos);
-Ort evaluate_approach_pos(int target_ID,float dist);
+Ort evaluate_approach_pos(Ort start_location,int target_ID,float dist);
 void update_check_point(Ort point,uint8_t id);
 float my_sqrt(float n);
 #endif

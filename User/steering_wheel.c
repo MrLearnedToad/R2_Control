@@ -5,10 +5,10 @@
 V_SteeringWheels Goal_V=
 {	.Kxy=3932.179,
 	.Kz = 70,
-    .Wheel[0].angle_offset=-157.5f,
-    .Wheel[1].angle_offset=142.5f,
-    .Wheel[2].angle_offset=22.5f,
-    .Wheel[3].angle_offset=22.5f,
+    .Wheel[0].angle_offset=157.5f,
+    .Wheel[1].angle_offset=97.5f,
+    .Wheel[2].angle_offset=-22.5f,
+    .Wheel[3].angle_offset=-22.5f,
 };
 V_SteeringWheels Goal_Vlast;
 

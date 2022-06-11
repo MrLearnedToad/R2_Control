@@ -252,6 +252,7 @@ extern uint8_t communciation_error_counter;
 extern short tof_read;
 extern fdcan_msg_queue *fdcan_msg_queue_head;
 extern SemaphoreHandle_t fdcan_queue_mutex;
+extern int judge_sign(double num);
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);

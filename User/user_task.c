@@ -69,7 +69,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
-    if((distance<short_drive_deadzone||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0))&&current_task->info.z>6&&current_task->info.z<10)
+    if((distance<short_drive_deadzone||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))&&current_task->info.z>6&&current_task->info.z<10)
     {
 //        dX=0;
 //        dY=0;
@@ -505,8 +505,57 @@ void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode)
         set_flags[i]=either;
     }
     Ort info={.x=0,.y=0,.z=0};
-    
-    if(flag_sensor_mode==0)
+    if(mode==automode)
+    {
+        if(pos==forward||pos==backward)
+        {
+            info.x=block_num+5;
+            if(block_num>6)
+              info.x-=5;
+            add_mission(GRABPOSSET,set_flags,0,&info);
+            info.x=tower_block_5;
+            add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+            info.x=forward;
+            add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
+            info.z=regulate;
+            set_flags[grab_status]=stop;
+            add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+        }
+        else
+        {
+            info.x=up;
+            add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
+            info.x=tower_bottom;
+            add_mission(GRABPOSSET,set_flags,0,&info);
+            info.x=block_num;
+            add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+            info.z=standby;
+            set_flags[grab_status]=stop;
+            add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+        }
+        info.x=0;
+        info.y=0;
+        info.z=0;
+        set_flags[auto_drive_status]=moving_partially_complete1;
+        add_mission(HOOKGRASP,set_flags,0,&info);
+        
+        set_flags[hook_status]=stop;
+        set_flags[hook_pos]=grasp;
+        
+        info.z=standby;
+        add_mission(POSREGULATORPOSSET,set_flags,0,&info);
+        info.x=tower_bottom;
+        add_mission(PICKUPACTIVATORPOSSET,set_flags,0,&info);
+        info.x=block_num;
+        if(block_num>6)
+            info.x-=5;
+        add_mission(GRABPOSSET,set_flags,0,&info);
+        info.x=0;
+        info.y=1;
+        add_mission(SWITCHERDIRECTIONSET,set_flags,0,&info);
+        
+    }
+    else if(flag_sensor_mode==0)
     {
         if(mode==automode)
         {
@@ -1113,6 +1162,9 @@ int fuck_block(mission_queue *current_task)
 {
     static uint8_t flag_init=0;
     uint8_t set_flags[total_flags]={0};
+    float deg,len;
+    static uint32_t clock=0;
+    static barrier *target;
     Ort info;
     for (int i = 0; i < total_flags; i++)
     {
@@ -1125,17 +1177,85 @@ int fuck_block(mission_queue *current_task)
     if(flag_init==0)
     {
         flag_init=1;
-        
+        focus_mode=1;
+        target=find_barrier(block_num);
+        if(target==NULL||target->location.z==up||target->location.z==down)
+        {
+            flag_init=0;
+            current_task->flag_finish=1;
+            clock=0;
+            flags[auto_drive_status]=current_task->info.z;
+            return 0;
+        }
     }
     
-    if(1)
+    deg=target->deg;
+    len=2.2f*(my_sqrt((abs(deg)+3)/60.0f)-0.223606797f);
+    //len=0.7f*arm_sin_f32(3.1415926f*fabs(deg)/60.0f);
+    dX=judge_sign(deg)*len*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
+    dY=-judge_sign(deg)*len*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+    
+    if(clock>500||Read_Button(27)==1||deg==90)
     {
-        
         flag_init=0;
         current_task->flag_finish=1;
+        clock=0;
         flags[auto_drive_status]=current_task->info.z;
+        return 0;
     }
+    if(abs(deg)<5)
+    {
+        flag_init=0;
+        focus_mode=0;
+        current_task->flag_finish=1;
+        flags[auto_drive_status]=current_task->info.z;
+        info.x=block_num;
+        get_block_flag=1;
+        clock=0;
+        add_mission(AUTOPICKUP,set_flags,0,&info);
+        return 0;
+        
+    }
+
+    clock++;
     return 0;
+}
+
+void woyebuzhidaoqushenmemingzile(int target)
+{
+    barrier *tar=find_barrier(target);
+    uint8_t set_flags[20];
+    Ort info,point;
+    for(int i=0;i<total_flags;i++)
+    {
+        set_flags[i]=either;
+    }
+    if(tar==NULL)
+    {
+        return;
+    }
+    if(check_barrier(current_pos,tar->location,0.2f)==0)
+    {
+        info=evaluate_approach_pos(current_pos,target,1.8f);
+        dZ=info.z;
+        info.z=moving_partially_complete1;
+        short_drive_deadzone=0.15f;
+        add_mission(AUTODRIVELONGDISTANCE,set_flags,0,&info);
+    }
+    else
+    {
+        info=dynamic_path_planning(current_pos,tar->location,check_barrier(current_pos,tar->location,0.2f))->pos;
+        info.z=moving_partially_complete1;
+        short_drive_deadzone=0.15f;
+        add_mission(AUTODRIVELONGDISTANCE,set_flags,0,&info);
+        info=evaluate_approach_pos(info,target,1.8f);
+        dZ=info.z;
+        set_flags[auto_drive_status]=moving_partially_complete1;
+        info.z=moving_partially_complete2;
+        short_drive_deadzone=0.15f;
+        add_mission(AUTODRIVELONGDISTANCE,set_flags,0,&info);
+        
+    }
 }
 
 void fdcan_add_msg_2_queue(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t StdId, uint32_t Length)

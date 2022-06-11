@@ -273,7 +273,7 @@ void RobotTask(void *argument)
       {
 //          info.x=1;
 //          add_mission(0,set_flags,0,&info);
-          dZ=0;
+          add_mission(FUCKBLOCK,set_flags,1,&info);
           last_key_status[0]=1;
       }
       else if(Read_Button(1)==1&&last_key_status[1]==0)
@@ -657,7 +657,7 @@ void manual_move(void *argument)
             rocker[2]=-Read_Rocker(2);
             rocker[3]=-Read_Rocker(3);
             if(lock_status==0)
-                dZ+=rocker[2]/1000.0f;
+                dZ+=rocker[2]/700.0f;
             else
             {
                 if(abs(rocker[2])<120&&(Read_Rocker(1)*Read_Rocker(1)+Read_Rocker(0)*Read_Rocker(0))<=100)

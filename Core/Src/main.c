@@ -830,8 +830,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim->Instance == TIM6)	/**/
 	{
 		static uint8_t ID=2,flag_sendlog=0;
-        
-        tof_speed_control();
+        if(flags[auto_drive_status]!=moving)
+            tof_speed_control();
 
         check_dead_barrier();
         if(global_clock<1499&&thread_lock==0)
