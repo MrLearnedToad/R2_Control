@@ -80,3 +80,4 @@ trrebuild743\main.o: ..\User\Tinn.h
 trrebuild743\main.o: ..\User\rgb.h
 trrebuild743\main.o: ..\User\GM6020.h
 trrebuild743\main.o: ..\User\VESC_CAN.h
+trrebuild743\main.o: ..\User\steering_wheel.h

@@ -469,7 +469,8 @@ void RobotTask(void *argument)
       }
       else if(Read_Button(27)==1&&last_key_status[27]==0)
       {
-          
+          info.x=block_num;
+          add_mission(AUTOPICKUPLONG,set_flags,0,&info);
           last_key_status[27]=1;
       }
       
@@ -871,6 +872,10 @@ void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *inf
         }
         case 14:{
             temp->taskname=fuckblock;
+            break;
+        }
+        case 15:{
+            temp->taskname=autopickuplong;
             break;
         }
     }   

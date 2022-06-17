@@ -137,6 +137,7 @@ void move_execute(Ort current__final_goal);
 void pre_plan(Ort pos_Goal);
 void add_barrier(Ort pos,double range,int barrier_id,int deg);
 void update_barrier(int barrier_ID,Ort pos,double range,int deg);
+void correct_brrier(Ort old_pos,Ort new_pos);
 void remove_barrier(int barrier_ID);
 void check_dead_barrier(void);
 int check_barrier(Ort pos1,Ort pos2,float offset_len);
@@ -154,4 +155,5 @@ int check_barrier_point(Ort pos);
 Ort evaluate_approach_pos(Ort start_location,int target_ID,float dist);
 void update_check_point(Ort point,uint8_t id);
 float my_sqrt(float n);
+float cal_distance(Ort src,Ort tar);
 #endif

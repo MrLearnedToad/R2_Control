@@ -26,9 +26,9 @@ plan_control_block pcb[2]={{
     },{
         .acceleration_limit_increase=3.0f,
         .acceleration_limit_decrease=3.0f,
-        .acceleration_limit_turn=3.0f,
+        .acceleration_limit_turn=3.3f,
         .speed_limit=3.0f,
-        .turn_speed_limit=2.4f
+        .turn_speed_limit=1.9f
     }
 };
 
@@ -448,6 +448,45 @@ void check_dead_barrier(void)
         }
         tmp->last_update_time++;
         tmp=tmp->next;
+    }
+    return;
+}
+
+/*********************************************************************************
+  *@  name      : correct_brrier
+  *@  function  : 校准后更新物品队列位置信息
+  *@  input     : NULL
+  *@  output    : NULL
+  *@  note      : NULL
+*********************************************************************************/
+void correct_brrier(Ort old_pos,Ort new_pos)
+{
+    barrier *temp=barrier_head;
+    new_pos.x=new_pos.x-old_pos.x;
+    new_pos.x=new_pos.y-old_pos.y;
+    if(block_num<7)
+    {
+        while(temp!=NULL)
+        {
+            if(temp->barrier_ID!=1)
+            {
+                temp->location.x+=new_pos.x;
+                temp->location.y+=new_pos.y;
+            }
+            temp=temp->next;
+        }
+    }
+    else
+    {
+        while(temp!=NULL)
+        {
+            if(temp->barrier_ID!=12)
+            {
+                temp->location.x+=new_pos.x;
+                temp->location.y+=new_pos.y;
+            }
+            temp=temp->next;
+        }
     }
     return;
 }
@@ -1282,6 +1321,11 @@ void update_check_point(Ort point,uint8_t id)
 {
     planned_path[id]=point;
     return;
+}
+
+float cal_distance(Ort src,Ort tar)
+{
+    return my_sqrt(pow(src.x-tar.x,2)+pow(src.y-tar.y,2));
 }
 
 /*********************************************************************************

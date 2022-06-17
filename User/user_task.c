@@ -23,6 +23,7 @@ int (*autoturn)(mission_queue *current_task)=auto_turn;
 int (*taskqueuedelay)(mission_queue *current_task)=task_queue_delay;
 int (*moveforward)(mission_queue *current_task)=move_forward;
 int (*fuckblock)(mission_queue *current_task)=fuck_block;
+int (*autopickuplong)(mission_queue *current_task)=auto_pick_up_long;
 /*全局变量区*/
 Ort target_pos;
 int current_target_ID=0;
@@ -31,6 +32,7 @@ extern uint8_t get_block_flag;
 uint8_t thread_lock=0;
 uint8_t final_point_lock;
 fdcan_msg_queue *fdcan_msg_queue_head=NULL;
+Ort r_correction_value;
 
 /******************* **************************************************************
   *@  name      : auto_drive_shortdistance
@@ -861,8 +863,9 @@ int auto_pick_up(mission_queue *current_task)
 *********************************************************************************/
 int auto_place(mission_queue *current_task)
 {
-    static uint8_t flag_running=0;
-    Ort release_pos,stop_pos;
+    static uint8_t flag_running=0,flag_correct=0;
+    static Ort p_base_pos,p_correction_value;
+    Ort release_pos,stop_pos,offset_vector;
     double distance,distance_2_move;
     uint8_t set_flags[20];
     
@@ -874,6 +877,7 @@ int auto_place(mission_queue *current_task)
     {         
         flag_running=1;
         flags[lock_mode_status]=moving;
+        p_correction_value=correction_value;
         
         if(flags[auto_drive_status]!=moving)
             flags[auto_drive_status]=stop;
@@ -881,19 +885,35 @@ int auto_place(mission_queue *current_task)
     if (block_num<7)
     {
         target_pos=find_barrier(1)->location;
-        stop_pos=evaluate_place_pos(1,1.0f);
+        stop_pos=evaluate_place_pos(1,1.2f);
     }
     else
     {
         target_pos=find_barrier(12)->location;
-        stop_pos=evaluate_place_pos(12,1.0f);
+        stop_pos=evaluate_place_pos(12,1.2f);
     }
     dZ=stop_pos.z;
+
+    if(flags[auto_drive_status]==moving_partially_complete2)
+    {
+        flag_correct=0;
+    }
+
+    if(flag_correct)
+    {
+        offset_vector.x=target_pos.x-p_base_pos.x;
+        offset_vector.y=target_pos.y-p_base_pos.y;
+        correction_value.x=p_correction_value.x-offset_vector.x;
+        correction_value.y=p_correction_value.y-offset_vector.y;
+    }
+
     if(flags[auto_drive_status]==stop&&flag_running==1)
     {
         flags[auto_drive_status]=moving;
         short_drive_deadzone=0.10f;
-        
+        flag_correct=1;
+        p_base_pos=target_pos;
+        p_correction_value=correction_value;
 //        dZ=-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         flag_running=2;
         stop_pos.z=moving_partially_complete1;
@@ -1121,6 +1141,7 @@ int move_forward(mission_queue *current_task)
     
     if((PA0_triggered_time!=8&&PA1_triggered_time!=8)||Read_Button(27)==1||timer>900)
     {
+        Ort old_pos=current_pos;
         open_loop_velocity.y=0.2f;
         flags[auto_drive_status]=current_task->info.z;
         while(flags[hook_pos]!=release)
@@ -1144,20 +1165,21 @@ int move_forward(mission_queue *current_task)
             correction_value.y=(6.0f-arm_cos_f32(-current_pos.z*3.1415926f/180.0f)*0.555f)-(float)gyro.y/1000.0f;
 
         }
-        
+        r_correction_value=correction_value;
+        correct_brrier(old_pos,current_pos);
         current_task->flag_finish=1;
         
     }
     return 0;
 }
-
-/*********************************************************************************
+PID_T block_deg_pid={.KP=0.1,.KI=0,.KD=0,.PID_MAX=200,.Dead_Zone=0.5f,.I_Limit=15,.I_MAX=70};
+/**********************************************************************************
   *@  name      : fuck_block
   *@  function  : 搭塔流程函数
   *@  input     : 塔块编号
   *@  output    : NULL
   *@  note      : 
-  *********************************************************************************/
+  ********************************************************************************/
 int fuck_block(mission_queue *current_task)
 {
     static uint8_t flag_init=0;
@@ -1190,8 +1212,9 @@ int fuck_block(mission_queue *current_task)
     }
     
     deg=target->deg;
-    len=2.2f*(my_sqrt((abs(deg)+3)/60.0f)-0.223606797f);
+    //len=2.2f*(my_sqrt((abs(deg)+3)/60.0f)-0.223606797f);
     //len=0.7f*arm_sin_f32(3.1415926f*fabs(deg)/60.0f);
+    len=Pid_Run(&block_deg_pid,0,-abs(deg));
     dX=judge_sign(deg)*len*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     dY=-judge_sign(deg)*len*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
     
@@ -1221,8 +1244,10 @@ int fuck_block(mission_queue *current_task)
     return 0;
 }
 
-void woyebuzhidaoqushenmemingzile(int target)
+int auto_pick_up_long(mission_queue *current_task)
 {
+    static uint8_t flag_init=0;
+    int target=current_task->info.x;
     barrier *tar=find_barrier(target);
     uint8_t set_flags[20];
     Ort info,point;
@@ -1232,30 +1257,44 @@ void woyebuzhidaoqushenmemingzile(int target)
     }
     if(tar==NULL)
     {
-        return;
+        return 0;
     }
-    if(check_barrier(current_pos,tar->location,0.2f)==0)
+    if(flag_init==0)
     {
-        info=evaluate_approach_pos(current_pos,target,1.8f);
-        dZ=info.z;
-        info.z=moving_partially_complete1;
-        short_drive_deadzone=0.15f;
-        add_mission(AUTODRIVELONGDISTANCE,set_flags,0,&info);
-    }
-    else
-    {
-        info=dynamic_path_planning(current_pos,tar->location,check_barrier(current_pos,tar->location,0.2f))->pos;
-        info.z=moving_partially_complete1;
-        short_drive_deadzone=0.15f;
-        add_mission(AUTODRIVELONGDISTANCE,set_flags,0,&info);
-        info=evaluate_approach_pos(info,target,1.8f);
-        dZ=info.z;
-        set_flags[auto_drive_status]=moving_partially_complete1;
-        info.z=moving_partially_complete2;
-        short_drive_deadzone=0.15f;
-        add_mission(AUTODRIVELONGDISTANCE,set_flags,0,&info);
+        flag_init=1;
+        if(check_barrier(current_pos,tar->location,0.2f)==0)
+        {
+            info=evaluate_approach_pos(current_pos,target,1.8f);
+            dZ=info.z;
+            info.z=moving_partially_complete2;
+            short_drive_deadzone=0.15f;
+            add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+        }
+        else
+        {
+            info=dynamic_path_planning(current_pos,tar->location,check_barrier(current_pos,tar->location,0.2f))->pos;
+            info.z=moving_partially_complete1;
+            short_drive_deadzone=0.15f;
+            add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+            info=evaluate_approach_pos(info,target,1.8f);
+            dZ=info.z;
+            set_flags[auto_drive_status]=moving_partially_complete1;
+            info.z=moving_partially_complete2;
+            short_drive_deadzone=0.15f;
+            add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
+        }
         
     }
+
+    info=evaluate_approach_pos(info,target,1.8f);
+        dZ=info.z;
+
+    if(cal_distance(tar->location,current_pos)||flags[auto_drive_status]==moving_partially_complete2)
+    {
+        flag_init=0;
+        current_task->flag_finish=1;
+    }
+    return 0;
 }
 
 void fdcan_add_msg_2_queue(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t StdId, uint32_t Length)

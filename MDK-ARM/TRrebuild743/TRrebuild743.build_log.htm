@@ -28,16 +28,14 @@ Project File Date:  06/01/2022
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'TRrebuild743'
 Note: source file '../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c' - object file renamed from 'TRrebuild743\heap_4.o' to 'TRrebuild743\heap_4_1.o'.
-compiling user_task.c...
-..\User\user_task.c(775): warning:  #550-D: variable "direction"  was set but never used
-      static uint8_t direction;
-..\User\user_task.c(1228): warning:  #177-D: variable "point"  was declared but never referenced
-      Ort info,point;
-..\User\user_task.c: 2 warnings, 0 errors
+compiling main.c...
+../Core/Src/main.c(749): warning:  #550-D: variable "R"  was set but never used
+      float R=0,distance=0,maxspeed,speed;
+../Core/Src/main.c: 1 warning, 0 errors
 linking...
-Program Size: Code=91028 RO-data=3548 RW-data=4500 ZI-data=515460  
+Program Size: Code=94488 RO-data=3544 RW-data=4564 ZI-data=515500  
 FromELF: creating hex file...
-"TRrebuild743\TRrebuild743.axf" - 0 Error(s), 2 Warning(s).
+"TRrebuild743\TRrebuild743.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -61,7 +59,7 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.5.0
       Include file:  CMSIS\Core\Include\tz_context.h
-Build Time Elapsed:  00:00:05
+Build Time Elapsed:  00:00:06
 </pre>
 </body>
 </html>

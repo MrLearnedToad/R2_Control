@@ -147,6 +147,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define TASKQUEUEDELAY 12
 #define MOVEFORWARD 13
 #define FUCKBLOCK 14
+#define AUTOPICKUPLONG 15
 
 #define either 114
 #define total_flags 15 //定义标志位总数量
@@ -215,6 +216,7 @@ extern int (*pickupactivatorposset)(mission_queue *current_task);
 extern int (*taskqueuedelay)(mission_queue *current_task);
 extern int (*moveforward)(mission_queue *current_task);
 extern int (*fuckblock)(mission_queue *current_task);
+extern int (*autopickuplong)(mission_queue *current_task);
 
 extern uint8_t flags[20];
 extern float dX;
@@ -253,6 +255,7 @@ extern short tof_read;
 extern fdcan_msg_queue *fdcan_msg_queue_head;
 extern SemaphoreHandle_t fdcan_queue_mutex;
 extern int judge_sign(double num);
+extern Ort r_correction_value;
 /*Basic Private Function Prototypes*/
 extern void add_mission(int mission_name,uint8_t *request,uint8_t flag_nessary,Ort *info);
 int auto_drive_shortdistance(mission_queue *current_task);
@@ -271,6 +274,7 @@ int task_queue_delay(mission_queue *current_task);
 int move_forward(mission_queue *current_task);
 int fuck_block(mission_queue *current_task);
 void fdcan_add_msg_2_queue(FDCAN_HandleTypeDef *hfdcan, uint8_t *TxData, uint32_t StdId, uint32_t Length);
+int auto_pick_up_long(mission_queue *current_task);
 /*Advanced Private Function Prototypes*/
 void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode);
 void place_block(uint8_t tower_num);

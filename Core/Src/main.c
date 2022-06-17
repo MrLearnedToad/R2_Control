@@ -45,6 +45,7 @@
 #include "GM6020.h"
 #include "VESC_CAN.h"
 #include "Ann.h"
+#include "steering_wheel.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -163,58 +164,58 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-nrf_init();
-HAL_Delay(20);
-FDCAN1_Init(&hfdcan1);
-HAL_Delay(200);
-HAL_TIM_Base_Start_IT(&htim7);
-HAL_Delay(200);
-FDCAN2_Init(&hfdcan2);
-HAL_Delay(20);
-HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
-HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
-HAL_UART_Receive_DMA(&huart2,tof_buffer,10);
-extern uint16_t RGB_DEFAULT[2];
-RGB_DEFAULT[0]=0;
-RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
-RGB_Init(&htim8,TIM_CHANNEL_3);
+    nrf_init();
+    HAL_Delay(20);
+    FDCAN1_Init(&hfdcan1);
+    HAL_Delay(200);
+    HAL_TIM_Base_Start_IT(&htim7);
+    HAL_Delay(200);
+    FDCAN2_Init(&hfdcan2);
+    HAL_Delay(20);
+    HAL_UART_Receive_DMA(&huart8,dma_buffer,30);
+    HAL_UART_Receive_IT(&huart3,huart3_rxbuffer,16);
+    HAL_UART_Receive_DMA(&huart2,tof_buffer,10);
+    extern uint16_t RGB_DEFAULT[2];
+    RGB_DEFAULT[0]=0;
+    RGB_Color(&htim8,TIM_CHANNEL_3,RGB_DEFAULT,0.2f);
+    RGB_Init(&htim8,TIM_CHANNEL_3);
 
-for(int i=0;i<10;i++)
-{
-    if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
+    for(int i=0;i<10;i++)
     {
-        send_init_msg(&huart8,0x02);
-    }
-    else
-    {
-        send_init_msg(&huart8,0x03);
-    }
-   HAL_Delay(10);
-}
-//__disable_fault_irq();//????????
-
-for(int i=0;i<10;i++)
-{
-    
+        if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4))
+        {
+            send_init_msg(&huart8,0x02);
+        }
+        else
+        {
+            send_init_msg(&huart8,0x03);
+        }
     HAL_Delay(10);
-}
-HAL_TIM_Base_Start_IT(&htim6);
-extern uint8_t block_num;
-//float 
-//tnn_buffer1_1[12]={-0.416729,-0.337441,0.190049,0.40271,0.229096,0.463848,0.240863,0.377448,-0.0322686,0.223719,0.123895,0.563927},
-//tnn_buffer1_2[2]={-0.257041,0.419105},
-//tnn_buffer2_1[12]={0.13623,-0.440966,0.308962,0.0377088,0.434576,0.490001,0.0025015,0.445981,-0.0441973,0.395057,0.0753355,0.442013},
-//tnn_buffer2_2[2]={0.326608,-0.0178685};
-block_num=2;
-Ort base={.x=8,.y=6};
-update_barrier(1,base,0.7f,0);
-base.x=4;
-base.y=6;
-update_barrier(12,base,0.7f,0);
-ANN_pid_init(&velocity_nn_x);
-ANN_pid_init(&velocity_nn_y);
+    }
+    //__disable_fault_irq();//????????
 
-hmi_init(&huart3);
+    for(int i=0;i<10;i++)
+    {
+        
+        HAL_Delay(10);
+    }
+    HAL_TIM_Base_Start_IT(&htim6);
+    extern uint8_t block_num;
+    //float 
+    //tnn_buffer1_1[12]={-0.416729,-0.337441,0.190049,0.40271,0.229096,0.463848,0.240863,0.377448,-0.0322686,0.223719,0.123895,0.563927},
+    //tnn_buffer1_2[2]={-0.257041,0.419105},
+    //tnn_buffer2_1[12]={0.13623,-0.440966,0.308962,0.0377088,0.434576,0.490001,0.0025015,0.445981,-0.0441973,0.395057,0.0753355,0.442013},
+    //tnn_buffer2_2[2]={0.326608,-0.0178685};
+    block_num=2;
+    Ort base={.x=8,.y=6};
+    update_barrier(1,base,0.7f,0);
+    base.x=4;
+    base.y=6;
+    update_barrier(12,base,0.7f,0);
+    ANN_pid_init(&velocity_nn_x);
+    ANN_pid_init(&velocity_nn_y);
+    r_correction_value=correction_value;
+    hmi_init(&huart3);
 
   /* USER CODE END 2 */
 
@@ -335,8 +336,8 @@ void send_msg(void)
     msg_buffer[1]='!';
     msg_buffer[2]=0x05;
     int ax,ay,az;
-    ax=current_pos.x*1000;
-    ay=current_pos.y*1000;
+    ax=gyro.x+r_correction_value.x*1000;
+    ay=gyro.y+r_correction_value.y*1000;
     memcpy(msg_buffer+3,&ax,4);
     memcpy(msg_buffer+7,&ay,4);
     az=(int)(current_pos.z*1000);
@@ -859,7 +860,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         log_clock++;
 //        GM6020_Set_Speed(0,1);
-        //send_log2(-dZ,current_pos.z,GM6020_Get_Pos(3),GM6020_Get_Pos(4),&huart8);
+        extern GM6020_PID GM6020_Pos_Pid[8];
+        send_log2(abs(VESC_GET_SPEED(1)),abs(VESC_GET_SPEED(2)),abs(VESC_GET_SPEED(3)),abs(VESC_GET_SPEED(4)),&huart8);
         //VESC_COMMAND_SEND(&hfdcan2,3,1,(int)debug.x);  
         if(flags[auto_drive_status]!=moving)
         {
@@ -892,7 +894,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             pos_log[0].x=current_pos.x;
             pos_log[0].y=current_pos.y;
             pos_log[0].z=current_pos.z;
-            send_msg();
+            //send_msg();
         }
          if(speed_clock==50)
             speed_clock=0;
