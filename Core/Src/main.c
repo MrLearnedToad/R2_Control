@@ -312,16 +312,16 @@ int judge_sign(double num)
 
 void acceration_limit()
 {
-    static float lastdx=0,lastdy=0;
+    static float lastdx=0,lastdy=0,mode[2]={0.03f,0.07f};
     float current_acceration;
     
     current_acceration=sqrtf((dX-lastdx)*(dX-lastdx)+(dY-lastdy)*(dY-lastdy));
     if(((lastdx*lastdx+lastdy*lastdy)>0.0004f||(dX*dX+dY*dY)>0.0004f)&&flags[auto_drive_status]!=moving)
     {
-        if(current_acceration>0.06f)
+        if(current_acceration>mode[Read_Button(22)])
         {
-            dX=judge_sign(dX-lastdx)*0.06f*fabs(dX-lastdx)/current_acceration+lastdx;
-            dY=judge_sign(dY-lastdy)*0.06f*fabs(dY-lastdy)/current_acceration+lastdy;
+            dX=judge_sign(dX-lastdx)*mode[Read_Button(22)]*fabs(dX-lastdx)/current_acceration+lastdx;
+            dY=judge_sign(dY-lastdy)*mode[Read_Button(22)]*fabs(dY-lastdy)/current_acceration+lastdy;
         }
     }
         lastdx=dX;
@@ -498,17 +498,35 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        deg=(int8_t)data[12];
-        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[1]/1000.0f)<0.01)
+        if((int8_t)data[12]!=90)
+        {
+            deg=-(int8_t)data[12]+current_pos.z;
+            if(deg>90)
+            {
+                deg-=180;
+            }
+            if(deg<-90)
+            {
+                deg+=180;
+            }
+        }
+        else
+        {
+            deg=361;
+        }
+        if(fabs(temp[0]/1000.0f)>10.5f||fabs(temp[1]/1000.0f)>10.5f)
         {
             return;
         }
         cmd=7-cmd;
         temp1.x=(float)temp[0]/1000.0f;
-        temp1.y=(float)(temp[1]+197.0f)/1000.0f;
+        temp1.y=(float)(temp[1])/1000.0f;
         temp1.z=temp2;
-        temp1=coordinate_transform(temp1,pos_log[19]);
-        
+        //temp1=coordinate_transform(temp1,pos_log[19]);
+        if(block_num==cmd)
+        {
+            block_color=temp2;
+        }
         if(cmd>=block_num)
             update_barrier(cmd,temp1,0.5f-(cmd-2)*0.075f,deg);
     }
@@ -582,16 +600,35 @@ void update_target_info(uint8_t *data)
         memcpy(temp,data+3,4);
         memcpy(temp+1,data+7,4);
         temp2=data[11];
-        deg=(int8_t)data[12];
-        if(fabs(temp[0]/1000.0f)>5||fabs(temp[1]/1000.0f)>5||fabs(temp[1]/1000.0f)<0.01)
+        if((int8_t)data[12]!=90)
+        {
+            deg=-(int8_t)data[12]+current_pos.z;
+            if(deg>90)
+            {
+                deg-=180;
+            }
+            if(deg<-90)
+            {
+                deg+=180;
+            }
+        }
+        else
+        {
+            deg=361;
+        }
+        if((temp[0]/1000.0f)>10.5f||fabs(temp[1]/1000.0f)>10.5f)
         {
             return;
         }
         cmd=21-cmd;
         temp1.x=(float)temp[0]/1000.0f;
-        temp1.y=(float)(temp[1]+197.0f)/1000.0f;
+        temp1.y=(float)(temp[1])/1000.0f;
         temp1.z=temp2;
-        temp1=coordinate_transform(temp1,pos_log[19]);
+        if(block_num==cmd)
+        {
+            block_color=temp2;
+        }
+        //temp1=coordinate_transform(temp1,pos_log[19]);
         if(cmd>=block_num)
             update_barrier(cmd,temp1,0.5f-(cmd-2-5)*0.075f,deg);
     }
@@ -766,11 +803,11 @@ void tof_speed_control(void)
         return;
     distance=(sqrt(pow(b->location.x-current_pos.x,2)+pow(b->location.y-current_pos.y,2))-0.1f);
 
-    if(distance>=0.7f&&distance<2.5f)
+    if(distance>=0.6f&&distance<2.5f)
     {
-        maxspeed=sqrt(2*4*(distance-0.7f)+0.3f*0.3f);
+        maxspeed=sqrt(2*4*(distance-0.6f)+0.3f*0.3f);
     } 
-    else if(distance<0.7f&&distance>0)
+    else if(distance<0.6f&&distance>0)
     {
         maxspeed=0.3f;
     }
@@ -840,7 +877,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if(flags[auto_drive_status]==moving&&global_clock<500)
         {
             executive_auto_move();
-            //send_log3(fabs(current_pos.x-pos_plan[global_clock].x),fabs(current_pos.y-pos_plan[global_clock].y),global_clock,99,&huart8);
+            send_log3(fabs(current_pos.x-pos_plan[global_clock].x),fabs(current_pos.y-pos_plan[global_clock].y),global_clock,99,&huart8);
 //            if(global_clock%8==0)
 //                send_log(ID,current_pos.x,current_pos.y,pos_plan[global_clock].x,pos_plan[global_clock].y,&huart3);
             flag_sendlog=0;
@@ -861,7 +898,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         log_clock++;
 //        GM6020_Set_Speed(0,1);
         extern GM6020_PID GM6020_Pos_Pid[8];
-        send_log2(abs(VESC_GET_SPEED(1)),abs(VESC_GET_SPEED(2)),abs(VESC_GET_SPEED(3)),abs(VESC_GET_SPEED(4)),&huart8);
+        //send_log2(current_speed.x,current_speed.y,0,0,&huart8);
         //VESC_COMMAND_SEND(&hfdcan2,3,1,(int)debug.x);  
         if(flags[auto_drive_status]!=moving)
         {
@@ -894,7 +931,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             pos_log[0].x=current_pos.x;
             pos_log[0].y=current_pos.y;
             pos_log[0].z=current_pos.z;
-            //send_msg();
+            send_msg();
         }
          if(speed_clock==50)
             speed_clock=0;

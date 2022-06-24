@@ -93,10 +93,21 @@ void NMI_Handler(void)
 /**
   * @brief This function handles Hard fault interrupt.
   */
+__ASM void cpsr_change()
+{
+    MRS R0,xpsr
+    LDR R1,=0XFFFFFF20
+    AND R0,R0,R1
+    LDR R1,=0X000000D0
+    ORR R0,R0,R1
+    MSR CONTROL,R0
+    BX LR
+}
+
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+    cpsr_change();
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {

@@ -24,6 +24,7 @@ int (*taskqueuedelay)(mission_queue *current_task)=task_queue_delay;
 int (*moveforward)(mission_queue *current_task)=move_forward;
 int (*fuckblock)(mission_queue *current_task)=fuck_block;
 int (*autopickuplong)(mission_queue *current_task)=auto_pick_up_long;
+int (*moveforward2)(mission_queue *current_task)=move_forward2;
 /*全局变量区*/
 Ort target_pos;
 int current_target_ID=0;
@@ -71,7 +72,7 @@ int auto_drive_shortdistance(mission_queue *current_task)
         flag_running=0;
         flags[drivemode]=manualmode;
     }
-    if((distance<short_drive_deadzone||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)||HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9))&&current_task->info.z>6&&current_task->info.z<10)
+    if((distance<short_drive_deadzone||(current_task->info.z!=moving_partially_complete3&&(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_1)||HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0))))&&current_task->info.z>6&&current_task->info.z<10)
     {
 //        dX=0;
 //        dY=0;
@@ -322,6 +323,7 @@ int debuggg=0;
 int switcher_direction_set(mission_queue *current_task)
 {
     uint8_t can_msg[8]={0};
+    
     if(flags[switcher_status]==stop&&current_task->info.y!=1)
     {
         flags[switcher_status]=moving;
@@ -378,7 +380,7 @@ int switcher_direction_set(mission_queue *current_task)
                 osDelay(100);
                 fdcan_add_msg_2_queue(&hfdcan1,can_msg,0x114,8);
             }
-            debuggg=block_num;
+            debuggg=block_color;
 //        }
     }
     if(cmd_feedback[3]==1)
@@ -818,12 +820,18 @@ int auto_pick_up(mission_queue *current_task)
         target_pos.z=atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         dZ=-target_pos.z;
         distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.556f;
+        distance_2_move=distance-0.676f;
         grasp_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
         grasp_pos.y=current_pos.y+(target_pos.y-current_pos.y)*distance_2_move/distance;
-        grasp_pos.z=moving_partially_complete1;
+        grasp_pos.z=moving_partially_complete2;
         flags[auto_drive_status]=moving;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&grasp_pos);
+        set_flags[auto_drive_status]=moving_partially_complete2;
+        grasp_pos.x=0;
+        grasp_pos.y=0;
+        grasp_pos.z=moving_partially_complete1;
+        add_mission(MOVEFORWARD2,set_flags,0,&grasp_pos);
+        set_flags[auto_drive_status]=either;
         direction=(uint8_t)target->location.z;
         pick_up(target->location.z,automode,0);
     }
@@ -867,6 +875,7 @@ int auto_place(mission_queue *current_task)
     static Ort p_base_pos,p_correction_value;
     Ort release_pos,stop_pos,offset_vector;
     double distance,distance_2_move;
+    int deg;
     uint8_t set_flags[20];
     
     for(int i=0;i<total_flags;i++)
@@ -885,27 +894,40 @@ int auto_place(mission_queue *current_task)
     if (block_num<7)
     {
         target_pos=find_barrier(1)->location;
+        deg=(int)(-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f)%45;
+        while((abs(deg)<5||abs(deg)>40)&&my_sqrt(pow(current_speed.x,2)+pow(current_speed.y,2))>1.0f)
+        {
+            osDelay(5);
+            target_pos=find_barrier(1)->location;
+            deg=(int)(-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f)%45;
+        }
         stop_pos=evaluate_place_pos(1,1.2f);
     }
     else
     {
         target_pos=find_barrier(12)->location;
+        deg=(int)(-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f)%45;
+        while((abs(deg)<5||abs(deg)>40)&&my_sqrt(pow(current_speed.x,2)+pow(current_speed.y,2))>1.0f)
+        {
+            osDelay(5);
+            target_pos=find_barrier(12)->location;
+            deg=(int)(-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f)%45;
+        }
         stop_pos=evaluate_place_pos(12,1.2f);
     }
     dZ=stop_pos.z;
-
     if(flags[auto_drive_status]==moving_partially_complete2)
     {
         flag_correct=0;
     }
 
-    if(flag_correct)
-    {
-        offset_vector.x=target_pos.x-p_base_pos.x;
-        offset_vector.y=target_pos.y-p_base_pos.y;
-        correction_value.x=p_correction_value.x-offset_vector.x;
-        correction_value.y=p_correction_value.y-offset_vector.y;
-    }
+//    if(flag_correct)
+//    {
+//        offset_vector.x=target_pos.x-p_base_pos.x;
+//        offset_vector.y=target_pos.y-p_base_pos.y;
+//        correction_value.x=p_correction_value.x-offset_vector.x;
+//        correction_value.y=p_correction_value.y-offset_vector.y;
+//    }
 
     if(flags[auto_drive_status]==stop&&flag_running==1)
     {
@@ -920,7 +942,7 @@ int auto_place(mission_queue *current_task)
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&stop_pos);
         distance=sqrtf((stop_pos.x-target_pos.x)*(stop_pos.x-target_pos.x)+(stop_pos.y-target_pos.y)*(stop_pos.y-target_pos.y));
         //distance=sqrtf((current_pos.x-target_pos.x)*(current_pos.x-target_pos.x)+(current_pos.y-target_pos.y)*(current_pos.y-target_pos.y));
-        distance_2_move=distance-0.70f;//0.515
+        distance_2_move=distance-0.65f;//0.515
         release_pos.x=stop_pos.x+(target_pos.x-stop_pos.x)*distance_2_move/distance;
         release_pos.y=stop_pos.y+(target_pos.y-stop_pos.y)*distance_2_move/distance;
 //        release_pos.x=current_pos.x+(target_pos.x-current_pos.x)*distance_2_move/distance;
@@ -933,7 +955,9 @@ int auto_place(mission_queue *current_task)
         set_flags[grab_status]=stop;
         
         set_flags[auto_drive_status]=moving_partially_complete1;
+        set_flags[deg_offset]=60;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
+        set_flags[deg_offset]=either;
         
         release_pos.z=moving_place_block;
         set_flags[auto_drive_status]=moving_partially_complete2;
@@ -956,7 +980,7 @@ int auto_place(mission_queue *current_task)
             release_pos.x=4.0f;
             release_pos.y=6.0f;
         }
-        float temp=-atan2f(release_pos.x-current_pos.x,release_pos.y-current_pos.y)*180.0f/3.1415926f;
+        float temp=-atan2f(target_pos.x-current_pos.x,target_pos.y-current_pos.y)*180.0f/3.1415926f;
         if(temp>=-135&&temp<-45)
         {
             release_pos.x=release_pos.x-1;
@@ -978,7 +1002,7 @@ int auto_place(mission_queue *current_task)
             release_pos.y=release_pos.y+1;
         }
         
-        release_pos.z=moving_complete3;
+        release_pos.z=moving_partially_complete3;
         add_mission(AUTODRIVESHORTDISTANCE,set_flags,1,&release_pos);
         if(block_num!=tower_block_5&&block_num!=tower_block_5+5)
             release_pos.x=block_num+1;
@@ -991,7 +1015,7 @@ int auto_place(mission_queue *current_task)
         
         release_pos.x=tower_bottom;
         set_flags[hook_status]=stop;
-        set_flags[auto_drive_status]=moving_complete3;
+        set_flags[auto_drive_status]=moving_partially_complete3;
 //        add_mission(HOOKGRASP,set_flags,0,&release_pos);
         set_flags[grab_status]=stop;
         add_mission(GRABPOSSET,set_flags,1,&release_pos);
@@ -1008,7 +1032,7 @@ int auto_place(mission_queue *current_task)
 //        dZ=-current_pos.z;
 //        deg_pid_disable=0;
 //    }
-    if(flags[auto_drive_status]==moving_complete3)
+    if(flags[auto_drive_status]==moving_partially_complete3)
     {
         get_block_flag=0;
         remove_barrier(block_num);
@@ -1040,7 +1064,6 @@ int auto_place(mission_queue *current_task)
 //        }
         
         focus_mode=1;
-        
         flags[lock_mode_status]=stop;
         flag_running=0;
         deg_pid_disable=0;
@@ -1109,7 +1132,7 @@ int move_forward(mission_queue *current_task)
     static uint8_t PA0_triggered_time=8,PA1_triggered_time=8;
     static int timer=0;
     NNlearn=0;
-    deg_pid_disable=1;
+        
     if(PA0_triggered_time<8)
         PA0_triggered_time++;
     if(PA1_triggered_time<8)
@@ -1122,17 +1145,19 @@ int move_forward(mission_queue *current_task)
     
     if(PA0_triggered_time==8&&PA1_triggered_time!=8)
     {
-        open_loop_velocity.y=0.3f;
+        open_loop_velocity.y=0.4f;
         open_loop_velocity.z=15;
+        deg_pid_disable=1;
     }
     else if(PA0_triggered_time!=8&&PA1_triggered_time==8)
     {
-        open_loop_velocity.y=0.3f;
+        open_loop_velocity.y=0.4f;
         open_loop_velocity.z=-15;
+        deg_pid_disable=1;
     }
     else
     {
-        open_loop_velocity.y=0.3f;
+        open_loop_velocity.y=0.4f;
         open_loop_velocity.z=0;
     }
     
@@ -1142,9 +1167,9 @@ int move_forward(mission_queue *current_task)
     if((PA0_triggered_time!=8&&PA1_triggered_time!=8)||Read_Button(27)==1||timer>900)
     {
         Ort old_pos=current_pos;
-        open_loop_velocity.y=0.2f;
+        open_loop_velocity.y=0.3f;
         flags[auto_drive_status]=current_task->info.z;
-        while(flags[hook_pos]!=release)
+        while(flags[hook_pos]!=release||flags[hook_status]==moving)
         {
             osDelay(10);
         }
@@ -1172,7 +1197,8 @@ int move_forward(mission_queue *current_task)
     }
     return 0;
 }
-PID_T block_deg_pid={.KP=0.1,.KI=0,.KD=0,.PID_MAX=200,.Dead_Zone=0.5f,.I_Limit=15,.I_MAX=70};
+PID_T block_deg_pid={.KP=0.1,.KI=0,.KD=0,.PID_MAX=4,.Dead_Zone=0.5f,.I_Limit=15,.I_MAX=70};
+PID_T block_dist_pid={.KP=2,.KI=0,.KD=0,.PID_MAX=3,.Dead_Zone=0.05f,.I_Limit=15,.I_MAX=70};
 /**********************************************************************************
   *@  name      : fuck_block
   *@  function  : 搭塔流程函数
@@ -1183,6 +1209,8 @@ PID_T block_deg_pid={.KP=0.1,.KI=0,.KD=0,.PID_MAX=200,.Dead_Zone=0.5f,.I_Limit=1
 int fuck_block(mission_queue *current_task)
 {
     static uint8_t flag_init=0;
+    static float s_distance;
+    float distance;
     uint8_t set_flags[total_flags]={0};
     float deg,len;
     static uint32_t clock=0;
@@ -1190,7 +1218,7 @@ int fuck_block(mission_queue *current_task)
     Ort info;
     for (int i = 0; i < total_flags; i++)
     {
-        set_flags[i]=114;
+        set_flags[i]=either;
     }
     info.x=0;
     info.y=0;
@@ -1209,24 +1237,41 @@ int fuck_block(mission_queue *current_task)
             flags[auto_drive_status]=current_task->info.z;
             return 0;
         }
+        s_distance=cal_distance(current_pos,target->location);
     }
-    
-    deg=target->deg;
+    distance=cal_distance(current_pos,target->location);
+    if(target->deg==361)
+    {
+        deg=60;
+    }
+    else
+    {
+        deg=-target->deg+current_pos.z;
+        if(deg>90)
+            deg-=180;
+        if(deg<-90)
+            deg+=180;
+    }
     //len=2.2f*(my_sqrt((abs(deg)+3)/60.0f)-0.223606797f);
     //len=0.7f*arm_sin_f32(3.1415926f*fabs(deg)/60.0f);
-    len=Pid_Run(&block_deg_pid,0,-abs(deg));
+    len=Pid_Run(&block_deg_pid,0,-fabs(deg))/3.0f;
     dX=judge_sign(deg)*len*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     dY=-judge_sign(deg)*len*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+    distance=Pid_Run(&block_dist_pid,s_distance,distance);
+    dX+=-distance/90.0f*arm_sin_f32(current_pos.z*3.1415926f/180.0f);
+    dY+=-distance/90.0f*arm_cos_f32(current_pos.z*3.1415926f/180.0f);
     
-    if(clock>500||Read_Button(27)==1||deg==90)
+    if(clock>1000||Read_Button(27)==1)
     {
         flag_init=0;
         current_task->flag_finish=1;
         clock=0;
         flags[auto_drive_status]=current_task->info.z;
+        dX=0;
+        dY=0;
         return 0;
     }
-    if(abs(deg)<5)
+    if(fabs(deg)<5)
     {
         flag_init=0;
         focus_mode=0;
@@ -1247,6 +1292,7 @@ int fuck_block(mission_queue *current_task)
 int auto_pick_up_long(mission_queue *current_task)
 {
     static uint8_t flag_init=0;
+    static float deg_tmp;
     int target=current_task->info.x;
     barrier *tar=find_barrier(target);
     uint8_t set_flags[20];
@@ -1257,15 +1303,19 @@ int auto_pick_up_long(mission_queue *current_task)
     }
     if(tar==NULL)
     {
+        flag_init=0;
+        current_task->flag_finish=1;
         return 0;
     }
     if(flag_init==0)
     {
         flag_init=1;
-        if(check_barrier(current_pos,tar->location,0.2f)==0)
+        //if(check_barrier(current_pos,tar->location,0.35f)==0)
+        if(1)
         {
-            info=evaluate_approach_pos(current_pos,target,1.8f);
+            info=evaluate_place_pos(target,0.85f);
             dZ=info.z;
+            deg_tmp=dZ;
             info.z=moving_partially_complete2;
             short_drive_deadzone=0.15f;
             add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
@@ -1276,8 +1326,9 @@ int auto_pick_up_long(mission_queue *current_task)
             info.z=moving_partially_complete1;
             short_drive_deadzone=0.15f;
             add_mission(AUTODRIVESHORTDISTANCE,set_flags,0,&info);
-            info=evaluate_approach_pos(info,target,1.8f);
+            info=evaluate_approach_pos(info,target,1.2f);
             dZ=info.z;
+            deg_tmp=dZ;
             set_flags[auto_drive_status]=moving_partially_complete1;
             info.z=moving_partially_complete2;
             short_drive_deadzone=0.15f;
@@ -1286,12 +1337,62 @@ int auto_pick_up_long(mission_queue *current_task)
         
     }
 
-    info=evaluate_approach_pos(info,target,1.8f);
-        dZ=info.z;
+    dZ=-atan2f(tar->location.x-current_pos.x,tar->location.y-current_pos.y)*180.0f/3.1415926f;
+    //dZ=deg_tmp;
 
-    if(cal_distance(tar->location,current_pos)||flags[auto_drive_status]==moving_partially_complete2)
+    if(cal_distance(tar->location,current_pos)<1.2f||flags[auto_drive_status]==moving_partially_complete2)
     {
+        tar=find_barrier(target);
+        if(tar!=NULL)
+        {
+            if(tar->location.z==up||tar->location.z==down)
+            {
+                info.x=block_num;
+                get_block_flag=1;
+                dZ=-atan2f(tar->location.x-current_pos.x,tar->location.y-current_pos.y)*180.0f/3.1415926f;
+                set_flags[deg_offset]=30;
+                add_mission(AUTOPICKUP,set_flags,0,&info);
+                focus_mode=0;
+            }
+            else
+            {
+                set_flags[deg_offset]=5;
+                dZ=-atan2f(tar->location.x-current_pos.x,tar->location.y-current_pos.y)*180.0f/3.1415926f;
+                info.z=moving_complete1;
+                add_mission(FUCKBLOCK,set_flags,1,&info);
+            }
+        }
         flag_init=0;
+        current_task->flag_finish=1;
+    }
+    return 0;
+}
+
+/*********************************************************************************
+  *@  name      : move_forward2
+  *@  function  : 夹块流程函数
+  *@  input     : 塔块编号
+  *@  output    : NULL
+  *@  note      : 
+*********************************************************************************/
+int move_forward2(mission_queue *current_task)
+{
+    static int timer=0;
+    NNlearn=0;
+    if(timer<1000)
+        timer++;
+    open_loop_velocity.y=0.35f;
+    if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_9)||Read_Button(27)==1||timer>900)
+    {
+        open_loop_velocity.y=0.1f;
+        flags[auto_drive_status]=current_task->info.z;
+        while((flags[hook_pos]!=grasp||flags[hook_status]==moving)&&Read_Button(27)==0)
+        {
+            osDelay(10);
+        }
+        open_loop_velocity.y=0;
+        timer=0;
+        NNlearn=1;
         current_task->flag_finish=1;
     }
     return 0;

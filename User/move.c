@@ -26,7 +26,7 @@ plan_control_block pcb[2]={{
     },{
         .acceleration_limit_increase=3.0f,
         .acceleration_limit_decrease=3.0f,
-        .acceleration_limit_turn=3.3f,
+        .acceleration_limit_turn=3.4f,
         .speed_limit=3.0f,
         .turn_speed_limit=1.9f
     }
@@ -523,47 +523,47 @@ int check_barrier(Ort pos1,Ort pos2,float offset_len)
     k=(pos1.y-pos2.y)/(pos1.x-pos2.x);
     b=pos1.y-k*pos1.x;
 
-    if(flag_center_access==0)//是否允许进入中央区？
-    {
-        if(pos2.x<1.5+0.25&&pos2.y>2.5-0.25)//判断终点是否在对方放球区
-        {
-            return -3;//对方放球区
-        }
-        if(pos2.y>9.5-0.25)//判断终点是否在对方区
-        {
-            return -2;//对方区
-        }
-        if (pos2.y>2.5-0.25&&pos2.x>1.5-0.25&&pos2.x<10.5+0.25)//判断终点是否在中央场地
-        {
-            return -1;//中央区域
-        }
-        if(pos1.x<10.5+0.25&&pos2.y>2.5-0.25)//判断路径是否穿过中央区域
-        {
-            return -4;//穿过中央区域
-        }
-    }
-    if(pos2.x<1.5+0.25&&pos2.y>2.5-0.25)//判断终点是否在对方放球区
-    {
-        return -3;//对方放球区
-    }
-    if(pos2.y>9.5-0.25)//判断终点是否在对方区
-    {
-        return -2;//对方区
-    }
-    if(pos1.x<1.5+0.25&&pos2.y>2.5-0.25)//判断路径是否穿过对方放球区
-    {
-        return -5;//穿过对方放球区
-    }
+//    if(flag_center_access==0)//是否允许进入中央区？
+//    {
+//        if(pos2.x<1.5+0.25&&pos2.y>2.5-0.25)//判断终点是否在对方放球区
+//        {
+//            return -3;//对方放球区
+//        }
+//        if(pos2.y>9.5-0.25)//判断终点是否在对方区
+//        {
+//            return -2;//对方区
+//        }
+//        if (pos2.y>2.5-0.25&&pos2.x>1.5-0.25&&pos2.x<10.5+0.25)//判断终点是否在中央场地
+//        {
+//            return -1;//中央区域
+//        }
+//        if(pos1.x<10.5+0.25&&pos2.y>2.5-0.25)//判断路径是否穿过中央区域
+//        {
+//            return -4;//穿过中央区域
+//        }
+//    }
+//    if(pos2.x<1.5+0.25&&pos2.y>2.5-0.25)//判断终点是否在对方放球区
+//    {
+//        return -3;//对方放球区
+//    }
+//    if(pos2.y>9.5-0.25)//判断终点是否在对方区
+//    {
+//        return -2;//对方区
+//    }
+//    if(pos1.x<1.5+0.25&&pos2.y>2.5-0.25)//判断路径是否穿过对方放球区
+//    {
+//        return -5;//穿过对方放球区
+//    }
 
     while (tmp2!=NULL)
     { 
         if(4*pow(tmp2->location.x-b*k+k*tmp2->location.y,2)-4*(k*k+1)*(pow(tmp2->location.x,2)+pow(b-tmp2->location.y,2)-pow(tmp2->range+offset_len,2))>0 //????
             &&tmp2->barrier_ID!=block_num&&(tmp2->barrier_ID==1||tmp2->barrier_ID==12))
         {
-            if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<pow(tmp2->range+offset_len,2))
-            {
-                return 100-tmp2->barrier_ID;
-            }
+//            if(((pos2.x-tmp2->location.x)*(pos2.x-tmp2->location.x)+(pos2.y-tmp2->location.y)*(pos2.y-tmp2->location.y))<pow(tmp2->range+offset_len,2))
+//            {
+//                return 100-tmp2->barrier_ID;
+//            }
             if(((tmp2->location.x-pos1.x)*(pos2.x-pos1.x)+(tmp2->location.y-pos1.y)*(pos2.y-pos1.y))>0&&((tmp2->location.x-pos2.x)*(pos1.x-pos2.x)+(tmp2->location.y-pos2.y)*(pos1.y-pos2.y))>0)
                 return tmp2->barrier_ID;//如果检测到了移动障碍物则返回障碍物的ID
         }
@@ -1182,10 +1182,10 @@ Ort evaluate_place_pos(int target_ID,float dist)
 {
     Ort target=find_barrier(target_ID)->location;
     float dist2=sqrt(pow(target.x-current_pos.x,2)+pow(target.y-current_pos.y,2));
-    float temp;
+    static float temp;
     if(target_ID==1||target_ID==12)
     {
-        temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
+          temp=-atan2f(target.x-current_pos.x,target.y-current_pos.y)*180.0f/3.1415926f;
 //        if(temp>=-157.5f&&temp<-112.5f)
 //        {
 //            target.x=target.x-dist;

@@ -87,6 +87,7 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define activator_pos 12
 #define activator_status 13
 #define delay_status 14
+#define deg_offset 15
 //操作状态宏定义
 #define automode 1
 #define manualmode 0
@@ -148,9 +149,10 @@ i.v.   .DBB.     .11irrii:..::.:.:....:iii.:.iiS:. ::.  rY:SBBQBRri.ir:.       v
 #define MOVEFORWARD 13
 #define FUCKBLOCK 14
 #define AUTOPICKUPLONG 15
+#define MOVEFORWARD2 16
 
-#define either 114
-#define total_flags 15 //定义标志位总数量
+#define either 233
+#define total_flags 16 //定义标志位总数量
 
 #define standby 0
 #define regulate 1
@@ -217,6 +219,7 @@ extern int (*taskqueuedelay)(mission_queue *current_task);
 extern int (*moveforward)(mission_queue *current_task);
 extern int (*fuckblock)(mission_queue *current_task);
 extern int (*autopickuplong)(mission_queue *current_task);
+extern int (*moveforward2)(mission_queue *current_task);
 
 extern uint8_t flags[20];
 extern float dX;
@@ -278,6 +281,7 @@ int auto_pick_up_long(mission_queue *current_task);
 /*Advanced Private Function Prototypes*/
 void pick_up(uint8_t pos,uint8_t mode,uint8_t flag_sensor_mode);
 void place_block(uint8_t tower_num);
+int move_forward2(mission_queue *current_task);
 /*Disposable Private Function Prototypes*/
 void send_msg_synchronal(void *id);
 #endif
